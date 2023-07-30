@@ -1,14 +1,9 @@
-// tbd: license comment
-/*
- * prokrustean.cpp
- *
- *  Created on: Jul 29, 2023
- *      Author: Adam Park
- */
+// Copyright (c) 2018, Nicola Prezza.  All rights reserved.
+// Use of this source code is governed
+// by a MIT license that can be found in the LICENSE file.
 
-
-#ifndef FM_IDX_HPP_
-#define FM_IDX_HPP_
+#ifndef INCLUDE_HPP_
+#define INCLUDE_HPP_
 
 #include <fstream>
 #include <vector>
@@ -557,5 +552,5 @@ void update_lcp(sa_node_n & x, vector<lcp_int_t> & LCP, uint64_t & lcp_values){
 }
 
 
-#endif /* FM_IDX_HPP_ */
+#endif /* INCLUDE_HPP_ */
 
