@@ -54,7 +54,12 @@ public:
 	uint64_t C;
 	uint64_t G;
 	uint64_t T;
+	uint64_t TERM = 0; // filled later
 
+	void fill_term(uint64_t i){
+		TERM = i - (A + C + G + T);
+	}
+	
 	p_rank operator+(const p_rank& a) const{
 
 		return {
@@ -205,43 +210,44 @@ public:
 		p_rank superblock_r = superblock_ranks[superblock_number];
 		p_rank block_r = get_counters(superblock_number,block_number);
 
-		return superblock_r + block_r + block_rank(superblock_number, block_number, block_off);
-
+		p_rank r = superblock_r + block_r + block_rank(superblock_number, block_number, block_off);
+		r.fill_term(i);
+		return r;
 	}
 
 	/*
 	 * standard rank. c can be A,C,G,T, or TERM
 	 */
-	uint64_t rank(uint64_t i, uint8_t c){
+	// uint64_t rank(uint64_t i, uint8_t c){
 
-		p_rank pr = parallel_rank(i);
+	// 	p_rank pr = parallel_rank(i);
 
-		if(c==TERM) return rank_non_dna(i);
+	// 	if(c==TERM) return rank_non_dna(i);
 
-		switch(c){
-			case 'A' : return pr.A; break;
-			case 'C' : return pr.C; break;
-			case 'G' : return pr.G; break;
-			case 'T' : return pr.T; break;
-		}
+	// 	switch(c){
+	// 		case 'A' : return pr.A; break;
+	// 		case 'C' : return pr.C; break;
+	// 		case 'G' : return pr.G; break;
+	// 		case 'T' : return pr.T; break;
+	// 	}
 
-		return 0;
+	// 	return 0;
 
-	}
+	// }
 
 	/*
 	 * return number of non-dna symbols in the prefix of length i of the text. At most 1 cache miss!
 	 */
-	uint64_t rank_non_dna(uint64_t i){
+	// uint64_t rank_non_dna(uint64_t i){
 
-		assert(i<=n);
-		auto r = parallel_rank(i);
+	// 	assert(i<=n);
+	// 	auto r = parallel_rank(i);
 
-		assert(r.A + r.C + r.G + r.T <= i);
+	// 	assert(r.A + r.C + r.G + r.T <= i);
 
-		return i - (r.A + r.C + r.G + r.T);
+	// 	return i - (r.A + r.C + r.G + r.T);
 
-	}
+	// }
 
 	uint64_t serialize(std::ostream& out){
 

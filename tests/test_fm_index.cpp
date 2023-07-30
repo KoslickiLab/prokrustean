@@ -4,6 +4,7 @@
 #include <iostream>
 #include "util.cpp"	
 #include "../src/fm_index/rank.hpp"
+#include "../src/fm_index/index.hpp"
 
 using namespace std;
 
@@ -61,12 +62,25 @@ bool check_content(string path){
     return res;
 }
 
-void simple_string(){
-    IS_TRUE(check_content("../data/simple_ebwt.txt"));
-    auto str = succint_string("../data/simple_ebwt.txt");
+string DATA_PATH1 = "../data/simple_ebwt.txt";
+
+void test_strings(){
+    IS_TRUE(check_content(DATA_PATH1));
+}
+
+void test_ranks(){
+    auto str = succint_string(DATA_PATH1);
     IS_TRUE(check_rank(str));
 }
+
+void test_LF(){
+    auto str = succint_string(DATA_PATH1);
+    auto idx = fm_index(DATA_PATH1);
+    interval root = idx.root();
+    left_ext_intervals left_exts = idx.LF(root);
+}
+
 int main(void) {
     // Call all tests. Using a test framework would simplify this.
-    simple_string();
+    test_ranks();
 }
