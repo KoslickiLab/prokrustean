@@ -8,9 +8,8 @@
 
 
 #include <iostream>
-// #include "internal/lcp.hpp"
 #include <unistd.h>
-// #include "internal/dna_bwt_n.hpp"
+// #include "src/construction/fm_idx.hpp"
 
 using namespace std;
 
