@@ -6,6 +6,7 @@
 #include "../src/fm_index/rank.hpp"
 #include "../src/fm_index/index.hpp"
 
+
 using namespace std;
 
 bool check_rank(succint_string str){
@@ -62,6 +63,22 @@ bool check_content(string path){
     return res;
 }
 
+void print_interval(interval in){
+    cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
+}
+void print_left_ext_intervals(left_ext_intervals left_exts){
+    cout << "left ext TERM: " << ends;
+    print_interval(left_exts.TERM);
+    cout << "left ext A: " << ends;
+    print_interval(left_exts.A);
+    cout << "left ext C: " << ends;
+    print_interval(left_exts.C);
+    cout << "left ext G: " << ends;
+    print_interval(left_exts.G);
+    cout << "left ext T: " << ends;
+    print_interval(left_exts.T);
+}
+
 string DATA_PATH1 = "../data/simple_ebwt.txt";
 
 void test_strings(){
@@ -78,9 +95,11 @@ void test_LF(){
     auto idx = fm_index(DATA_PATH1);
     interval root = idx.root();
     left_ext_intervals left_exts = idx.LF(root);
+    print_left_ext_intervals(left_exts);
 }
 
-int main(void) {
+void main_fm_index() {
     // Call all tests. Using a test framework would simplify this.
     test_ranks();
+    test_LF();
 }

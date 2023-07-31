@@ -11,7 +11,8 @@ find_package(Boost 1.55 REQUIRED COMPONENTS unit_test_framework)
 
 file(GLOB test_SRC "*.cpp")
 
-add_executable(${PROJECT_NAME} ${test_SRC})
+# add_executable(${PROJECT_NAME} ${test_SRC})
+add_executable(${PROJECT_NAME} tests.cpp)
 # add_executable(${PROJECT_NAME} 
 # ./test_fm_index.cpp
 # )
