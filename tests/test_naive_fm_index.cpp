@@ -9,8 +9,10 @@ using namespace std;
 
 void test_naive_sa(){
     vector<string> sequences = {"ACACACGTGTGT", "AGGCCCTT"};
-    auto fm_idx = NaiveFmIndex(sequences);
-    fm_idx.print_sa();
+    auto fm_idx = NaiveFmIndex(sequences, 3);
+    // fm_idx.print_sa();
+    // fm_idx.print_ssa();
+    fm_idx.print_ebwt();
 }
 
 

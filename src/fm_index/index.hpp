@@ -67,25 +67,8 @@ public:
 		this->TERM = TERM;
 
         STRING = succint_string(path, TERM);
-        
-		//build F column
-		for(uint64_t i=0;i<STRING.size();++i){
-
-			// assert(STRING[i] < 256);
-
-			F_A += (STRING[i]==TERM);
-			F_C += (STRING[i]=='A');
-			F_G += (STRING[i]=='C');
-			F_T += (STRING[i]=='G');
-
-		}
-
-		F_C += F_A;
-		F_G += F_C;
-		F_T += F_G;
-
-	}
-
+        C = STRING.get_count_array();
+    }
     /*
     * Input: suffix tree node N.
     * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
@@ -112,12 +95,49 @@ public:
 
         return {
             {   before_TERM.TERM,    before_A.TERM,    before_C.TERM,    before_G.TERM,    before_T.TERM,    before_end.TERM, interval.depth+1},
-            {F_A + before_TERM.A, F_A + before_A.A, F_A + before_C.A, F_A + before_G.A, F_A + before_T.A, F_A + before_end.A, interval.depth+1},
-            {F_C + before_TERM.C, F_C + before_A.C, F_C + before_C.C, F_C + before_G.C, F_C + before_T.C, F_C + before_end.C, interval.depth+1},
-            {F_G + before_TERM.G, F_G + before_A.G, F_G + before_C.G, F_G + before_G.G, F_G + before_T.G, F_G + before_end.G, interval.depth+1},
-            {F_T + before_TERM.T, F_T + before_A.T, F_T + before_C.T, F_T + before_G.T, F_T + before_T.T, F_T + before_end.T, interval.depth+1}
+            {C.A + before_TERM.A, C.A + before_A.A, C.A + before_C.A, C.A + before_G.A, C.A + before_T.A, C.A + before_end.A, interval.depth+1},
+            {C.C + before_TERM.C, C.C + before_A.C, C.C + before_C.C, C.C + before_G.C, C.C + before_T.C, C.C + before_end.C, interval.depth+1},
+            {C.G + before_TERM.G, C.G + before_A.G, C.G + before_C.G, C.G + before_G.G, C.G + before_T.G, C.G + before_end.G, interval.depth+1},
+            {C.T + before_TERM.T, C.T + before_A.T, C.T + before_C.T, C.T + before_G.T, C.T + before_T.T, C.T + before_end.T, interval.depth+1}
         };
+    }
 
+    uint64_t LF(uint64_t r){
+        uint64_t f;
+        // cout << STRING[r] << endl;
+        switch (STRING[r])
+        {
+            case 'A': f=C.A+STRING.rank(r, 'A'); break;
+            case 'C': f=C.C+STRING.rank(r, 'C'); break;
+            case 'G': f=C.G+STRING.rank(r, 'G'); break;
+            case 'T': f=C.T+STRING.rank(r, 'T'); break;
+            default: //TERM, otherwise invalidated already.
+                f=STRING.rank(r, TERM);
+                break;
+        }
+        return f;
+    }
+
+    void set_sampled_suffixes(vector<uint64_t> ssa, uint64_t s){
+        SSA = ssa;
+        sample_factor = s;
+    }
+    
+    char get_character(uint64_t pos){
+        return STRING[pos];
+    }
+
+    uint64_t get_suffix(uint64_t r){
+		cout << "get suffix[" << r << "] " << endl;
+        uint64_t row = r;
+        uint64_t k = 0;
+        while (row % sample_factor != 1){
+            row = LF(row);
+            k++;
+            cout << "row: " << row << ", " << "k: " << k << endl;
+        }
+		uint64_t pos = SSA[row/sample_factor];
+        return pos + k;
     }
 
 	uint64_t serialize(std::ostream& out){
@@ -125,10 +145,10 @@ public:
 		uint64_t w_bytes = 0;
         uint64_t n = STRING.size();
 		out.write((char*)&n,sizeof(n));
-		out.write((char*)&F_A,sizeof(uint64_t));
-		out.write((char*)&F_C,sizeof(uint64_t));
-		out.write((char*)&F_G,sizeof(uint64_t));
-		out.write((char*)&F_T,sizeof(uint64_t));
+		out.write((char*)&C.A,sizeof(uint64_t));
+		out.write((char*)&C.C,sizeof(uint64_t));
+		out.write((char*)&C.G,sizeof(uint64_t));
+		out.write((char*)&C.T,sizeof(uint64_t));
 
 		w_bytes += sizeof(n) + sizeof(uint64_t)*4;
 
@@ -138,6 +158,10 @@ public:
 
 	}
 
+    uint64_t size(){
+        return STRING.size();
+    }
+
 	/* load the structure from the istream
 	 * \param in the istream
 	 */
@@ -145,10 +169,10 @@ public:
 
 	// 	in.read((char*)&n,sizeof(n));
 
-	// 	in.read((char*)F_A,sizeof(uint64_t));
-	// 	in.read((char*)F_C,sizeof(uint64_t));
-	// 	in.read((char*)F_G,sizeof(uint64_t));
-	// 	in.read((char*)F_T,sizeof(uint64_t));
+	// 	in.read((char*)C.A,sizeof(uint64_t));
+	// 	in.read((char*)C.C,sizeof(uint64_t));
+	// 	in.read((char*)C.G,sizeof(uint64_t));
+	// 	in.read((char*)C.T,sizeof(uint64_t));
 
 	// 	STRING.load(in);
 
@@ -182,10 +206,10 @@ public:
 
 		return {
 			0,
-			F_A,
-			F_C,
-			F_G,
-			F_T,
+			C.A,
+			C.C,
+			C.G,
+			C.T,
 			STRING.size(),
 			0
 		};
@@ -197,7 +221,7 @@ public:
 	 */
 	// sa_leaf first_leaf(){
 
-	// 	return {{0, F_A}, 0};
+	// 	return {{0, C.A}, 0};
 
 	// }
 
@@ -253,13 +277,10 @@ private:
 
 	char TERM = '#';
 
-	uint64_t F_A=0; //F array
-	uint64_t F_C=0; //F array
-	uint64_t F_G=0; //F array
-	uint64_t F_T=0; //F array
-
-	//vector<uint64_t> F;
+    c_array C;
 	succint_string STRING;
+    vector<uint64_t> SSA;
+    uint64_t sample_factor=0; // sampling factor
 
 };
 

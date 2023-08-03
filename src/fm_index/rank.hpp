@@ -91,6 +91,12 @@ public:
 
 };
 
+struct c_array {
+	uint64_t A;
+	uint64_t C;
+	uint64_t G;
+	uint64_t T;
+};
 
 class succint_string{
 
@@ -104,6 +110,7 @@ public:
 	succint_string(string path, char TERM = '#'){
 
 		this->TERM = TERM;
+		c_array = {0,0,0,0};
 
 		n = uint64_t(filesize(path));
 
@@ -121,46 +128,51 @@ public:
 		while(uint64_t(data) % ALN != 0) data++;
 
 		//cout << "alignment of data: " << (void*)data << endl;
+		
+		ifstream ifs(path);
 
-		{
+		string BUF(BLOCK_SIZE,'A');
 
-			ifstream ifs(path);
+		for(uint64_t i = 0; i<n; ++i){
 
-			string BUF(BLOCK_SIZE,'A');
+			char c;
 
-			for(uint64_t i = 0; i<n; ++i){
+			ifs.read((char*)&c, sizeof(char));
 
-				char c;
+			BUF[i%BLOCK_SIZE] = c;
 
-				ifs.read((char*)&c, sizeof(char));
+			//buffer is full
+			if((i%BLOCK_SIZE) == BLOCK_SIZE-1) set(i/BLOCK_SIZE, BUF);
 
-				BUF[i%BLOCK_SIZE] = c;
-
-				if(c!='A' and c!='C' and c!='G' and c!='T' and c!=TERM){
+			switch (c)
+			{
+				case 'A': c_array.C++; break;
+				case 'C': c_array.G++; break;
+				case 'G': c_array.T++; break;
+				case 'T': break;
+				default:
+				if(c==TERM){
+					c_array.A++;
+				} else {
 					cout << "Error while reading file: read forbidden character '" <<  c << "' (ASCII code " << int(c) << ")." << endl;
 					cout << "Only A,C,G,T, and " << TERM << " are admitted in the input BWT!" << endl;
-
 					// if(c=='N'){
-
 					// 	cout << "Possible solution: it seems that your file contains 'N' characters. Please, re-run with option -n." << endl;
-
 					// }else{
-
 					// 	cout << "Possible solution: if the unknown character is the terminator, you can solve the problem by adding option \"-t " << int(c) << "\"." << endl;
-
 					// }
-
 					exit(1);
 				}
-
-				//buffer is full
-				if((i%BLOCK_SIZE) == BLOCK_SIZE-1) set(i/BLOCK_SIZE, BUF);
-
+				break;
 			}
-
-			if(n % BLOCK_SIZE != 0) set(n/BLOCK_SIZE, BUF);
-
 		}
+		c_array.C += c_array.A;
+		c_array.G += c_array.C;
+		c_array.T += c_array.G;
+
+		if(n % BLOCK_SIZE != 0) set(n/BLOCK_SIZE, BUF);
+
+		
 
 		// assert(check_content(path));
 		build_rank_support();
@@ -217,37 +229,37 @@ public:
 
 	/*
 	 * standard rank. c can be A,C,G,T, or TERM
+	 * todo: optimize?
 	 */
-	// uint64_t rank(uint64_t i, uint8_t c){
+	uint64_t rank(uint64_t i, uint8_t c){
 
-	// 	p_rank pr = parallel_rank(i);
+		if(c==TERM) return rank_non_dna(i);
+		
+		p_rank pr = parallel_rank(i);
 
-	// 	if(c==TERM) return rank_non_dna(i);
+		switch(c){
+			case 'A' : return pr.A; break;
+			case 'C' : return pr.C; break;
+			case 'G' : return pr.G; break;
+			case 'T' : return pr.T; break;
+		}
 
-	// 	switch(c){
-	// 		case 'A' : return pr.A; break;
-	// 		case 'C' : return pr.C; break;
-	// 		case 'G' : return pr.G; break;
-	// 		case 'T' : return pr.T; break;
-	// 	}
-
-	// 	return 0;
-
-	// }
+		return 0;
+	}
 
 	/*
 	 * return number of non-dna symbols in the prefix of length i of the text. At most 1 cache miss!
 	 */
-	// uint64_t rank_non_dna(uint64_t i){
+	uint64_t rank_non_dna(uint64_t i){
 
-	// 	assert(i<=n);
-	// 	auto r = parallel_rank(i);
+		assert(i<=n);
+		auto r = parallel_rank(i);
 
-	// 	assert(r.A + r.C + r.G + r.T <= i);
+		assert(r.A + r.C + r.G + r.T <= i);
 
-	// 	return i - (r.A + r.C + r.G + r.T);
+		return i - (r.A + r.C + r.G + r.T);
 
-	// }
+	}
 
 	uint64_t serialize(std::ostream& out){
 
@@ -270,6 +282,9 @@ public:
 
 	}
 
+	c_array get_count_array(){
+		return c_array;
+	}
 	// void load(std::istream& in) {
 
 	// 	in.read((char*)&n,sizeof(n));
@@ -540,6 +555,8 @@ private:
 
 	uint64_t nbytes = 0; //bytes used in data
 	uint64_t n = 0;
+
+	c_array c_array;
 
 };
 
