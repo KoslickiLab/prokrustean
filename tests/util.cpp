@@ -14,13 +14,12 @@ class NaiveFmIndex{
 
 public:
 	NaiveFmIndex(vector<string> sequences, int s_factor=1){
-        sort(sequences.begin(), sequences.end());
+        // sort(sequences.begin(), sequences.end());
         this->sequences = sequences;
         this->sa = get_gsa(this->sequences);
         this->ssa = get_ssa(sa, s_factor);
         this->ebwt = get_ebwt(this->sa);
     }
-
 
     char TERM = '#';
     vector<string> sequences;
@@ -34,13 +33,14 @@ public:
         for (int i=0; i< sequences.size(); i++){
             auto seq = sequences[i];
             for (int j=0; j< seq.size(); j++){
-                string suffix = seq.substr(j, seq.size()) + TERM;
+                // string suffix = seq.substr(j, seq.size()) + TERM;
+                string suffix = seq.substr(j, seq.size());
                 suffixes.push_back(make_tuple(global_idx, suffix));
                 global_idx++;
             }
-            string s(1, TERM);
-            suffixes.push_back(make_tuple(global_idx, s));
-            global_idx++;
+            // string s(1, TERM);
+            // suffixes.push_back(make_tuple(global_idx, s));
+            // global_idx++;
         }
 
         // affects the ordering rule
@@ -55,7 +55,8 @@ public:
     vector<char> get_ebwt(vector<pair<int, string>> sa){
         string concatenated_string = "";
         for (int i=0; i< sequences.size(); i++){
-            concatenated_string += (sequences[i]+TERM);
+            // concatenated_string += (sequences[i]+TERM);
+            concatenated_string += sequences[i];
         }
 
         vector<char> ebwt;
@@ -107,17 +108,19 @@ public:
 
 vector<string> get_sequences(string path){
     ifstream ifs(path);
-    string seq = "";
+    string seq;
     vector<string> sequences;
     while(ifs.peek()!=EOF){
         char c;
         ifs.read((char*)&c, sizeof(char));
+        seq += c;
         if(c=='#'){
             sequences.push_back(seq);
-            seq = "";
-        } else {
-            seq += c;
-        }
+            seq.clear();
+        } 
+        // else {
+        //     seq += c;
+        // }
     }
     return sequences;
 }

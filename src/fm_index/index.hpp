@@ -10,9 +10,17 @@ using namespace std;
 #define FM_INDEX_INDEX_HPP_
 
 /*
+ * factory. For potential optimization later.
+ */
+// FmIndex create_fm_index(string path, char TERM = '#'){
+// 	FmIndex idx = FmIndex(path, TERM);
+// 	return idx;
+// }
+
+/*
  * representation of a right-maximal substring (SA node) as a list of STRING intervals
  */
-struct interval {
+struct Interval {
 
 	uint64_t first_TERM;
 	uint64_t first_A;
@@ -46,52 +54,52 @@ struct interval {
 
 struct left_ext_intervals {
 
-    interval TERM;
-	interval A;
-	interval C;
-	interval G;
-	interval T;
+    Interval TERM;
+	Interval A;
+	Interval C;
+	Interval G;
+	Interval T;
 
 };
 
-class fm_index{
+class FmIndex{
 
 public:
-	fm_index(){};
+	FmIndex(){};
 
 	/*
 	 * constructor path of a STRING file containing the STRING in ASCII format
 	 */
-	fm_index(string path, char TERM = '#'){
+	FmIndex(string path, char TERM = '#'){
 
 		this->TERM = TERM;
 
-        STRING = succint_string(path, TERM);
+        STRING = SuccintString(path, TERM);
         C = STRING.get_count_array();
     }
     /*
     * Input: suffix tree node N.
     * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
     */
-    left_ext_intervals LF(interval interval){
+    left_ext_intervals LF(Interval interval){
 
-        p_rank rank = STRING.parallel_rank(interval.first_TERM);
-        p_rank before_TERM = rank;
+        ParallelRank rank = STRING.parallel_rank(interval.first_TERM);
+        ParallelRank before_TERM = rank;
 
         if(interval.first_A != interval.first_TERM) rank = STRING.parallel_rank(interval.first_A);
-        p_rank before_A = rank;
+        ParallelRank before_A = rank;
 
         if(interval.first_C != interval.first_A) rank = STRING.parallel_rank(interval.first_C);
-        p_rank before_C = rank;
+        ParallelRank before_C = rank;
 
         if(interval.first_G != interval.first_C) rank = STRING.parallel_rank(interval.first_G);
-        p_rank before_G = rank;
+        ParallelRank before_G = rank;
 
         if(interval.first_T != interval.first_G) rank = STRING.parallel_rank(interval.first_T);
-        p_rank before_T = rank;
+        ParallelRank before_T = rank;
 
         if(interval.last != interval.first_T) rank = STRING.parallel_rank(interval.last);
-        p_rank before_end = rank;
+        ParallelRank before_end = rank;
 
         return {
             {   before_TERM.TERM,    before_A.TERM,    before_C.TERM,    before_G.TERM,    before_T.TERM,    before_end.TERM, interval.depth+1},
@@ -162,6 +170,10 @@ public:
         return STRING.size();
     }
 
+	uint64_t seq_cnt(){
+        return C.A;
+    }
+
 	/* load the structure from the istream
 	 * \param in the istream
 	 */
@@ -202,7 +214,7 @@ public:
 	//  * functions for suffix tree navigation
 	//  */
 
-	interval root(){
+	Interval root(){
 
 		return {
 			0,
@@ -277,8 +289,8 @@ private:
 
 	char TERM = '#';
 
-    c_array C;
-	succint_string STRING;
+    CArray C;
+	SuccintString STRING;
     vector<uint64_t> SSA;
     uint64_t sample_factor=0; // sampling factor
 

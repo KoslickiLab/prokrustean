@@ -46,7 +46,7 @@
 
 using namespace std;
 
-struct p_rank{
+struct ParallelRank{
 
 public:
 
@@ -60,7 +60,7 @@ public:
 		TERM = i - (A + C + G + T);
 	}
 	
-	p_rank operator+(const p_rank& a) const{
+	ParallelRank operator+(const ParallelRank& a) const{
 
 		return {
 			a.A + A,
@@ -71,19 +71,19 @@ public:
 
 	}
 
-	bool operator==(const p_rank& a) const{
+	bool operator==(const ParallelRank& a) const{
 
 		return a.A == A and a.C == C and a.G == G and a.T == T;
 
 	}
 
-	bool operator!=(const p_rank& a) const{
+	bool operator!=(const ParallelRank& a) const{
 
 		return a.A != A or a.C != C or a.G != G or a.T != T;
 
 	}
 
-	bool operator<=(const p_rank& a) const{
+	bool operator<=(const ParallelRank& a) const{
 
 		return A <= a.A and C <= a.C and G <= a.G and T <= a.T;
 
@@ -91,23 +91,23 @@ public:
 
 };
 
-struct c_array {
+struct CArray {
 	uint64_t A;
 	uint64_t C;
 	uint64_t G;
 	uint64_t T;
 };
 
-class succint_string{
+class SuccintString{
 
 public:
 
-	succint_string(){}
+	SuccintString(){}
 
 	/*
 	 * constructor from ASCII file
 	 */
-	succint_string(string path, char TERM = '#'){
+	SuccintString(string path, char TERM = '#'){
 
 		this->TERM = TERM;
 		c_array = {0,0,0,0};
@@ -118,7 +118,7 @@ public:
 		n_blocks = (n+1)/BLOCK_SIZE + ((n+1)%BLOCK_SIZE != 0);
 		nbytes = (n_blocks * BYTES_PER_BLOCK);//number of bytes effectively filled with data
 
-		superblock_ranks = vector<p_rank>(n_superblocks);
+		superblock_ranks = vector<ParallelRank>(n_superblocks);
 
 		/*
 		 * this block of code ensures that data is aligned by 64 bytes = 512 bits
@@ -212,17 +212,17 @@ public:
 	/*
 	 * Parallel rank of (A,C,T,G) at position i.
 	 */
-	p_rank parallel_rank(uint64_t i){
+	ParallelRank parallel_rank(uint64_t i){
 
 		uint64_t superblock_number = i / SUPERBLOCK_SIZE;
 		uint64_t superblock_off = i % SUPERBLOCK_SIZE;
 		uint64_t block_number = superblock_off / BLOCK_SIZE;
 		uint64_t block_off = superblock_off % BLOCK_SIZE;
 
-		p_rank superblock_r = superblock_ranks[superblock_number];
-		p_rank block_r = get_counters(superblock_number,block_number);
+		ParallelRank superblock_r = superblock_ranks[superblock_number];
+		ParallelRank block_r = get_counters(superblock_number,block_number);
 
-		p_rank r = superblock_r + block_r + block_rank(superblock_number, block_number, block_off);
+		ParallelRank r = superblock_r + block_r + block_rank(superblock_number, block_number, block_off);
 		r.fill_term(i);
 		return r;
 	}
@@ -235,7 +235,7 @@ public:
 
 		if(c==TERM) return rank_non_dna(i);
 		
-		p_rank pr = parallel_rank(i);
+		ParallelRank pr = parallel_rank(i);
 
 		switch(c){
 			case 'A' : return pr.A; break;
@@ -272,8 +272,8 @@ public:
 
 		w_bytes += sizeof(n) + sizeof(nbytes) + sizeof(n_superblocks) + sizeof(n_blocks);
 
-		out.write((char*)superblock_ranks.data(),n_superblocks*sizeof(p_rank));
-		w_bytes += n_superblocks*sizeof(p_rank);
+		out.write((char*)superblock_ranks.data(),n_superblocks*sizeof(ParallelRank));
+		w_bytes += n_superblocks*sizeof(ParallelRank);
 
 		out.write((char*)data,nbytes*sizeof(uint8_t));
 		w_bytes += nbytes*sizeof(uint8_t);
@@ -282,7 +282,7 @@ public:
 
 	}
 
-	c_array get_count_array(){
+	CArray get_count_array(){
 		return c_array;
 	}
 	// void load(std::istream& in) {
@@ -312,8 +312,8 @@ private:
 
 	void build_rank_support(){
 
-		p_rank superblock_r = {};
-		p_rank block_r = {};
+		ParallelRank superblock_r = {};
+		ParallelRank block_r = {};
 
 		for(uint64_t bl = 0; bl < n_blocks-1; ++bl){
 
@@ -329,7 +329,7 @@ private:
 
 			set_counters(superblock_number, block_number,block_r);
 
-			p_rank local_rank = block_rank(superblock_number, block_number);
+			ParallelRank local_rank = block_rank(superblock_number, block_number);
 
 			block_r = block_r + local_rank;
 			superblock_r = superblock_r + local_rank;
@@ -410,7 +410,7 @@ private:
 	/*
 	 * rank in block given as coordinates: superblock, block, offset in block
 	 */
-	inline p_rank block_rank(uint64_t superblock_number, uint64_t block_number, uint64_t block_off){
+	inline ParallelRank block_rank(uint64_t superblock_number, uint64_t block_number, uint64_t block_off){
 
 		assert(block_off<BLOCK_SIZE);
 
@@ -449,7 +449,7 @@ private:
 	/*
 	 * rank in block given as coordinates: superblock, block, offset in block
 	 */
-	inline p_rank block_rank64(uint64_t superblock_number, uint64_t block_number, uint64_t block_off){
+	inline ParallelRank block_rank64(uint64_t superblock_number, uint64_t block_number, uint64_t block_off){
 
 		assert(block_off < 64);
 
@@ -480,7 +480,7 @@ private:
 	/*
 	 * rank in whole block given as coordinates: superblock, block
 	 */
-	inline p_rank block_rank(uint64_t superblock_number, uint64_t block_number){
+	inline ParallelRank block_rank(uint64_t superblock_number, uint64_t block_number){
 
 		//starting address of the block
 		uint8_t* start = data + superblock_number*BYTES_PER_SUPERBLOCK + block_number*BYTES_PER_BLOCK;
@@ -490,7 +490,7 @@ private:
 
 		__uint128_t b2 = ~chars[2]; //most significant bit
 
-		p_rank res = {
+		ParallelRank res = {
 
 			popcount128(b2 & (~chars[1]) & (~chars[0])),
 			popcount128(b2 & (~chars[1]) & (chars[0])),
@@ -508,7 +508,7 @@ private:
 	/*
 	 * set counters in the i-th block to r
 	 */
-	void set_counters(uint64_t superblock_number, uint64_t block_number, p_rank r){
+	void set_counters(uint64_t superblock_number, uint64_t block_number, ParallelRank r){
 
 		//block start
 		uint8_t* start = data + superblock_number*BYTES_PER_SUPERBLOCK + block_number*BYTES_PER_BLOCK;
@@ -526,7 +526,7 @@ private:
 	/*
 	 * get counters of the i-th block
 	 */
-	inline p_rank get_counters(uint64_t superblock_number, uint64_t superblock_off){
+	inline ParallelRank get_counters(uint64_t superblock_number, uint64_t superblock_off){
 
 		//block start
 		uint8_t* start = data + superblock_number*BYTES_PER_SUPERBLOCK + superblock_off*BYTES_PER_BLOCK;
@@ -551,12 +551,12 @@ private:
 	//data aligned with blocks of 64 bytes = 512 bits
 	uint8_t * data = NULL;
 
-	vector<p_rank> superblock_ranks;
+	vector<ParallelRank> superblock_ranks;
 
 	uint64_t nbytes = 0; //bytes used in data
 	uint64_t n = 0;
 
-	c_array c_array;
+	CArray c_array;
 
 };
 

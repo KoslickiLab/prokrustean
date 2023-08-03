@@ -10,8 +10,8 @@
 
 using namespace std;
 
-bool check_rank(succint_string str){
-    p_rank p = {};
+bool check_rank(SuccintString str){
+    ParallelRank p = {};
     bool res = true;
 
     for(int i=0;i<str.size();++i){
@@ -45,7 +45,7 @@ std::ifstream::pos_type filesize(string filename){
 * check that the string contains exactly the same characters as the file in path
 */
 bool check_content(string path){
-    auto str = succint_string(path);
+    auto str = SuccintString(path);
     ifstream ifs(path);
     bool res = true;
     for(uint64_t i=0;i<str.size();++i){
@@ -64,7 +64,7 @@ bool check_content(string path){
     return res;
 }
 
-void print_interval(interval in){
+void print_interval(Interval in){
     cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
 }
 void print_left_ext_intervals(left_ext_intervals left_exts){
@@ -82,21 +82,23 @@ void print_left_ext_intervals(left_ext_intervals left_exts){
 
 string PATH1_SEQ = "../data/1_sequences.txt";
 string PATH1_BWT = "../data/1_ebwt.txt";
-string PATH2_SEQ = "../data/2_sequences.txt";
+string PATH2_SEQ = "../data/2_sequences_unsorted.txt";
 string PATH2_BWT = "../data/2_ebwt.txt";
+string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
+string PATH3_BWT = "../data/3_ebwt.txt";
 
 void test_strings(){
     IS_TRUE(check_content(PATH1_BWT));
 }
 
 void test_ranks(){
-    auto str = succint_string(PATH1_BWT);
+    auto str = SuccintString(PATH1_BWT);
     IS_TRUE(check_rank(str));
 }
 
 void test_LF(){
-    auto idx = fm_index(PATH1_BWT);
-    interval root = idx.root();
+    auto idx = FmIndex(PATH1_BWT);
+    Interval root = idx.root();
     left_ext_intervals left_exts = idx.LF(root);
     // print_left_ext_intervals(left_exts);
     // print_left_ext_intervals(idx.LF(left_exts.TERM));
@@ -106,18 +108,95 @@ void test_LF(){
     // print_left_ext_intervals(idx.LF(left_exts.T));
 }
 
-void test_sampled_suffixes(){
+void test_recovery(){
     // naive
     vector<string> sequences = get_sequences(PATH1_SEQ);
     auto fm_idx_naive = NaiveFmIndex(sequences, 3);
-    fm_idx_naive.print_sa();
-    fm_idx_naive.print_ebwt();
     // fm_index
-    auto fm_idx = fm_index(PATH1_BWT);
-    sample_by_sa_order(fm_idx, 3);
+    auto fm_idx = FmIndex(PATH1_BWT);
+    for (int i=0; i<sequences.size(); i++){
+        // cout << recover_text(fm_idx, i) <<endl;
+        // cout << sequences[i] <<endl;
+        assert(sequences[i]==recover_text(fm_idx, i));
+    }
+
+    vector<pair<uint64_t, string>> sa(fm_idx.size());
+    uint64_t text_pos = 0;
+    for (int i=0; i<sequences.size(); i++){
+        for(auto pair: recover_suffix_array(fm_idx, i)){
+            sa[pair.first]=make_tuple(text_pos, pair.second);
+            text_pos++;
+        }
+    }
     for (int i=0; i<fm_idx.size(); i++){
-        cout << "sa comparison " << fm_idx_naive.get_suffix(i) << ":" << fm_idx.get_suffix(i) << endl;
-        assert(fm_idx_naive.get_suffix(i) == fm_idx.get_suffix(i));
+        //important: skip terminator only.
+        if (i < fm_idx.seq_cnt()) continue;
+        // cout << sa[i].first << ", " << fm_idx_naive.sa[i].first << endl;
+        // cout << sa[i].second << ", " << fm_idx_naive.sa[i].second << endl;
+        assert(sa[i].first==fm_idx_naive.sa[i].first);
+        assert(sa[i].second==fm_idx_naive.sa[i].second);
+    }
+}
+
+void test_recovery_unsorted(){
+    // naive
+    vector<string> sequences = get_sequences(PATH2_SEQ);
+    auto fm_idx_naive = NaiveFmIndex(sequences, 3);
+    // fm_idx_naive.print_ebwt();
+    // fm_index
+    auto fm_idx = FmIndex(PATH2_BWT);
+    for (int i=0; i<sequences.size(); i++){
+        // cout << recover_text(fm_idx, i) <<endl;
+        // cout << sequences[i] <<endl;
+        assert(sequences[i]==recover_text(fm_idx, i));
+    }
+
+    vector<pair<uint64_t, string>> sa(fm_idx.size());
+    uint64_t text_pos = 0;
+    for (int i=0; i<sequences.size(); i++){
+        for(auto pair: recover_suffix_array(fm_idx, i)){
+            sa[pair.first]=make_tuple(text_pos, pair.second);
+            text_pos++;
+        }
+    }
+    for (int i=0; i<fm_idx.size(); i++){
+        //important: skip terminator only.
+        if (i < fm_idx.seq_cnt()) continue;
+        // cout << sa[i].first << ", " << fm_idx_naive.sa[i].first << endl;
+        // cout << sa[i].second << ", " << fm_idx_naive.sa[i].second << endl;
+        assert(sa[i].first==fm_idx_naive.sa[i].first);
+        assert(sa[i].second==fm_idx_naive.sa[i].second);
+    }
+}
+
+void test_recovery_unsorted_tied(){
+    // naive
+    vector<string> sequences = get_sequences(PATH3_SEQ);
+    auto fm_idx_naive = NaiveFmIndex(sequences);
+    // fm_idx_naive.print_ebwt();
+    // fm_index
+    auto fm_idx = FmIndex(PATH3_BWT);
+    for (int i=0; i<sequences.size(); i++){
+        // cout << recover_text(fm_idx, i) <<endl;
+        // cout << sequences[i] <<endl;
+        assert(sequences[i]==recover_text(fm_idx, i));
+    }
+
+    vector<pair<uint64_t, string>> sa(fm_idx.size());
+    uint64_t text_pos = 0;
+    for (int i=0; i<sequences.size(); i++){
+        for(auto pair: recover_suffix_array(fm_idx, i)){
+            sa[pair.first]=make_tuple(text_pos, pair.second);
+            text_pos++;
+        }
+    }
+    for (int i=0; i<fm_idx.size(); i++){
+        //important: skip terminator only.
+        if (i < fm_idx.seq_cnt()) continue;
+        // cout << sa[i].first << ", " << fm_idx_naive.sa[i].first << endl;
+        // cout << sa[i].second << ", " << fm_idx_naive.sa[i].second << endl;
+        assert(sa[i].first==fm_idx_naive.sa[i].first);
+        assert(sa[i].second==fm_idx_naive.sa[i].second);
     }
 }
 
@@ -125,5 +204,7 @@ void main_fm_index() {
     // Call all tests. Using a test framework would simplify this.
     test_ranks();
     test_LF();
-    test_sampled_suffixes();
+    test_recovery();
+    test_recovery_unsorted();
+    test_recovery_unsorted_tied();
 }

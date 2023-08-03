@@ -12,7 +12,7 @@ void test_naive_sa(){
     auto fm_idx = NaiveFmIndex(sequences, 3);
     // fm_idx.print_sa();
     // fm_idx.print_ssa();
-    fm_idx.print_ebwt();
+    // fm_idx.print_ebwt();
 }
 
 
