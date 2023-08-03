@@ -5,6 +5,7 @@
 #include "util.cpp"	
 #include "../src/fm_index/rank.hpp"
 #include "../src/fm_index/index.hpp"
+#include "../src/fm_index/tree.hpp"
 
 using namespace std;
 
@@ -94,10 +95,10 @@ void test_ranks(){
     IS_TRUE(check_rank(str));
 }
 
-void test_LF(){
+void test_tree(){
     auto idx = FmIndex(PATH1_BWT);
-    Interval root = idx.root();
-    left_ext_intervals left_exts = idx.LF(root);
+    Interval root = get_root(idx);
+    left_ext_intervals left_exts = navigate(idx, root);
     // print_left_ext_intervals(left_exts);
     // print_left_ext_intervals(idx.LF(left_exts.TERM));
     // print_left_ext_intervals(idx.LF(left_exts.A));
@@ -201,7 +202,7 @@ void test_recovery_unsorted_tied(){
 void main_fm_index() {
     // Call all tests. Using a test framework would simplify this.
     test_ranks();
-    test_LF();
+    test_tree();
     test_recovery();
     test_recovery_unsorted();
     test_recovery_unsorted_tied();
