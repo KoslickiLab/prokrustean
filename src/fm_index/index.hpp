@@ -143,24 +143,6 @@ public:
         return STRING[pos];
     }
 
-	// uint64_t serialize(std::ostream& out){
-
-	// 	uint64_t w_bytes = 0;
-    //     uint64_t n = STRING.size();
-	// 	out.write((char*)&n,sizeof(n));
-	// 	out.write((char*)&C.A,sizeof(uint64_t));
-	// 	out.write((char*)&C.C,sizeof(uint64_t));
-	// 	out.write((char*)&C.G,sizeof(uint64_t));
-	// 	out.write((char*)&C.T,sizeof(uint64_t));
-
-	// 	w_bytes += sizeof(n) + sizeof(uint64_t)*4;
-
-	// 	w_bytes += STRING.serialize(out);
-
-	// 	return w_bytes;
-
-	// }
-
     uint64_t size(){
         return STRING.size();
     }
@@ -168,42 +150,6 @@ public:
 	uint64_t seq_cnt(){
         return C.A;
     }
-
-	/* load the structure from the istream
-	 * \param in the istream
-	 */
-	// void load(std::istream& in) {
-
-	// 	in.read((char*)&n,sizeof(n));
-
-	// 	in.read((char*)C.A,sizeof(uint64_t));
-	// 	in.read((char*)C.C,sizeof(uint64_t));
-	// 	in.read((char*)C.G,sizeof(uint64_t));
-	// 	in.read((char*)C.T,sizeof(uint64_t));
-
-	// 	STRING.load(in);
-
-	// }
-
-	// void save_to_file(string path){
-
-	// 	std::ofstream out(path);
-	// 	serialize(out);
-	// 	out.close();
-
-	// }
-
-	/*
-	 * path = path of an index file
-	 */
-	// void load_from_file(string path){
-
-	// 	std::ifstream in(path);
-	// 	load(in);
-	// 	in.close();
-
-	// }
-
 
 	// /*
 	//  * functions for suffix tree navigation
@@ -223,6 +169,46 @@ public:
 
 	}
 
+	/*
+	debugging purpose
+	*/
+	string recover_text(int seq_no){
+		uint64_t L = seq_no;
+		uint64_t F = LF(L);
+
+		string seq;
+		while(F >= seq_cnt()){
+			seq = get_character(L) + seq;
+			L = F;
+			F = LF(L);
+		}
+		// must be terminator symbol
+		seq += get_character(L); 
+		return seq;
+	}
+
+	/*
+	debugging purpose
+	*/
+	vector<pair<uint64_t, string>> recover_suffix_array(int seq_no){
+		uint64_t L = seq_no;
+		uint64_t F = LF(L);
+
+		string seq(1, TERM);
+		vector<pair<uint64_t, string>> sa;
+		while(F >= seq_cnt()){
+			seq = get_character(L) + seq;
+			sa.push_back(make_tuple(F, seq));
+			L = F;
+			F = LF(L);
+		}
+		// important: this can be misleading because F is randomly (in lexicographical order) chosen
+		string term(1, TERM);
+		sa.insert(sa.begin(), make_tuple(F, term));
+		reverse(sa.begin(), sa.end());
+
+		return sa;
+	}
 	/*
 	 * depth = LCP inside the leaf.
 	 */
@@ -285,10 +271,8 @@ private:
 	char TERM = '#';
 
     CArray C;
-	SuccintString STRING;
-    vector<uint64_t> SSA;
-    uint64_t sample_factor=0; // sampling factor
 
+	SuccintString STRING;
 };
 
 #endif /* FM_INDEX_INDEX_HPP_ */

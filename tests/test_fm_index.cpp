@@ -5,8 +5,6 @@
 #include "util.cpp"	
 #include "../src/fm_index/rank.hpp"
 #include "../src/fm_index/index.hpp"
-#include "../src/fm_index/locate.hpp"
-
 
 using namespace std;
 
@@ -117,13 +115,13 @@ void test_recovery(){
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;
-        assert(sequences[i]==recover_text(fm_idx, i));
+        assert(sequences[i]==fm_idx.recover_text(i));
     }
 
     vector<pair<uint64_t, string>> sa(fm_idx.size());
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
-        for(auto pair: recover_suffix_array(fm_idx, i)){
+        for(auto pair: fm_idx.recover_suffix_array(i)){
             sa[pair.first]=make_tuple(text_pos, pair.second);
             text_pos++;
         }
@@ -148,13 +146,13 @@ void test_recovery_unsorted(){
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;
-        assert(sequences[i]==recover_text(fm_idx, i));
+        assert(sequences[i]==fm_idx.recover_text(i));
     }
 
     vector<pair<uint64_t, string>> sa(fm_idx.size());
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
-        for(auto pair: recover_suffix_array(fm_idx, i)){
+        for(auto pair: fm_idx.recover_suffix_array(i)){
             sa[pair.first]=make_tuple(text_pos, pair.second);
             text_pos++;
         }
@@ -179,13 +177,13 @@ void test_recovery_unsorted_tied(){
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;
-        assert(sequences[i]==recover_text(fm_idx, i));
+        assert(sequences[i]==fm_idx.recover_text(i));
     }
 
     vector<pair<uint64_t, string>> sa(fm_idx.size());
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
-        for(auto pair: recover_suffix_array(fm_idx, i)){
+        for(auto pair: fm_idx.recover_suffix_array(i)){
             sa[pair.first]=make_tuple(text_pos, pair.second);
             text_pos++;
         }
