@@ -6,6 +6,46 @@ using namespace std;
 #ifndef FM_INDEX_LOCATE_HPP_
 #define FM_INDEX_LOCATE_HPP_
 
+// struct CArray {
+// 	uint64_t A;
+// 	uint64_t C;
+// 	uint64_t G;
+// 	uint64_t T;
+// };
+
+// CArray get_c_array(string path, char TERM){
+    // CArray c_array = {0,0,0,0};
+    // ifstream ifs(path);
+
+    // char c;
+    // while(ifs.peek()!=EOF){
+    //     ifs.read((char*)&c, sizeof(char));
+    //     switch (c)
+    //     {
+    //         case 'A': c_array.C++; break;
+    //         case 'C': c_array.G++; break;
+    //         case 'G': c_array.T++; break;
+    //         case 'T': break;
+    //         default:
+    //         if(c==TERM){
+    //             c_array.A++;
+    //         } else {
+    //             cout << "Error while reading file: read forbidden character '" <<  c << "' (ASCII code " << int(c) << ")." << endl;
+    //             cout << "Only A,C,G,T, and " << TERM << " are admitted in the input BWT!" << endl;
+    //             // if(c=='N'){
+    //             // 	cout << "Possible solution: it seems that your file contains 'N' characters. Please, re-run with option -n." << endl;
+    //             // }else{
+    //             // 	cout << "Possible solution: if the unknown character is the terminator, you can solve the problem by adding option \"-t " << int(c) << "\"." << endl;
+    //             // }
+    //             exit(1);
+    //         }
+    //         break;
+    //     }
+    // }
+    // c_array.C += c_array.A;
+    // c_array.G += c_array.C;
+    // c_array.T += c_array.G;
+// }
 
 // void sample_by_sa_order(fm_index &index, uint64_t s){
 //     //consider between two strategies

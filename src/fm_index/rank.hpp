@@ -91,12 +91,7 @@ public:
 
 };
 
-struct CArray {
-	uint64_t A;
-	uint64_t C;
-	uint64_t G;
-	uint64_t T;
-};
+
 
 class SuccintString{
 
@@ -110,7 +105,6 @@ public:
 	SuccintString(string path, char TERM = '#'){
 
 		this->TERM = TERM;
-		c_array = {0,0,0,0};
 
 		n = uint64_t(filesize(path));
 
@@ -146,14 +140,12 @@ public:
 
 			switch (c)
 			{
-				case 'A': c_array.C++; break;
-				case 'C': c_array.G++; break;
-				case 'G': c_array.T++; break;
+				case 'A': break;
+				case 'C': break;
+				case 'G': break;
 				case 'T': break;
 				default:
-				if(c==TERM){
-					c_array.A++;
-				} else {
+				if(c!=TERM){
 					cout << "Error while reading file: read forbidden character '" <<  c << "' (ASCII code " << int(c) << ")." << endl;
 					cout << "Only A,C,G,T, and " << TERM << " are admitted in the input BWT!" << endl;
 					// if(c=='N'){
@@ -166,13 +158,8 @@ public:
 				break;
 			}
 		}
-		c_array.C += c_array.A;
-		c_array.G += c_array.C;
-		c_array.T += c_array.G;
 
 		if(n % BLOCK_SIZE != 0) set(n/BLOCK_SIZE, BUF);
-
-		
 
 		// assert(check_content(path));
 		build_rank_support();
@@ -282,9 +269,6 @@ public:
 
 	}
 
-	CArray get_count_array(){
-		return c_array;
-	}
 	// void load(std::istream& in) {
 
 	// 	in.read((char*)&n,sizeof(n));
@@ -555,9 +539,6 @@ private:
 
 	uint64_t nbytes = 0; //bytes used in data
 	uint64_t n = 0;
-
-	CArray c_array;
-
 };
 
 

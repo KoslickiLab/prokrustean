@@ -62,6 +62,13 @@ struct left_ext_intervals {
 
 };
 
+struct CArray {
+	uint64_t A;
+	uint64_t C;
+	uint64_t G;
+	uint64_t T;
+};
+
 class FmIndex{
 
 public:
@@ -75,7 +82,13 @@ public:
 		this->TERM = TERM;
 
         STRING = SuccintString(path, TERM);
-        C = STRING.get_count_array();
+		auto r = STRING.parallel_rank(STRING.size());
+        C = {
+			r.TERM, 
+			r.TERM+r.A, 
+			r.TERM+r.A+r.C, 
+			r.TERM+r.A+r.C+r.G
+		};
     }
     /*
     * Input: suffix tree node N.
@@ -125,46 +138,28 @@ public:
         }
         return f;
     }
-
-    void set_sampled_suffixes(vector<uint64_t> ssa, uint64_t s){
-        SSA = ssa;
-        sample_factor = s;
-    }
     
     char get_character(uint64_t pos){
         return STRING[pos];
     }
 
-    uint64_t get_suffix(uint64_t r){
-		cout << "get suffix[" << r << "] " << endl;
-        uint64_t row = r;
-        uint64_t k = 0;
-        while (row % sample_factor != 1){
-            row = LF(row);
-            k++;
-            cout << "row: " << row << ", " << "k: " << k << endl;
-        }
-		uint64_t pos = SSA[row/sample_factor];
-        return pos + k;
-    }
+	// uint64_t serialize(std::ostream& out){
 
-	uint64_t serialize(std::ostream& out){
+	// 	uint64_t w_bytes = 0;
+    //     uint64_t n = STRING.size();
+	// 	out.write((char*)&n,sizeof(n));
+	// 	out.write((char*)&C.A,sizeof(uint64_t));
+	// 	out.write((char*)&C.C,sizeof(uint64_t));
+	// 	out.write((char*)&C.G,sizeof(uint64_t));
+	// 	out.write((char*)&C.T,sizeof(uint64_t));
 
-		uint64_t w_bytes = 0;
-        uint64_t n = STRING.size();
-		out.write((char*)&n,sizeof(n));
-		out.write((char*)&C.A,sizeof(uint64_t));
-		out.write((char*)&C.C,sizeof(uint64_t));
-		out.write((char*)&C.G,sizeof(uint64_t));
-		out.write((char*)&C.T,sizeof(uint64_t));
+	// 	w_bytes += sizeof(n) + sizeof(uint64_t)*4;
 
-		w_bytes += sizeof(n) + sizeof(uint64_t)*4;
+	// 	w_bytes += STRING.serialize(out);
 
-		w_bytes += STRING.serialize(out);
+	// 	return w_bytes;
 
-		return w_bytes;
-
-	}
+	// }
 
     uint64_t size(){
         return STRING.size();
