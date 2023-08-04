@@ -65,20 +65,32 @@ bool check_content(string path){
 }
 
 void print_interval(Interval in){
-    cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
+    for(auto first: in.firsts){
+        cout << first << " ,";
+    }
+    cout << endl;
+    // cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
 }
-void print_left_ext_intervals(left_extension left_exts){
-    cout << "left ext TERM: " << ends;
-    print_interval(left_exts.TERM);
-    cout << "left ext A: " << ends;
-    print_interval(left_exts.A);
-    cout << "left ext C: " << ends;
-    print_interval(left_exts.C);
-    cout << "left ext G: " << ends;
-    print_interval(left_exts.G);
-    cout << "left ext T: " << ends;
-    print_interval(left_exts.T);
+
+void print_left_ext_intervals(vector<char> characters, left_extension left_exts){
+    for(int i=0; i< left_exts.intervals.size(); i++){
+        cout << "left ext " << characters[i] << ": ";
+        print_interval(left_exts.intervals[i]);
+    }
+
 }
+// void print_left_ext_intervals(left_extension left_exts){
+//     cout << "left ext TERM: " << ends;
+//     print_interval(left_exts.TERM);
+//     cout << "left ext A: " << ends;
+//     print_interval(left_exts.A);
+//     cout << "left ext C: " << ends;
+//     print_interval(left_exts.C);
+//     cout << "left ext G: " << ends;
+//     print_interval(left_exts.G);
+//     cout << "left ext T: " << ends;
+//     print_interval(left_exts.T);
+// }
 
 string PATH1_SEQ = "../data/1_sequences.txt";
 string PATH1_BWT = "../data/1_ebwt.txt";
@@ -97,10 +109,11 @@ void test_ranks(){
 }
 
 void test_tree(){
-    auto idx = FmIndex(PATH1_BWT);
-    Interval root = get_root(idx);
-    left_extension left_exts = left_extend(idx, root);
-    // print_left_ext_intervals(left_exts);
+    auto str = SuccintString(PATH1_BWT);
+    auto fm_idx = FmIndex(str);
+    Interval root = get_root(fm_idx);
+    left_extension left_exts = left_extend(fm_idx, root);
+    print_left_ext_intervals(str.characters, left_exts);
     // print_left_ext_intervals(idx.LF(left_exts.TERM));
     // print_left_ext_intervals(idx.LF(left_exts.A));
     // print_left_ext_intervals(idx.LF(left_exts.C));
@@ -113,7 +126,8 @@ void test_recovery(){
     vector<string> sequences = get_sequences(PATH1_SEQ);
     auto fm_idx_naive = NaiveFmIndex(sequences, 3);
     // fm_index
-    auto fm_idx = FmIndex(PATH1_BWT);
+    auto str = SuccintString(PATH1_BWT);
+    auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;
@@ -144,7 +158,8 @@ void test_recovery_unsorted(){
     auto fm_idx_naive = NaiveFmIndex(sequences, 3);
     // fm_idx_naive.print_ebwt();
     // fm_index
-    auto fm_idx = FmIndex(PATH2_BWT);
+    auto str = SuccintString(PATH2_BWT);
+    auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;
@@ -175,7 +190,8 @@ void test_recovery_unsorted_tied(){
     auto fm_idx_naive = NaiveFmIndex(sequences);
     // fm_idx_naive.print_ebwt();
     // fm_index
-    auto fm_idx = FmIndex(PATH3_BWT);
+    auto str = SuccintString(PATH3_BWT);
+    auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
         // cout << sequences[i] <<endl;

@@ -43,6 +43,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include "index.hpp"
 
 using namespace std;
 
@@ -93,7 +94,7 @@ public:
 
 
 
-class SuccintString{
+class SuccintString: public AbstractString{
 
 public:
 
@@ -173,27 +174,8 @@ public:
 
 	//return i-th character
 	char operator[](uint64_t i){
-
-		assert(i<n);
-
-		uint64_t superblock_number = i / SUPERBLOCK_SIZE;
-		uint64_t superblock_off = i % SUPERBLOCK_SIZE;
-		uint64_t block_number = superblock_off / BLOCK_SIZE;
-		uint64_t block_off = superblock_off % BLOCK_SIZE;
-
-		//chars[0..3] contains 1st, 2nd, 3rd least significant bits of the BLOCK_SIZE characters
-		__uint128_t* chars = (__uint128_t*)(data + superblock_number*BYTES_PER_SUPERBLOCK + block_number*BYTES_PER_BLOCK);
-
-		uint64_t b =	((chars[0]>>(BLOCK_SIZE-(block_off+1)))&0x1) +
-						(((chars[1]>>(BLOCK_SIZE-(block_off+1)))&0x1)<<1) +
-						(((chars[2]>>(BLOCK_SIZE-(block_off+1)))&0x1)<<2);
-
-		return 	(b == 0)*'A' +
-				(b == 1)*'C' +
-				(b == 2)*'G' +
-				(b == 3)*'T' +
-				(b == 4)*TERM;
-
+		CharId cid = access(i);
+		return characters[cid];
 	}
 
 	/*
@@ -218,21 +200,21 @@ public:
 	 * standard rank. c can be A,C,G,T, or TERM
 	 * todo: optimize?
 	 */
-	uint64_t rank(uint64_t i, uint8_t c){
+	// uint64_t rank(uint64_t i, uint8_t c){
 
-		if(c==TERM) return rank_non_dna(i);
+	// 	if(c==TERM) return rank_non_dna(i);
 		
-		ParallelRank pr = parallel_rank(i);
+	// 	ParallelRank pr = parallel_rank(i);
 
-		switch(c){
-			case 'A' : return pr.A; break;
-			case 'C' : return pr.C; break;
-			case 'G' : return pr.G; break;
-			case 'T' : return pr.T; break;
-		}
+	// 	switch(c){
+	// 		case 'A' : return pr.A; break;
+	// 		case 'C' : return pr.C; break;
+	// 		case 'G' : return pr.G; break;
+	// 		case 'T' : return pr.T; break;
+	// 	}
 
-		return 0;
-	}
+	// 	return 0;
+	// }
 
 	/*
 	 * return number of non-dna symbols in the prefix of length i of the text. At most 1 cache miss!
@@ -269,27 +251,56 @@ public:
 
 	}
 
-	// void load(std::istream& in) {
-
-	// 	in.read((char*)&n,sizeof(n));
-	// 	in.read((char*)&nbytes,sizeof(nbytes));
-	// 	in.read((char*)&n_superblocks,sizeof(n_superblocks));
-	// 	in.read((char*)&n_blocks,sizeof(n_blocks));
-
-	// 	superblock_ranks = vector<p_rank>(n_superblocks);
-	// 	in.read((char*)superblock_ranks.data(),n_superblocks*sizeof(p_rank));
-
-	// 	memory = vector<uint8_t>(nbytes+ALN,0);
-	// 	data = memory.data();
-	// 	while(uint64_t(data) % ALN != 0) data++;
-	// 	in.read((char*)data,nbytes*sizeof(uint8_t));
-
-	// 	assert(check_rank());
-
-	// }
-
 	uint64_t size(){
 		return n;
+	}
+
+	vector<char> get_characters(){
+		return characters;
+	}
+	
+	//the order follows the character sequence
+	vector<char> characters = {'#', 'A', 'C', 'G', 'T'};
+	
+	char TERM = '#';
+	CharId access(uint64_t i){
+		assert(i<n);
+
+		uint64_t superblock_number = i / SUPERBLOCK_SIZE;
+		uint64_t superblock_off = i % SUPERBLOCK_SIZE;
+		uint64_t block_number = superblock_off / BLOCK_SIZE;
+		uint64_t block_off = superblock_off % BLOCK_SIZE;
+
+		//chars[0..3] contains 1st, 2nd, 3rd least significant bits of the BLOCK_SIZE characters
+		__uint128_t* chars = (__uint128_t*)(data + superblock_number*BYTES_PER_SUPERBLOCK + block_number*BYTES_PER_BLOCK);
+
+		uint64_t b =	((chars[0]>>(BLOCK_SIZE-(block_off+1)))&0x1) +
+						(((chars[1]>>(BLOCK_SIZE-(block_off+1)))&0x1)<<1) +
+						(((chars[2]>>(BLOCK_SIZE-(block_off+1)))&0x1)<<2);
+
+		return 	(b == 0)*1 +
+				(b == 1)*2 +
+				(b == 2)*3 +
+				(b == 3)*4 +
+				(b == 4)*0;
+	}
+
+	uint64_t rank(uint64_t i, CharId cid){
+		
+		auto r = parallel_rank(i);
+		switch(cid){
+			case 0 : return r.TERM; break;
+			case 1 : return r.A; break;
+			case 2 : return r.C; break;
+			case 3 : return r.G; break;
+			case 4 : return r.T; break;
+			default: assert(false);
+		}
+	};
+	//the order follows the character sequence
+    RankArray ranks(uint64_t i){
+		auto r = parallel_rank(i);
+		return {r.TERM, r.A, r.C, r.G, r.T};
 	}
 
 private:
@@ -524,8 +535,6 @@ private:
 		};
 
 	}
-
-	char TERM = '#';
 
 	uint64_t n_superblocks = 0;
 	uint64_t n_blocks = 0;

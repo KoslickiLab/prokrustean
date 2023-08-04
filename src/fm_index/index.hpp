@@ -1,26 +1,28 @@
-
-
-#include "rank.hpp"
-#include <algorithm>
-
-using namespace std;
-
 #ifndef FM_INDEX_INDEX_HPP_
 #define FM_INDEX_INDEX_HPP_
 
-/*
- * factory. For potential optimization later.
- */
-// FmIndex create_fm_index(string path, char TERM = '#'){
-// 	FmIndex idx = FmIndex(path, TERM);
-// 	return idx;
-// }
+#include <algorithm>
+#include <ranges>
 
-struct CArray {
-	uint64_t A;
-	uint64_t C;
-	uint64_t G;
-	uint64_t T;
+using namespace std;
+
+//character ids
+typedef uint8_t CharId;
+//C array of fm index. Each index is CharId 
+typedef vector<uint64_t> CArray;
+typedef vector<uint64_t> RankArray;
+
+class AbstractString{
+public:
+	CharId term_id=0;
+	//the order follows the character sequence
+	virtual vector<char> get_characters() = 0;
+	virtual char operator[](uint64_t i) = 0;
+	virtual CharId access(uint64_t i) = 0;
+	virtual uint64_t rank(uint64_t i, CharId c) = 0;
+	//the order follows the character sequence
+    virtual RankArray ranks(uint64_t i) = 0;
+	virtual uint64_t size() = 0;
 };
 
 class FmIndex{
@@ -29,50 +31,45 @@ public:
 	/*
 	 * constructor path of a STRING file containing the STRING in ASCII format
 	 */
-	FmIndex(string path, char TERM = '#'){
-
-		this->TERM = TERM;
-
-        STRING = SuccintString(path, TERM);
-		auto r = STRING.parallel_rank(STRING.size());
-        C = {
-			r.TERM, 
-			r.TERM+r.A, 
-			r.TERM+r.A+r.C, 
-			r.TERM+r.A+r.C+r.G
-		};
+	FmIndex(AbstractString &string){
+		this->STRING = &string;
+        this->C = get_c_array(string);
     }
-	char TERM = '#';
+	char TERM='#'; //Lexicographically first
+	CharId term_id=0;
     CArray C;
-	SuccintString STRING;
+	AbstractString* STRING;
 
     uint64_t LF(uint64_t r){
-        uint64_t f;
         // cout << STRING[r] << endl;
-        switch (STRING[r])
-        {
-            case 'A': f=C.A+STRING.rank(r, 'A'); break;
-            case 'C': f=C.C+STRING.rank(r, 'C'); break;
-            case 'G': f=C.G+STRING.rank(r, 'G'); break;
-            case 'T': f=C.T+STRING.rank(r, 'T'); break;
-            default: //TERM, otherwise invalidated already.
-                f=STRING.rank(r, TERM);
-                break;
-        }
+		CharId cid = STRING->access(r);
+		uint64_t f = C[cid]+STRING->rank(r, cid);
         return f;
     }
     
     char get_character(uint64_t pos){
-        return STRING[pos];
+        return (*STRING)[pos];
     }
 
     uint64_t size(){
-        return STRING.size();
+        return STRING->size();
     }
 
 	uint64_t seq_cnt(){
-        return C.A;
+        return C[1];
     }
+
+private:
+	CArray get_c_array(AbstractString &string){
+		RankArray r = string.ranks(string.size());
+		CArray c_array(r.size());
+		for(int i=0; i<c_array.size(); i++){
+			for(int j=0; j<i; j++){
+				c_array[i] += r[j];
+			}
+		}
+		return c_array;
+	}
 };
 
 #endif /* FM_INDEX_INDEX_HPP_ */
