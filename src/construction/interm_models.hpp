@@ -8,15 +8,6 @@
 
 using namespace std;
 
-class ReprSABase {
-public:
-    virtual bool is_repr(uint64_t sa_idx) = 0;
-    // returns repeat id list
-    virtual vector<uint64_t> pop_repr(uint64_t sa_idx) = 0;
-
-    virtual void insert_repr(uint64_t sa_idx, uint64_t repeat_idx) = 0;
-};
-
 class ReprSASimple: public ReprSABase {
     std::vector<bool> sa_mark;
     std::unordered_map<uint64_t, vector<uint64_t>> dictionary;

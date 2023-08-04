@@ -66,7 +66,7 @@ bool check_content(string path){
 void print_interval(Interval in){
     cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
 }
-void print_left_ext_intervals(left_ext_intervals left_exts){
+void print_left_ext_intervals(left_extension left_exts){
     cout << "left ext TERM: " << ends;
     print_interval(left_exts.TERM);
     cout << "left ext A: " << ends;
@@ -98,7 +98,7 @@ void test_ranks(){
 void test_tree(){
     auto idx = FmIndex(PATH1_BWT);
     Interval root = get_root(idx);
-    left_ext_intervals left_exts = navigate(idx, root);
+    left_extension left_exts = left_extend(idx, root);
     // print_left_ext_intervals(left_exts);
     // print_left_ext_intervals(idx.LF(left_exts.TERM));
     // print_left_ext_intervals(idx.LF(left_exts.A));

@@ -11,11 +11,11 @@ typedef uint64_t Pos;
 
 class MinCover {
     uint64_t size;
-    vector<pair<uint64_t, RepId>> mc_rep;
+    vector<tuple<uint64_t, RepId>> mc_rep;
 public:
     MinCover(){}
 
-    void AddCovOcc(RepId id, Pos pos){
+    void addCovOcc(RepId id, Pos pos){
     }
 };
 
@@ -25,8 +25,12 @@ class Prokrustean {
 public:
     Prokrustean(){}
 
-    MinCover GetMC(SeqId id){
+    MinCover getMC(SeqId id){
     }
-    MinCover GetMC(RepId id){
+    MinCover getMC(RepId id){
+    }
+    RepId registerRep(uint64_t size){
+        rep_mc.push_back(MinCover());
+        return rep_mc.size();
     }
 };

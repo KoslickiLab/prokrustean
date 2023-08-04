@@ -23,27 +23,48 @@ struct Interval {
 	//depth = |W|
 	uint64_t depth;
 
+    uint64_t first(char c){
+        uint64_t idx;
+        switch (c)
+        {
+        case 'A': idx = first_A; break;
+        case 'C': idx = first_C; break;
+        case 'G': idx = first_G; break;
+        case 'T': idx = first_T; break;
+        default: idx = first_TERM; break;
+        }
+        return idx;
+    }
+
 	uint64_t key(){
 		return first_TERM;
 	}
-    bool has_term(){
-        return first_TERM != first_A;
-    }
-    bool has_A(){
-        return first_A != first_C;
-    }
-    bool has_C(){
-        return first_C != first_G;
-    }
-    bool has_G(){
-        return first_G != first_T;
-    }
-    bool has_T(){
-        return first_T != last;
+
+    // uint64_t occurrence_cnt(char c){
+    //     uint64_t cnt;
+    //     switch (c)
+    //     {
+    //     case 'A': cnt = first_C-first_A; break;
+    //     case 'C': cnt = first_G-first_C; break;
+    //     case 'G': cnt = first_T-first_G; break;
+    //     case 'T': cnt = last-first_T; break;
+    //     // term
+    //     default: cnt = first_A-first_TERM; break;
+    //     }
+    //     return cnt;
+    // }
+    vector<char> collect_extensions(){
+        vector<char> exts = {};
+        if(first_A!=first_C) exts.push_back('A');
+        if(first_C!=first_G) exts.push_back('C');
+        if(first_G!=first_T) exts.push_back('G');
+        if(first_T!=last) exts.push_back('T');
+        if(first_TERM!=first_A) exts.push_back(0);
+        return exts;
     }
 };
 
-struct left_ext_intervals {
+struct left_extension {
 
     Interval TERM;
 	Interval A;
@@ -51,13 +72,46 @@ struct left_ext_intervals {
 	Interval G;
 	Interval T;
 
+    uint64_t first(char l, char r){
+        uint64_t idx;
+        switch (l)
+        {
+        case 'A': idx = A.first(r); break;
+        case 'C': idx = C.first(r); break;
+        case 'G': idx = G.first(r); break;
+        case 'T': idx = T.first(r); break;
+        default: idx = TERM.first(r); break;
+        }
+        return idx;
+    }
+
+    vector<tuple<char,char>> collect_extentions(){
+        vector<tuple<char,char>> exts = {};
+        for (auto r: TERM.collect_extensions()){
+            exts.push_back(make_tuple(0, r));
+        }
+        for (auto r: A.collect_extensions()){
+            exts.push_back(make_tuple('A', r));
+        }
+        for (auto r: C.collect_extensions()){
+            exts.push_back(make_tuple('C', r));
+        }
+        for (auto r: G.collect_extensions()){
+            exts.push_back(make_tuple('G', r));
+        }
+        for (auto r: T.collect_extensions()){
+            exts.push_back(make_tuple('T', r));
+        }
+        
+        return exts;
+    }
 };
 
 /*
 * Input: suffix tree node N.
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
-left_ext_intervals navigate(FmIndex &index, Interval interval){
+left_extension left_extend(FmIndex &index, Interval interval){
     SuccintString STRING = index.STRING;
     CArray C = index.C;
 
