@@ -108,19 +108,6 @@ void test_ranks(){
     IS_TRUE(check_rank(str));
 }
 
-void test_tree(){
-    auto str = SuccintString(PATH1_BWT);
-    auto fm_idx = FmIndex(str);
-    Interval root = get_root(fm_idx);
-    left_extension left_exts = left_extend(fm_idx, root);
-    print_left_ext_intervals(str.characters, left_exts);
-    // print_left_ext_intervals(idx.LF(left_exts.TERM));
-    // print_left_ext_intervals(idx.LF(left_exts.A));
-    // print_left_ext_intervals(idx.LF(left_exts.C));
-    // print_left_ext_intervals(idx.LF(left_exts.G));
-    // print_left_ext_intervals(idx.LF(left_exts.T));
-}
-
 void test_recovery(){
     // naive
     vector<string> sequences = get_sequences(PATH1_SEQ);
@@ -216,11 +203,88 @@ void test_recovery_unsorted_tied(){
     }
 }
 
+tuple<uint64_t, uint64_t> get_sa_range_by_weiner_link(FmIndex &fm_index, string W){
+    Interval interval = get_root(fm_index);
+    for(int i=W.size()-1; i>=0; i--){
+        CharId c = fm_index.convert_char(W[i]);
+        left_extension left_ext = left_extend(fm_index, interval);
+        interval = left_ext.intervals[c];
+    }
+    return make_tuple(interval.firsts[0], interval.firsts[interval.firsts.size()-1]);
+}
+
+tuple<uint64_t, uint64_t> get_sa_range(FmIndex &fm_index, string W){
+    vector<string> suffixes = recover_suffix_array(fm_index);
+    if(W.size()==0){
+        return make_tuple(0, suffixes.size());
+    }
+    vector<uint64_t> list;
+    uint64_t i = 0;
+    for(auto suffix: recover_suffix_array(fm_index)){
+        if(suffix.compare(0, W.size(), W) == 0){
+            list.push_back(i);
+        }
+        i++;
+    }
+    assert(list.size()!=0);
+    return make_tuple(list[0], list[list.size()-1]+1);
+}
+
+void test_left_extension(){
+    auto str = SuccintString(PATH1_BWT);
+    auto fm_idx = FmIndex(str);
+    // vector<string> suffixes = recover_suffix_array(fm_idx);
+    // for(auto suffix: recover_suffix_array(fm_idx)){
+    //     cout<< suffix << endl;
+    // }
+    // test root
+    string W = "";
+    auto sa_range_wl = get_sa_range_by_weiner_link(fm_idx, W);
+    auto sa_range = get_sa_range(fm_idx, W);
+    assert(sa_range_wl == sa_range);
+    // test single
+    W = "G";
+    sa_range_wl = get_sa_range_by_weiner_link(fm_idx, W);
+    sa_range = get_sa_range(fm_idx, W);
+    assert(sa_range_wl == sa_range);
+    // test long
+    for(auto seq: recover_text(fm_idx)){
+        //remove terminator
+        W = seq.substr(0, seq.size()-1);
+        sa_range_wl = get_sa_range_by_weiner_link(fm_idx, W);
+        sa_range = get_sa_range(fm_idx, W);
+        // cout << get<0>(sa_range) << ", " << get<1>(sa_range) << endl;
+        assert(sa_range_wl == sa_range);
+    }
+}
+
+void test_left_extension_exhaustive(){
+    vector<string> paths = {PATH1_BWT, PATH2_BWT, PATH3_BWT};
+    for(auto path: paths){
+        auto str = SuccintString(path);
+        auto fm_idx = FmIndex(str);
+        for(auto seq: recover_text(fm_idx)){
+            //remove terminator
+            for(int i=0; i<seq.size()-1; i++){
+                for(int j=i; j< seq.size()-1; j++){
+                    auto W = seq.substr(i, j+1);
+                    auto sa_range_wl = get_sa_range_by_weiner_link(fm_idx, W);
+                    auto sa_range = get_sa_range(fm_idx, W);
+                    assert(sa_range_wl == sa_range);
+                }
+            }    
+            // cout << get<0>(sa_range) << ", " << get<1>(sa_range) << endl;
+        }
+    }
+    
+}
+
 void main_fm_index() {
     // Call all tests. Using a test framework would simplify this.
     test_ranks();
-    test_tree();
     test_recovery();
     test_recovery_unsorted();
     test_recovery_unsorted_tied();
+    test_left_extension();
+    test_left_extension_exhaustive();
 }

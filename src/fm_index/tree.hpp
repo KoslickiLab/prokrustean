@@ -63,9 +63,11 @@ left_extension left_extend(FmIndex &index, Interval interval){
 
     vector<Interval> left_intervals;
     for(int c=0; c < index.STRING->get_characters().size(); c++){
+        uint64_t C = index.C[c];
         vector<uint64_t> firsts;
         for(auto p_rank:left_p_ranks){
-            firsts.push_back(index.C[c]+p_rank[c]);
+            uint64_t sa_idx = index.C[c]+p_rank[c];
+            firsts.push_back(sa_idx);
         }
         left_intervals.push_back({firsts, interval.depth+1});
     }

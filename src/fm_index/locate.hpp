@@ -24,8 +24,19 @@ string recover_text(FmIndex &fm_idx, int seq_no){
 	return seq;
 }
 
+vector<string> recover_text(FmIndex &fm_idx){
+	vector<string> seqs;
+	for(int i=0; i<fm_idx.seq_cnt(); i++){
+		seqs.push_back(recover_text(fm_idx, i));
+	}
+	return seqs;
+}
+
 /*
 debugging purpose
+index is position in the sequence,
+first: sa index
+second: actual suffix
 */
 vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no){
 	uint64_t L = seq_no;
@@ -45,6 +56,29 @@ vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no)
 	reverse(sa.begin(), sa.end());
 
 	return sa;
+}
+
+/*
+debugging purpose
+index is sa index
+*/
+vector<string> recover_suffix_array(FmIndex &fm_idx){
+	vector<pair<uint64_t, string>> sa;
+	for(int i=0; i<fm_idx.seq_cnt(); i++){
+		for(auto pair: recover_suffix_array(fm_idx, i)){
+			sa.push_back(pair);
+		}
+	}
+	std::sort(sa.begin(), sa.end(), 
+        [](tuple<int, string> const &t1, tuple<int, string> const &t2) {
+            return get<0>(t1) < get<0>(t2); 
+        });
+	
+	vector<string> suffixes;
+	for(auto pair: sa){
+		suffixes.push_back(pair.second);
+	}
+	return suffixes;
 }
 
 #endif /* FM_INDEX_LOCATE_HPP_ */

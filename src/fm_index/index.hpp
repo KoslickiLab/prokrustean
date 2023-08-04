@@ -33,12 +33,14 @@ public:
 	 */
 	FmIndex(AbstractString &string){
 		this->STRING = &string;
+		this->characters = STRING->get_characters();
         this->C = get_c_array(string);
     }
 	char TERM='#'; //Lexicographically first
 	CharId term_id=0;
     CArray C;
 	AbstractString* STRING;
+	vector<char> characters;
 
     uint64_t LF(uint64_t r){
         // cout << STRING[r] << endl;
@@ -49,6 +51,14 @@ public:
     
     char get_character(uint64_t pos){
         return (*STRING)[pos];
+    }
+
+	char convert_char(uint8_t id){
+        return characters[id];
+    }
+
+	uint8_t convert_char(char c){
+        return std::find(characters.begin(), characters.end(), c) - characters.begin();
     }
 
     uint64_t size(){
