@@ -15,15 +15,25 @@ struct Interval {
     vector<uint64_t> firsts;
 	uint64_t depth;
 
-    vector<CharId> collect_extensions(){
+    vector<CharId> distinct_extensions(){
         vector<CharId> exts = {};
-        for(int i=0; i<firsts.size(); i++){
-            if(i<firsts.size()-1){
-                if(firsts[i+1]-firsts[i]) 
+        for(int i=0; i<firsts.size()-1; i++){
+            if(firsts[i]<firsts[i+1]) 
                 exts.push_back(i);
-            }
         }
         return exts;
+    }
+
+    uint64_t count(){
+        return firsts[firsts.size()-1]-firsts[0];
+    }
+
+    uint64_t suffix_count(){
+        return firsts[1]-firsts[0];
+    }
+
+    bool right_maximal(){
+        return distinct_extensions().size()>1 || suffix_count()>1;
     }
 };
 
@@ -32,18 +42,48 @@ struct left_extension {
     // left extended intervals. Each means sa intervals of cW for each character c.
     vector<Interval> intervals;
 
-    uint64_t first(CharId l, CharId r){
-        return intervals[l].firsts[r];
+    uint64_t first_l(CharId l){
+        // The first sa index always appears at the 0. 
+        // Even if '#' and 'A' is not an extension but 'G' is, for example, then firsts[0]=firsts[1]=firsts[2]!=firsts[3].
+        return intervals[l].firsts[0];
     }
 
-    vector<tuple<CharId,CharId>> collect_extentions(){
+    uint64_t first_r(CharId r){
+        uint64_t min = intervals[0].firsts[r];
+        for(int i=1; i<intervals.size()-1; i++){
+            if(intervals[i].firsts[r]<min){
+                min = intervals[i].firsts[r];
+            }
+        }
+        return min;
+    }
+
+    vector<tuple<CharId,CharId>> distinct_extensions(){
         vector<tuple<CharId,CharId>> exts = {};
         for(int i=0; i<intervals.size(); i++){
-            for(auto r: intervals[i].collect_extensions()){
+            for(auto r: intervals[i].distinct_extensions()){
                 exts.push_back(make_tuple(i, r));    
             }
         }
         return exts;
+    }
+
+    uint64_t prefix_count(){
+        return intervals[0].count();
+    }
+
+    bool dup_sequence_exists(){
+        return intervals[0].suffix_count()>1;
+    }
+
+    bool left_maximal(){
+        int distinct = 0;
+        for(auto interval:intervals){
+            if(interval.count()>0){
+                distinct++;
+            }
+        }
+        return distinct>1 || prefix_count()>1;
     }
 };
 
