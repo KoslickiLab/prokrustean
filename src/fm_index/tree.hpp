@@ -1,5 +1,6 @@
 #include "index.hpp"
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 
@@ -49,8 +50,8 @@ struct left_extension {
     }
 
     uint64_t first_r(CharId r){
-        uint64_t min = intervals[0].firsts[r];
-        for(int i=1; i<intervals.size()-1; i++){
+        uint64_t min = std::numeric_limits<uint64_t>::max();
+        for(int i=0; i<intervals.size(); i++){
             if(intervals[i].firsts[r]<min){
                 min = intervals[i].firsts[r];
             }
