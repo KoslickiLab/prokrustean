@@ -1,3 +1,6 @@
+#ifndef PROKRUSTEAN_HPP_
+#define PROKRUSTEAN_HPP_
+
 #include <vector>
 #include <cassert>
 #include <iostream>
@@ -10,6 +13,8 @@ typedef uint64_t SeqId;
 typedef uint64_t Pos;  
 
 class MinCover {
+    bool is_rep;
+    uint64_t id;
     uint64_t size;
     vector<tuple<uint64_t, RepId>> mc_rep;
 public:
@@ -24,13 +29,6 @@ class Prokrustean {
     vector<MinCover> rep_mc;
 public:
     Prokrustean(){}
-
-    MinCover getMC(SeqId id){
-    }
-    MinCover getMC(RepId id){
-    }
-    RepId registerRep(uint64_t size){
-        rep_mc.push_back(MinCover());
-        return rep_mc.size();
-    }
 };
+
+#endif

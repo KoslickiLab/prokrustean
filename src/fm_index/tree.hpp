@@ -16,11 +16,11 @@ struct Interval {
     vector<uint64_t> firsts;
 	uint64_t depth;
 
-    vector<CharId> distinct_extensions(){
-        vector<CharId> exts = {};
+    vector<tuple<CharId, uint64_t>> distinct_extensions(){
+        vector<tuple<CharId, uint64_t>> exts = {};
         for(int i=0; i<firsts.size()-1; i++){
             if(firsts[i]<firsts[i+1]) 
-                exts.push_back(i);
+                exts.push_back(make_tuple(i, firsts[i]));
         }
         return exts;
     }
@@ -59,11 +59,11 @@ struct left_extension {
         return min;
     }
 
-    vector<tuple<CharId,CharId>> distinct_extensions(){
-        vector<tuple<CharId,CharId>> exts = {};
+    vector<tuple<CharId, CharId, uint64_t>> distinct_extensions(){
+        vector<tuple<CharId, CharId, uint64_t>> exts = {};
         for(int i=0; i<intervals.size(); i++){
             for(auto r: intervals[i].distinct_extensions()){
-                exts.push_back(make_tuple(i, r));    
+                exts.push_back(make_tuple(i, get<0>(r), get<1>(r)));    
             }
         }
         return exts;
