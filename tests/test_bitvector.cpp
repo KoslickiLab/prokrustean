@@ -63,10 +63,10 @@ void test_fixed_size_bitvector(){
 
 void test_large_size_bitvector(){
     uint64_t N = 80000000000;
-    uint64_t test_count = 10000;
+    uint64_t test_count = 100000;
     bm::bvector<> bv(N);
     vector<int> numbers;
-    bool print = false;
+    bool print = true;
 
     auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < test_count; i++){
@@ -85,6 +85,15 @@ void test_large_size_bitvector(){
     }
 
     if(print) std::cout << "set bits(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
+
+    start = std::chrono::steady_clock::now();
+
+    for(auto no: numbers){
+        bv.get_bit(no);
+    }
+
+    if(print) std::cout << "get bits(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
+
     start = std::chrono::steady_clock::now();
 
     std::unique_ptr<bm::bvector<>::rs_index_type>
@@ -98,8 +107,7 @@ void test_large_size_bitvector(){
         assert(bv.rank(no-1, *rs_idx)<bv.rank(no, *rs_idx));
     }
 
-    if(print) std::cout << "check(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
-    
+    if(print) std::cout << "rank(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
     // assert(bv.rank(size-3, *rs_idx)==false);
     // assert(bv.rank(size-2, *rs_idx)==true);
     // assert(bv.rank(size-1, *rs_idx)==true);
