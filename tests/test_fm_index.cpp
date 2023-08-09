@@ -64,7 +64,7 @@ bool check_content(string path){
     return res;
 }
 
-void print_interval(Interval in){
+void print_interval(SuffixArrayNode in){
     for(auto first: in.firsts){
         cout << first << " ,";
     }
@@ -72,10 +72,10 @@ void print_interval(Interval in){
     // cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
 }
 
-void print_left_ext_intervals(vector<char> characters, left_extension left_exts){
-    for(int i=0; i< left_exts.intervals.size(); i++){
+void print_left_ext_intervals(vector<char> characters, NodeLeftExtension left_exts){
+    for(int i=0; i< left_exts.nodes.size(); i++){
         cout << "left ext " << characters[i] << ": ";
-        print_interval(left_exts.intervals[i]);
+        print_interval(left_exts.nodes[i]);
     }
 
 }
@@ -204,11 +204,11 @@ void test_recovery_unsorted_tied(){
 }
 
 tuple<uint64_t, uint64_t> get_sa_range_by_weiner_link(FmIndex &fm_index, string W){
-    Interval interval = get_root(fm_index);
+    SuffixArrayNode interval = get_root(fm_index);
     for(int i=W.size()-1; i>=0; i--){
         CharId c = fm_index.convert_char(W[i]);
-        left_extension left_ext = left_extend(fm_index, interval);
-        interval = left_ext.intervals[c];
+        NodeLeftExtension left_ext = extend_left(fm_index, interval);
+        interval = left_ext.nodes[c];
     }
     return make_tuple(interval.firsts[0], interval.firsts[interval.firsts.size()-1]);
 }

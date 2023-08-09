@@ -61,13 +61,16 @@ void test_fixed_size_bitvector(){
     assert(bv.rank(11, *rs_idx)==true);
 }
 
-void test_large_size_bitvector(){
-    uint64_t N = 80000000000;
-    uint64_t test_count = 100000;
+
+void test_many_sets(){
+    // N=8b, test=1b => sampling 20s, set bits 103s, get bits 52s 
+    // N=8b, test=1m => sampling 0.022s, set bits 0.127s, get bits 0.052s, rank 14s 
+    uint64_t N = 8*pow(10,5);;
+    uint64_t test_count = pow(10,3);;
     bm::bvector<> bv(N);
     vector<int> numbers;
-    bool print = true;
-
+    bool print = false;
+    
     auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < test_count; i++){
         int no = rand() % N;
@@ -113,9 +116,50 @@ void test_large_size_bitvector(){
     // assert(bv.rank(size-1, *rs_idx)==true);
 }
 
+void test_plain_bit(){
+    // N=8b, test=1b => sampling 21s, set bits 83s, check count 0.3s
+    uint64_t N = 8*pow(10,5);
+    uint64_t test_count = pow(10,3);
+    vector<bool> bv(N);
+    vector<int> numbers;
+    bool print = false;
+    
+    auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < test_count; i++){
+        int no = rand() % N;
+        if(no == 0){
+            continue;
+        }
+        numbers.push_back(no);
+    }
+
+    if(print) std::cout << "sampling(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
+    start = std::chrono::steady_clock::now();
+
+    for(auto no: numbers){
+        bv[no]=true;
+    }
+
+    if(print) std::cout << "set bits(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
+
+    start = std::chrono::steady_clock::now();
+
+    auto count = std::count(bv.begin(), bv.end(), true);
+
+    if(print) std::cout << "count bits(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
+}
+
+void test_threading(){
+    //vector<bool> cannot be thread-safe.
+    // https://cplusplus.com/forum/lounge/191739/
+}
+
+
 void main_bitvector() {
     cout << "test_ranks finished" << endl; 
     test_bitvector_ranks();
     test_fixed_size_bitvector();
-    test_large_size_bitvector();
+    test_many_sets();
+    test_plain_bit();
+    test_threading();
 }
