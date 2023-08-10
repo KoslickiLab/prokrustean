@@ -81,4 +81,19 @@ vector<string> recover_suffix_array(FmIndex &fm_idx){
 	return suffixes;
 }
 
+vector<int> recover_lcp(FmIndex &fm_idx){
+	vector<int> lcp;
+	auto sa = recover_suffix_array(fm_idx);
+	for(int i=1; i<sa.size(); i++){
+		int pre = 0;
+		for (int j = 0; j < min(sa[i-1].size(), sa[i].size()); j++) {
+			if (sa[i-1][j] != sa[i][j])
+				break;
+			pre++;
+		}
+		lcp.push_back(pre);
+	}
+	return lcp;
+}
+
 #endif /* FM_INDEX_LOCATE_HPP_ */

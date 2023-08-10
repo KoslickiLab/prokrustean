@@ -1,3 +1,6 @@
+#ifndef TEST_FMINDEX_HPP_
+#define TEST_FMINDEX_HPP_
+
 #include <fstream>
 #include <vector>
 #include <cassert>
@@ -64,7 +67,7 @@ bool check_content(string path){
     return res;
 }
 
-void print_interval(SuffixArrayNode in){
+void print_interval(SuffixArrayInterval in){
     for(auto first: in.firsts){
         cout << first << " ,";
     }
@@ -72,10 +75,10 @@ void print_interval(SuffixArrayNode in){
     // cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
 }
 
-void print_left_ext_intervals(vector<char> characters, NodeLeftExtension left_exts){
-    for(int i=0; i< left_exts.nodes.size(); i++){
+void print_left_ext_intervals(vector<char> characters, SuffixArrayNode left_exts){
+    for(int i=0; i< left_exts.c_intervals.size(); i++){
         cout << "left ext " << characters[i] << ": ";
-        print_interval(left_exts.nodes[i]);
+        print_interval(left_exts.c_intervals[i]);
     }
 
 }
@@ -92,12 +95,6 @@ void print_left_ext_intervals(vector<char> characters, NodeLeftExtension left_ex
 //     print_interval(left_exts.T);
 // }
 
-string PATH1_SEQ = "../data/1_sequences.txt";
-string PATH1_BWT = "../data/1_ebwt.txt";
-string PATH2_SEQ = "../data/2_sequences_unsorted.txt";
-string PATH2_BWT = "../data/2_ebwt.txt";
-string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
-string PATH3_BWT = "../data/3_ebwt.txt";
 
 void test_strings(){
     IS_TRUE(check_content(PATH1_BWT));
@@ -204,11 +201,11 @@ void test_recovery_unsorted_tied(){
 }
 
 tuple<uint64_t, uint64_t> get_sa_range_by_weiner_link(FmIndex &fm_index, string W){
-    SuffixArrayNode interval = get_root(fm_index);
+    SuffixArrayInterval interval = get_root(fm_index);
     for(int i=W.size()-1; i>=0; i--){
         CharId c = fm_index.convert_char(W[i]);
-        NodeLeftExtension left_ext = extend_left(fm_index, interval);
-        interval = left_ext.nodes[c];
+        SuffixArrayNode left_ext = to_node(fm_index, interval);
+        interval = left_ext.c_intervals[c];
     }
     return make_tuple(interval.firsts[0], interval.firsts[interval.firsts.size()-1]);
 }
@@ -288,3 +285,5 @@ void main_fm_index() {
     test_left_extension();
     test_left_extension_exhaustive();
 }
+
+#endif

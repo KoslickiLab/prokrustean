@@ -1,6 +1,7 @@
 #include "models.hpp"
 #include "../fm_index/tree.hpp"
 #include <algorithm>
+#include <stack>
 
 using namespace std;
 
@@ -50,29 +51,43 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
     }
 }
 
-vector<MaximalRepeat> collect_repeats_in_subtree(SuffixArrayNode &curr_interval, FmIndex &fm_idx){
-    vector<MaximalRepeat> reps;
-    NodeLeftExtension extension = extend_left(fm_idx, curr_interval);
-    /* find rep */
-    bool is_rep = extension.left_maximal() && curr_interval.right_maximal();
-    if(is_rep){
-        /* find repr sa */
-        vector<uint64_t> sa_indexes = decide_repr_sa_extensions(fm_idx.characters.size(), extension.distinct_extensions());
-        reps.push_back({curr_interval.depth, sa_indexes});
+optional<MaximalRepeat> get_repeat_and_repr_sa(SuffixArrayNode &node, FmIndex &fm_idx){
+    if(node.left_maximal() && node.interval.right_maximal()){
+        vector<uint64_t> repr_sa = decide_repr_sa_extensions(fm_idx.characters.size(), node.distinct_extensions());
+        MaximalRepeat rep = {node.interval.depth, repr_sa};
+        return rep;
+    } else {
+        return nullopt;
     }
-    // navigate
-    for(auto c_interval:extension.nodes){
-        if(c_interval.count()>1){
-            vector<MaximalRepeat> c_reps = collect_repeats_in_subtree(c_interval, fm_idx);
-            reps.insert(reps.end(), c_reps.begin(), c_reps.end());
-        }
-    }
-    return reps;
 }
 
+// vector<MaximalRepeat> collect_repeats_in_subtree(SuffixArrayNode &root, FmIndex &fm_idx){
+//     stack<SuffixArrayNode> stack;
+//     vector<MaximalRepeat> reps;
+    
+//     stack.push(root);
+//     while(~stack.empty()){
+//         SuffixArrayNode node = stack.top();
+//         stack.pop();
+//         /* find rep */
+//         SuffixArrayNode extension = extend_left(fm_idx, node);
+//         bool is_rep = extension.left_maximal() && node.right_maximal();
+//         if(is_rep){
+//             /* find repr sa */
+//             vector<uint64_t> sa_indexes = decide_repr_sa_extensions(fm_idx.characters.size(), extension.distinct_extensions());
+//             reps.push_back({node.depth, sa_indexes});
+//         }
+//         /* navigate */
+//         for(auto c_node:extension.c_nodes){
+//             if(c_node.count()>1){
+//                 stack.push(c_node);
+//             }
+//         }
+//     }
+//     return reps;
+// }
 
 SeqAnnotation get_annotation_structure(SeqId id, FmIndex &fm_idx, ReprSuffixAnnotation &repr_sa){
-    
     vector<tuple<Pos, vector<RepId>>> annotations;
 
     uint64_t L = id;
