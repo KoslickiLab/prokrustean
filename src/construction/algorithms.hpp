@@ -8,7 +8,7 @@ using namespace std;
 
 Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1){
     // step1: collect representative suffix array
-    SuffixArrayInterval root = get_root(fm_idx);
+    SuffixArrayNode root = get_root(fm_idx);
     // vector<MaximalRepeat> repeats = {};
     vector<MaximalRepeatAnnotation> repeats = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
 

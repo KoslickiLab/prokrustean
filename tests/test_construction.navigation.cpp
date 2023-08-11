@@ -13,9 +13,9 @@
 
 using namespace std;
 
-optional<tuple<uint64_t, uint64_t>> _get_lcp(SuffixArrayNode &node, FmIndex &fm_idx){
-    if(node.interval.right_maximal()){
-        return make_tuple(node.interval.depth, node.interval.firsts[0]);
+optional<tuple<uint64_t, uint64_t>> _get_lcp(SuffixArrayNodeExtension &node, FmIndex &fm_idx){
+    if(node.node.right_maximal()){
+        return make_tuple(node.node.depth, node.node.firsts[0]);
     } else {
         return nullopt;
     }
@@ -36,7 +36,7 @@ void _compare_lcp_recovered_vs_tree(FmIndex &fm_idx){
     sort(lcp_str.begin(), lcp_str.end());
     lcp_str.erase(unique(lcp_str.begin(), lcp_str.end() ), lcp_str.end());
     
-    SuffixArrayInterval root = get_root(fm_idx);
+    SuffixArrayNode root = get_root(fm_idx);
     auto pairs = navigate_tree<tuple<uint64_t, uint64_t>, _get_lcp>(root, 0, fm_idx);
     vector<string> tree_lcp_str;
     for(auto p: pairs){

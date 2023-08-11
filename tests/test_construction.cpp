@@ -8,6 +8,9 @@
 
 using namespace std;
 
+void _check_repr_rule(){
+
+}
 
 void main_construction() {
     // Call all tests. Using a test framework would simplify this.

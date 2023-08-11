@@ -172,11 +172,11 @@ void test_recovery_unsorted_tied(){
 }
 
 tuple<uint64_t, uint64_t> get_sa_range_by_weiner_link(FmIndex &fm_index, string W){
-    SuffixArrayInterval interval = get_root(fm_index);
+    SuffixArrayNode interval = get_root(fm_index);
     for(int i=W.size()-1; i>=0; i--){
         CharId c = fm_index.convert_char(W[i]);
-        SuffixArrayNode left_ext = to_node(fm_index, interval);
-        interval = left_ext.c_intervals[c];
+        SuffixArrayNodeExtension left_ext = extend_node(fm_index, interval);
+        interval = left_ext.c_nodes[c];
     }
     return make_tuple(interval.firsts[0], interval.firsts[interval.firsts.size()-1]);
 }

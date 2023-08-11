@@ -51,10 +51,10 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
     }
 }
 
-optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNode &node, FmIndex &fm_idx){
-    if(node.left_maximal() && node.interval.right_maximal()){
+optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &node, FmIndex &fm_idx){
+    if(node.left_maximal() && node.node.right_maximal()){
         vector<uint64_t> repr_sa = decide_repr_sa_extensions(fm_idx.characters.size(), node.distinct_extensions());
-        MaximalRepeatAnnotation rep = {node.interval.depth, repr_sa};
+        MaximalRepeatAnnotation rep = {node.node.depth, repr_sa};
         return rep;
     } else {
         return nullopt;
