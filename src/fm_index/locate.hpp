@@ -87,7 +87,7 @@ vector<int> recover_lcp(FmIndex &fm_idx){
 	for(int i=1; i<sa.size(); i++){
 		int pre = 0;
 		for (int j = 0; j < min(sa[i-1].size(), sa[i].size()); j++) {
-			if (sa[i-1][j] != sa[i][j])
+			if (sa[i-1][j] != sa[i][j] || sa[i][j] == '#')
 				break;
 			pre++;
 		}

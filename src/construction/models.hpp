@@ -10,7 +10,7 @@
 
 using namespace std;
 
-struct MaximalRepeat {
+struct MaximalRepeatAnnotation {
     // 
     uint64_t size;
 
@@ -18,7 +18,7 @@ struct MaximalRepeat {
     vector<uint64_t> repr_sa_indexes;
 };
 
-struct SeqAnnotation {
+struct SequenceAnnotation {
     // 
     uint64_t size;
 
@@ -39,7 +39,7 @@ public:
     }
 
     // 
-    void set_repr_sa_rank(vector<MaximalRepeat> &repeats){
+    void set_repr_sa_rank(vector<MaximalRepeatAnnotation> &repeats){
         for(auto rep: repeats){
             for(auto sa_idx: rep.repr_sa_indexes){
                 bv.set_bit(sa_idx);
@@ -52,7 +52,7 @@ public:
         repr_suffixes.resize(repr_suff_cnt);
     }
 
-    void set_repr_sa_annotation(vector<MaximalRepeat> &repeats){
+    void set_repr_sa_annotation(vector<MaximalRepeatAnnotation> &repeats){
         uint64_t rep_id = 0;
         for(auto rep: repeats){
             for(auto sa_idx: rep.repr_sa_indexes){
@@ -80,7 +80,7 @@ public:
     }
 
     // 
-    void set_repeats(vector<MaximalRepeat> &repeats, uint64_t from, uint64_t to){
+    void set_repeats(vector<MaximalRepeatAnnotation> &repeats, uint64_t from, uint64_t to){
 
     }
 

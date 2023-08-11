@@ -51,10 +51,10 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
     }
 }
 
-optional<MaximalRepeat> get_repeat_and_repr_sa(SuffixArrayNode &node, FmIndex &fm_idx){
+optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNode &node, FmIndex &fm_idx){
     if(node.left_maximal() && node.interval.right_maximal()){
         vector<uint64_t> repr_sa = decide_repr_sa_extensions(fm_idx.characters.size(), node.distinct_extensions());
-        MaximalRepeat rep = {node.interval.depth, repr_sa};
+        MaximalRepeatAnnotation rep = {node.interval.depth, repr_sa};
         return rep;
     } else {
         return nullopt;
@@ -87,7 +87,7 @@ optional<MaximalRepeat> get_repeat_and_repr_sa(SuffixArrayNode &node, FmIndex &f
 //     return reps;
 // }
 
-SeqAnnotation get_annotation_structure(SeqId id, FmIndex &fm_idx, ReprSuffixAnnotation &repr_sa){
+SequenceAnnotation get_seq_annot(SeqId id, FmIndex &fm_idx, ReprSuffixAnnotation &repr_sa){
     vector<tuple<Pos, vector<RepId>>> annotations;
 
     uint64_t L = id;
@@ -103,11 +103,11 @@ SeqAnnotation get_annotation_structure(SeqId id, FmIndex &fm_idx, ReprSuffixAnno
         F = fm_idx.LF(L);
         rev_pos++;
     }
-    SeqAnnotation annot = {rev_pos, annotations};
+    SequenceAnnotation annot = {rev_pos, annotations};
     return annot;
 }
 
-vector<MinCover> get_min_covers(SeqAnnotation annotation){
+vector<MinCover> get_min_covers(SequenceAnnotation annotation){
 
 }
 

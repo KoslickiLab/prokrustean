@@ -167,6 +167,8 @@ template<class T> using NodeFunc = optional<T>(*)(SuffixArrayNode&, FmIndex&);
 
 template<class T, NodeFunc<T> process_node>
 vector<T> navigate_tree(SuffixArrayInterval &root, int Lmin, FmIndex &fm_idx){
+    Lmin = Lmin >= 1? Lmin : 1;
+
     std::stack<SuffixArrayInterval> interval_stack;
     vector<T> Ts;
     
@@ -174,18 +176,19 @@ vector<T> navigate_tree(SuffixArrayInterval &root, int Lmin, FmIndex &fm_idx){
     while(!interval_stack.empty()){
         auto interval = interval_stack.top();
         interval_stack.pop();
+
         auto node = to_node(fm_idx, interval);
-        optional<T> t = process_node(node, fm_idx);
-        
-        if(t.has_value()){
-            Ts.push_back(t.value());
+        if(node.interval.depth>=Lmin){
+            optional<T> t = process_node(node, fm_idx);
+            if(t.has_value()) {
+                Ts.push_back(t.value());
+            }
         }
         
         for(int i=0; i<node.c_intervals.size(); i++){
             // terminal
             if(node.c_s[i]==0) 
             continue;
-
             auto c_interval = node.c_intervals[i];
             if(c_interval.count()>1){
                 interval_stack.push(c_interval);

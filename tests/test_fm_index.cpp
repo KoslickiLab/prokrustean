@@ -67,35 +67,6 @@ bool check_content(string path){
     return res;
 }
 
-void print_interval(SuffixArrayInterval in){
-    for(auto first: in.firsts){
-        cout << first << " ,";
-    }
-    cout << endl;
-    // cout << in.first_TERM << " , " << in.first_A << " , " << in.first_C << " , " << in.first_G << " , " << in.first_T << " , " << in.last << endl;
-}
-
-void print_left_ext_intervals(vector<char> characters, SuffixArrayNode left_exts){
-    for(int i=0; i< left_exts.c_intervals.size(); i++){
-        cout << "left ext " << characters[i] << ": ";
-        print_interval(left_exts.c_intervals[i]);
-    }
-
-}
-// void print_left_ext_intervals(left_extension left_exts){
-//     cout << "left ext TERM: " << ends;
-//     print_interval(left_exts.TERM);
-//     cout << "left ext A: " << ends;
-//     print_interval(left_exts.A);
-//     cout << "left ext C: " << ends;
-//     print_interval(left_exts.C);
-//     cout << "left ext G: " << ends;
-//     print_interval(left_exts.G);
-//     cout << "left ext T: " << ends;
-//     print_interval(left_exts.T);
-// }
-
-
 void test_strings(){
     IS_TRUE(check_content(PATH1_BWT));
 }
