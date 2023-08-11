@@ -8,9 +8,10 @@ using namespace std;
 
 //character ids
 typedef uint8_t CharId;
+typedef uint64_t SuffixArrayIdx;
 //C array of fm index. Each index is CharId 
 typedef vector<uint64_t> CArray;
-typedef vector<uint64_t> RankArray;
+typedef vector<SuffixArrayIdx> RankArray;
 
 class AbstractString{
 public:
@@ -19,9 +20,9 @@ public:
 	virtual vector<char> get_characters() = 0;
 	virtual char operator[](uint64_t i) = 0;
 	virtual CharId access(uint64_t i) = 0;
-	virtual uint64_t rank(uint64_t i, CharId c) = 0;
+	virtual uint64_t rank(SuffixArrayIdx i, CharId c) = 0;
 	//the order follows the character sequence
-    virtual RankArray ranks(uint64_t i) = 0;
+    virtual RankArray ranks(SuffixArrayIdx i) = 0;
 	virtual uint64_t size() = 0;
 };
 

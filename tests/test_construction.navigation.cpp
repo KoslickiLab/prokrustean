@@ -13,9 +13,9 @@
 
 using namespace std;
 
-optional<tuple<uint64_t, uint64_t>> _get_lcp(SuffixArrayNodeExtension &node, FmIndex &fm_idx){
-    if(node.node.right_maximal()){
-        return make_tuple(node.node.depth, node.node.firsts[0]);
+optional<tuple<uint64_t, uint64_t>> _get_lcp(SuffixArrayNodeExtension &ext){
+    if(ext.node.right_maximal()){
+        return make_tuple(ext.node.depth, ext.node.firsts[0]);
     } else {
         return nullopt;
     }

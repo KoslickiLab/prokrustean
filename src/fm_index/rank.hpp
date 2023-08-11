@@ -51,13 +51,13 @@ struct ParallelRank{
 
 public:
 
-	uint64_t A;
-	uint64_t C;
-	uint64_t G;
-	uint64_t T;
-	uint64_t TERM = 0; // filled later
+	SuffixArrayIdx A;
+	SuffixArrayIdx C;
+	SuffixArrayIdx G;
+	SuffixArrayIdx T;
+	SuffixArrayIdx TERM = 0; // filled later
 
-	void fill_term(uint64_t i){
+	void fill_term(SuffixArrayIdx i){
 		TERM = i - (A + C + G + T);
 	}
 	
@@ -219,7 +219,7 @@ public:
 	/*
 	 * return number of non-dna symbols in the prefix of length i of the text. At most 1 cache miss!
 	 */
-	uint64_t rank_non_dna(uint64_t i){
+	uint64_t rank_non_dna(SuffixArrayIdx i){
 
 		assert(i<=n);
 		auto r = parallel_rank(i);
@@ -285,7 +285,7 @@ public:
 				(b == 4)*0;
 	}
 
-	uint64_t rank(uint64_t i, CharId cid){
+	uint64_t rank(SuffixArrayIdx i, CharId cid){
 		
 		auto r = parallel_rank(i);
 		switch(cid){
@@ -298,7 +298,7 @@ public:
 		}
 	};
 	//the order follows the character sequence
-    RankArray ranks(uint64_t i){
+    RankArray ranks(SuffixArrayIdx i){
 		auto r = parallel_rank(i);
 		return {r.TERM, r.A, r.C, r.G, r.T};
 	}

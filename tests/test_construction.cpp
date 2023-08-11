@@ -9,7 +9,7 @@
 using namespace std;
 
 void _check_repr_rule(){
-
+    
 }
 
 void main_construction() {

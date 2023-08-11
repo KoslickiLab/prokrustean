@@ -39,10 +39,9 @@ struct SuffixArrayNodeExtension {
     SuffixArrayNode node;
     // left extended intervals. Each means sa intervals of cW for each character c.
     vector<SuffixArrayNode> c_nodes;
-    vector<CharId> c_s;
 
-    vector<tuple<CharId, CharId, uint64_t>> distinct_extensions(){
-        vector<tuple<CharId, CharId, uint64_t>> exts = {};
+    vector<tuple<CharId, CharId, SuffixArrayIdx>> distinct_extensions(){
+        vector<tuple<CharId, CharId, SuffixArrayIdx>> exts = {};
         for(int i=0; i<c_nodes.size(); i++){
             for(auto r: c_nodes[i].distinct_extensions()){
                 exts.push_back(make_tuple(i, get<0>(r), get<1>(r)));    
@@ -77,7 +76,6 @@ SuffixArrayNodeExtension extend_node(FmIndex &index, SuffixArrayNode &node){
     }
 
     vector<SuffixArrayNode> c_nodes;
-    vector<CharId> c_s;
     for(int c=0; c < index.STRING->get_characters().size(); c++){
         uint64_t C = index.C[c];
         vector<uint64_t> firsts;
@@ -86,10 +84,9 @@ SuffixArrayNodeExtension extend_node(FmIndex &index, SuffixArrayNode &node){
             firsts.push_back(sa_idx);
         }
         c_nodes.push_back({firsts, node.depth+1});
-        c_s.push_back(c);
     }
     
-    return {node, c_nodes, c_s};
+    return {node, c_nodes};
 };
 
 /*
@@ -104,7 +101,7 @@ SuffixArrayNode get_root(FmIndex &index){
     return {firsts, 0};
 };
 
-template<class T> using NodeFunc = optional<T>(*)(SuffixArrayNodeExtension&, FmIndex&);
+template<class T> using NodeFunc = optional<T>(*)(SuffixArrayNodeExtension&);
 
 template<class T, NodeFunc<T> process_node>
 vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
@@ -120,7 +117,7 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
 
         auto ext = extend_node(fm_idx, node);
         if(ext.node.depth>=Lmin){
-            optional<T> t = process_node(ext, fm_idx);
+            optional<T> t = process_node(ext);
             if(t.has_value()) {
                 Ts.push_back(t.value());
             }
@@ -128,8 +125,8 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
 
         for(int i=0; i<ext.c_nodes.size(); i++){
             // terminal
-            if(ext.c_s[i]==0) 
-            continue;
+            if(i==0) continue;
+
             auto child = ext.c_nodes[i];
             if(child.interval_size()>1){
                 stack.push(child);

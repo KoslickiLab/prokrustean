@@ -8,12 +8,12 @@ using namespace std;
 #ifndef CONSTRUCTION_ALGO_PROCEDURES_HPP_
 #define CONSTRUCTION_ALGO_PROCEDURES_HPP_
 
-vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, CharId, uint64_t>> distinct_extensions){
+vector<uint64_t> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId, SuffixArrayIdx>> distinct_extensions){
     vector<uint64_t> sa_indexes;
-    vector<tuple<CharId, uint64_t>> left_paired_1st(char_cnt);
-    vector<tuple<CharId, uint64_t>> right_paired_1st(char_cnt);
-    vector<int> left_paired_cnt(char_cnt);
-    vector<int> right_paired_cnt(char_cnt);
+    vector<tuple<CharId, uint64_t>> left_paired_1st(char_max);
+    vector<tuple<CharId, uint64_t>> right_paired_1st(char_max);
+    vector<int> left_paired_cnt(char_max);
+    vector<int> right_paired_cnt(char_max);
     for(auto pair:distinct_extensions){
         auto left = get<0>(pair);
         auto right = get<1>(pair);
@@ -29,7 +29,7 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
         }
         right_paired_cnt[right]++;
     }
-    for(int i=1/*skip term*/; i<char_cnt-1; i++){ 
+    for(int i=1/*skip term*/; i<char_max-1; i++){ 
         if(left_paired_cnt[i]==0) 
         continue;
         //left exclusive but not bi-exclusive
@@ -39,7 +39,7 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
         uint64_t sa_idx = get<1>(left_paired_1st[i]);
         sa_indexes.push_back(sa_idx);
     }
-    for(int i=1/*skip term*/; i<char_cnt-1; i++){ 
+    for(int i=1/*skip term*/; i<char_max-1; i++){ 
         if(right_paired_cnt[i]==0) 
         continue;
         //left exclusive but not bi-exclusive
@@ -51,10 +51,10 @@ vector<uint64_t> decide_repr_sa_extensions(int char_cnt, vector<tuple<CharId, Ch
     }
 }
 
-optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &node, FmIndex &fm_idx){
-    if(node.left_maximal() && node.node.right_maximal()){
-        vector<uint64_t> repr_sa = decide_repr_sa_extensions(fm_idx.characters.size(), node.distinct_extensions());
-        MaximalRepeatAnnotation rep = {node.node.depth, repr_sa};
+optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &ext){
+    if(ext.left_maximal() && ext.node.right_maximal()){
+        vector<uint64_t> repr_sa = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
+        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa};
         return rep;
     } else {
         return nullopt;
