@@ -8,10 +8,10 @@ using namespace std;
 #ifndef CONSTRUCTION_ALGO_PROCEDURES_HPP_
 #define CONSTRUCTION_ALGO_PROCEDURES_HPP_
 
-vector<uint64_t> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId, SuffixArrayIdx>> distinct_extensions){
-    vector<uint64_t> sa_indexes;
-    vector<tuple<CharId, uint64_t>> left_paired_1st(char_max);
-    vector<tuple<CharId, uint64_t>> right_paired_1st(char_max);
+vector<SuffixArrayIdx> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId, SuffixArrayIdx>> distinct_extensions){
+    vector<SuffixArrayIdx> sa_indexes;
+    vector<tuple<CharId, SuffixArrayIdx>> left_paired_1st(char_max);
+    vector<tuple<CharId, SuffixArrayIdx>> right_paired_1st(char_max);
     vector<int> left_paired_cnt(char_max);
     vector<int> right_paired_cnt(char_max);
     for(auto pair:distinct_extensions){
@@ -29,7 +29,7 @@ vector<uint64_t> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, Ch
         }
         right_paired_cnt[right]++;
     }
-    for(int i=1/*skip term*/; i<char_max-1; i++){ 
+    for(int i=1/*skip term*/; i<char_max; i++){ 
         if(left_paired_cnt[i]==0) 
         continue;
         //left exclusive but not bi-exclusive
@@ -39,7 +39,7 @@ vector<uint64_t> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, Ch
         uint64_t sa_idx = get<1>(left_paired_1st[i]);
         sa_indexes.push_back(sa_idx);
     }
-    for(int i=1/*skip term*/; i<char_max-1; i++){ 
+    for(int i=1/*skip term*/; i<char_max; i++){ 
         if(right_paired_cnt[i]==0) 
         continue;
         //left exclusive but not bi-exclusive
@@ -49,6 +49,7 @@ vector<uint64_t> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, Ch
         uint64_t sa_idx = get<1>(right_paired_1st[i]);
         sa_indexes.push_back(sa_idx);
     }
+    return sa_indexes;
 }
 
 optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &ext){
