@@ -153,6 +153,6 @@ void test_repr_rule(){
 }
 
 
-void main_construction() {
+void main_construction_repr() {
     test_repr_rule();
 }

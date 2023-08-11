@@ -1,0 +1,109 @@
+#include <fstream>
+#include <vector>
+#include <cassert>
+#include <iostream>
+#include "util.cpp"	
+#include "../src/construction/algorithms.hpp"
+#include "../src/construction/models.hpp"
+#include "../src/fm_index/index.hpp"
+#include "../src/fm_index/rank.hpp"
+#include "../src/fm_index/tree.hpp"
+#include "../src/fm_index/locate.hpp"
+
+using namespace std;
+
+vector<char> characters = {'A', 'C', 'G', 'T'};
+
+int _occurrence(vector<string> sequences, string str){
+    int occ = 0;
+    for(auto seq: sequences){
+        int pos = 0;
+        while(pos+str.size()<seq.size()){
+            if(str == seq.substr(pos, str.size())){
+                occ++;
+            }
+            pos++;
+        }
+    }
+    return occ;
+}
+
+set<string> _distinct(vector<string> sequences, int L){
+    set<string> strings;
+    for(auto seq: sequences){
+        if(seq.size()<L){
+            continue;
+        }
+        int pos = 0;
+        while(pos < seq.size()-L){
+            strings.insert(seq.substr(pos, L));
+            pos++;    
+        }
+    }
+    return strings;
+}
+
+vector<string> _find_maximal_repeats(vector<string> sequences, int Lmin){
+    int Lmax=0;
+    for(auto seq:sequences){
+        if(Lmax<seq.size()) 
+        Lmax=seq.size();
+    }
+    
+    vector<string> repeats;
+    for(int L=Lmin; L<=Lmax; L++){
+        auto dist_strings = _distinct(sequences, L);
+        for(auto str: dist_strings){
+            bool repeat = true;
+            bool l_maximal = true;
+            bool r_maximal = true;
+            for(auto c: characters){
+                int occ = _occurrence(sequences, str);
+                int l_occ = _occurrence(sequences, c+str);
+                int r_occ = _occurrence(sequences, str+c);
+                // extension
+                if(occ < 2) repeat = false;
+                if(l_occ == occ) l_maximal = false;
+                if(r_occ == occ) r_maximal = false;
+            }
+            if(repeat && l_maximal && r_maximal){
+                repeats.push_back(str);
+            }
+        }
+    }
+    sort(repeats.begin(), repeats.end());
+    return repeats;
+}
+
+void test_maximal_repeat(){
+    int Lmin = 2;
+    auto str = SuccintString(PATH1_BWT);
+    auto fm_idx = FmIndex(str);
+    auto sequences = recover_text(fm_idx);
+    for(auto rep: _find_maximal_repeats(sequences, Lmin)){
+        cout << rep <<endl;
+    }
+
+    SuffixArrayNode root = get_root(fm_idx);
+    vector<MaximalRepeatAnnotation> rep_annot = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
+    auto sa = recover_suffix_array(fm_idx);
+    vector<string> repeats;
+    for(auto r: rep_annot){
+        cout << "r size: " << r.size << endl;
+        for(auto sa_idx: r.repr_sa_indexes){
+            // auto str = sa[sa_idx].substr(1, r.size);
+            auto str = sa[sa_idx];
+            cout << "idx: " << sa_idx << " str: " << str << endl;
+            // repeats.push_back(str);
+        }
+    }
+    sort(repeats.begin(), repeats.end());
+    for(auto r: repeats){
+        cout << r << endl;
+    }
+}
+
+
+void main_construction_max_rep() {
+    test_maximal_repeat();
+}
