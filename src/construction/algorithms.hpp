@@ -13,10 +13,10 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1){
     vector<MaximalRepeatAnnotation> repeats = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
 
     // step2 get repr structure
-    auto repr_annotation = ReprSuffixAnnotation(fm_idx.size());
-    repr_annotation.set_repr_sa_rank(repeats);
-    repr_annotation.set_repr_sa_annotation(repeats);
-
+    auto repr_annotation = ReprSuffixAnnotation();
+    repr_annotation.initialize_rank(fm_idx.size(), repeats);
+    repr_annotation.initialize_repr_sa(repeats);
+    
     // step3 build structure
     // parallelize by sequences
     vector<MinCover> covers;

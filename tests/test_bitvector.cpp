@@ -49,6 +49,33 @@ void test_bitvector_ranks(){
     assert(~found);
 }
 
+void test_bitvector_ranks2(){
+    bm::bvector<> bv { 1, 20, 30, 31 }; // init a test bit-vector
+    bm::bvector<>::rs_index_type* rs_idx(new bm::bvector<>::rs_index_type());
+    
+    bv.build_rs_index(rs_idx);
+
+    auto r1 = bv.rank(20, *rs_idx);
+    assert(r1==2);
+    r1 = bv.rank(21, *rs_idx);
+    assert(r1==2);
+    r1 = bv.rank(30, *rs_idx);
+    assert(r1==3);
+    auto r1c = bv.rank_corrected(31, *rs_idx); // 3
+    assert(r1c==3);
+    r1c = bv.rank_corrected(32, *rs_idx); // 4
+    assert(r1c==4);
+    r1c = bv.rank_corrected(33, *rs_idx); // 4
+    assert(r1c==4);
+    bm::bvector<>::size_type pos;
+    bool found = bv.select(2, pos, *rs_idx);
+    assert(found && pos==20);
+    found = bv.select(3, pos, *rs_idx);
+    assert(found && pos==30);
+    found = bv.select(5, pos, *rs_idx);
+    assert(~found);
+}
+
 void test_fixed_size_bitvector(){
     bm::bvector<> bv(100);
     bv.set_bit(10, true);
@@ -156,8 +183,8 @@ void test_threading(){
 
 
 void main_bitvector() {
-    cout << "test_ranks finished" << endl; 
     test_bitvector_ranks();
+    test_bitvector_ranks2();
     test_fixed_size_bitvector();
     test_many_sets();
     test_plain_bit();

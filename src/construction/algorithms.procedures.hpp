@@ -62,50 +62,32 @@ optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &ext){
     }
 }
 
-// vector<MaximalRepeat> collect_repeats_in_subtree(SuffixArrayNode &root, FmIndex &fm_idx){
-//     stack<SuffixArrayNode> stack;
-//     vector<MaximalRepeat> reps;
-    
-//     stack.push(root);
-//     while(~stack.empty()){
-//         SuffixArrayNode node = stack.top();
-//         stack.pop();
-//         /* find rep */
-//         SuffixArrayNode extension = extend_left(fm_idx, node);
-//         bool is_rep = extension.left_maximal() && node.right_maximal();
-//         if(is_rep){
-//             /* find repr sa */
-//             vector<uint64_t> sa_indexes = decide_repr_sa_extensions(fm_idx.characters.size(), extension.distinct_extensions());
-//             reps.push_back({node.depth, sa_indexes});
-//         }
-//         /* navigate */
-//         for(auto c_node:extension.c_nodes){
-//             if(c_node.count()>1){
-//                 stack.push(c_node);
-//             }
-//         }
-//     }
-//     return reps;
-// }
-
 SequenceAnnotation get_seq_annot(SeqId id, FmIndex &fm_idx, ReprSuffixAnnotation &repr_sa){
-    vector<tuple<Pos, vector<RepId>>> annotations;
+    stack<tuple<Pos, vector<RepId>>> temp_annotations;
 
     uint64_t L = id;
     uint64_t F = fm_idx.LF(L);
     uint64_t rev_pos = 0;
     /* plot occurrences */
     while(F >= fm_idx.seq_cnt()){
-        auto reps = repr_sa.get_repeats(F);
+        optional<vector<RepId>> reps = repr_sa.get_repeats(F);
         if (reps.has_value()){
-            annotations.push_back(make_tuple(rev_pos, reps.value()));
+            temp_annotations.push(make_tuple(rev_pos, reps.value()));
         }
         L = F;
         F = fm_idx.LF(L);
         rev_pos++;
     }
-    SequenceAnnotation annot = {rev_pos, annotations};
-    return annot;
+    
+    uint64_t seq_len = rev_pos;
+    vector<tuple<Pos, vector<RepId>>> annotations;
+    while(!temp_annotations.empty()){
+        auto item = temp_annotations.top();
+        Pos rpos = get<0>(item);
+        vector<RepId> reps = get<1>(item);
+        annotations.push_back(make_tuple(seq_len-1-rpos, reps));
+    }
+    return {seq_len, annotations};
 }
 
 vector<MinCover> get_min_covers(SequenceAnnotation annotation){
