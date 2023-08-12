@@ -38,6 +38,17 @@ vector<SuffixArrayIdx> decide_repr_sa_extensions(int char_max, vector<tuple<Char
         continue;
         uint64_t sa_idx = get<1>(left_paired_1st[i]);
         sa_indexes.push_back(sa_idx);
+        
+        cout << "left char: ";
+        switch (i)
+        {
+        case 1: cout << "A"; break;
+        case 2: cout << "C"; break;
+        case 3: cout << "G"; break;
+        case 4: cout << "T"; break;
+        default: break;
+        }
+        cout << ", " << sa_idx << endl;
     }
     for(int i=1/*skip term*/; i<char_max; i++){ 
         if(right_paired_cnt[i]==0) 
@@ -48,12 +59,24 @@ vector<SuffixArrayIdx> decide_repr_sa_extensions(int char_max, vector<tuple<Char
         continue;
         uint64_t sa_idx = get<1>(right_paired_1st[i]);
         sa_indexes.push_back(sa_idx);
+
+        cout << "right char: ";
+        switch (i)
+        {
+        case 1: cout << "A"; break;
+        case 2: cout << "C"; break;
+        case 3: cout << "G"; break;
+        case 4: cout << "T"; break;
+        default: break;
+        }
+        cout << ", " << sa_idx << endl;
     }
     return sa_indexes;
 }
 
 optional<MaximalRepeatAnnotation> get_rep_annot(SuffixArrayNodeExtension &ext){
     if(ext.left_maximal() && ext.node.right_maximal()){
+        cout << "max repeat of " << ext.node.depth << endl;
         vector<uint64_t> repr_sa = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
         MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa};
         return rep;
@@ -78,7 +101,7 @@ SequenceAnnotation get_seq_annot(SeqId id, FmIndex &fm_idx, ReprSuffixAnnotation
         F = fm_idx.LF(L);
         rev_pos++;
     }
-    
+
     uint64_t seq_len = rev_pos;
     vector<tuple<Pos, vector<RepId>>> annotations;
     while(!temp_annotations.empty()){
