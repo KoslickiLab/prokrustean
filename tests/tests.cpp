@@ -5,7 +5,7 @@
 #include "test_construction.maxrep.cpp"
 #include "test_construction.navigation.cpp"
 // #include "test_construction.mincover.cpp"
-#include "test_construction.reprrank.cpp"
+#include "test_construction.repr_annot.cpp"
 
 int main(void){
     cout << "--- main_fm_index ---" << endl;
@@ -19,7 +19,7 @@ int main(void){
     cout << "--- main_construction_max_rep ---" << endl;
     main_construction_max_rep();
     cout << "--- main_construction_reprrank ---" << endl;
-    main_construction_reprrank();
+    main_construction_repr_annot();
     cout << "--- main_bitvector ---" << endl;
     main_bitvector();
     cout << "--- main_construction_repr ---" << endl;

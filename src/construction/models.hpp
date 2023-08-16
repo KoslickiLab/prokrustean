@@ -75,10 +75,10 @@ public:
 
     void initialize_repr_sa(vector<MaximalRepeatAnnotation> &repeats){
         repr_suffixes.resize(sa_rank.get_repr_size());
-
-        for(uint64_t rep_id; rep_id< repeats.size(); rep_id++){
+        for(uint64_t rep_id=0; rep_id< repeats.size(); rep_id++){
             for(auto sa_idx: repeats[rep_id].repr_sa_indexes){
-                repr_suffixes[sa_idx].push_back(rep_id);
+                uint64_t r = sa_rank.rank(sa_idx);
+                repr_suffixes[r].push_back(rep_id);
             }
         }
     }
