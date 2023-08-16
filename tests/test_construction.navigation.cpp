@@ -6,7 +6,7 @@
 #include <iostream>
 #include "util.cpp"	
 #include "../src/fm_index/index.hpp"
-#include "../src/fm_index/rank.hpp"
+#include "../src/fm_index/string.sdsl.hpp"
 #include "../src/fm_index/tree.hpp"
 #include "../src/fm_index/locate.hpp"
 #include "../src/construction/models.hpp"
@@ -54,22 +54,22 @@ void _compare_lcp_recovered_vs_tree(FmIndex &fm_idx){
 
 void test_lcp_equivalence() {
     // fm_index
-    auto str = SuccintString(PATH1_BWT);
+    auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     _compare_lcp_recovered_vs_tree(fm_idx);
 
-    str = SuccintString(PATH2_BWT);
+    str = WaveletString(PATH2_BWT);
     fm_idx = FmIndex(str);
     _compare_lcp_recovered_vs_tree(fm_idx);
 
-    str = SuccintString(PATH3_BWT);
+    str = WaveletString(PATH3_BWT);
     fm_idx = FmIndex(str);
     _compare_lcp_recovered_vs_tree(fm_idx);
 }
 
 void test_intervals(){
     int Lmin = 2;
-    auto str = SuccintString(PATH1_BWT);
+    auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
 
     SuffixArrayNode root = get_root(fm_idx);

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-//character ids
+//character ids -> lexicographical order of characters 
 typedef uint8_t CharId;
 typedef uint64_t SuffixArrayIdx;
 //C array of fm index. Each index is CharId 
@@ -32,10 +32,11 @@ public:
 	/*
 	 * constructor path of a STRING file containing the STRING in ASCII format
 	 */
-	FmIndex(AbstractString &string){
+	FmIndex(AbstractString &string, char TERM='#'){
 		this->STRING = &string;
 		this->characters = STRING->get_characters();
         this->C = get_c_array(string);
+		this->TERM = TERM;
     }
 	char TERM='#'; //Lexicographically first
 	CharId term_id=0;

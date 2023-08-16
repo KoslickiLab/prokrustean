@@ -6,39 +6,13 @@
 #include <cassert>
 #include <iostream>
 #include "util.cpp"	
-#include "../src/fm_index/rank.hpp"
+#include "../src/fm_index/string.sdsl.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/locate.hpp"
 #include "../src/fm_index/tree.hpp"
 
 using namespace std;
 
-bool check_rank(SuccintString str){
-    ParallelRank p = {};
-    bool res = true;
-
-    for(int i=0;i<str.size();++i){
-        auto r = str.parallel_rank(i);
-        if(p != r){
-            res = false;
-        }
-        p.A += (str.operator[](i)=='A');
-        p.C += (str.operator[](i)=='C');
-        p.G += (str.operator[](i)=='G');
-        p.T += (str.operator[](i)=='T');
-    }
-    auto r = str.parallel_rank(str.size());
-    if(p != r){
-        res = false;
-    }
-    if(res){
-        cout << "rank is correct" << endl;
-    }else{
-        cout << "rank is not correct" << endl;
-    }
-    return res;
-
-}
 
 std::ifstream::pos_type filesize(string filename){
     std::ifstream in(filename.c_str(), std::ifstream::ate | std::ifstream::binary);
@@ -48,7 +22,7 @@ std::ifstream::pos_type filesize(string filename){
 * check that the string contains exactly the same characters as the file in path
 */
 bool check_content(string path){
-    auto str = SuccintString(path);
+    auto str = WaveletString(path);
     ifstream ifs(path);
     bool res = true;
     for(uint64_t i=0;i<str.size();++i){
@@ -71,17 +45,13 @@ void test_strings(){
     IS_TRUE(check_content(PATH1_BWT));
 }
 
-void test_ranks(){
-    auto str = SuccintString(PATH1_BWT);
-    IS_TRUE(check_rank(str));
-}
 
 void test_recovery(){
     // naive
     vector<string> sequences = get_sequences(PATH1_SEQ);
     auto fm_idx_naive = NaiveFmIndex(sequences, 3);
     // fm_index
-    auto str = SuccintString(PATH1_BWT);
+    auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
@@ -113,7 +83,7 @@ void test_recovery_unsorted(){
     auto fm_idx_naive = NaiveFmIndex(sequences, 3);
     // fm_idx_naive.print_ebwt();
     // fm_index
-    auto str = SuccintString(PATH2_BWT);
+    auto str = WaveletString(PATH2_BWT);
     auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
@@ -145,7 +115,7 @@ void test_recovery_unsorted_tied(){
     auto fm_idx_naive = NaiveFmIndex(sequences);
     // fm_idx_naive.print_ebwt();
     // fm_index
-    auto str = SuccintString(PATH3_BWT);
+    auto str = WaveletString(PATH3_BWT);
     auto fm_idx = FmIndex(str);
     for (int i=0; i<sequences.size(); i++){
         // cout << recover_text(fm_idx, i) <<endl;
@@ -199,7 +169,7 @@ tuple<uint64_t, uint64_t> get_sa_range(FmIndex &fm_index, string W){
 }
 
 void test_left_extension(){
-    auto str = SuccintString(PATH1_BWT);
+    auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     // vector<string> suffixes = recover_suffix_array(fm_idx);
     // for(auto suffix: recover_suffix_array(fm_idx)){
@@ -229,7 +199,7 @@ void test_left_extension(){
 void test_left_extension_exhaustive(){
     vector<string> paths = {PATH1_BWT, PATH2_BWT, PATH3_BWT};
     for(auto path: paths){
-        auto str = SuccintString(path);
+        auto str = WaveletString(path);
         auto fm_idx = FmIndex(str);
         for(auto seq: recover_text(fm_idx)){
             //remove terminator
@@ -249,7 +219,6 @@ void test_left_extension_exhaustive(){
 
 void main_fm_index() {
     // Call all tests. Using a test framework would simplify this.
-    test_ranks();
     test_recovery();
     test_recovery_unsorted();
     test_recovery_unsorted_tied();

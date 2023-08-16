@@ -6,7 +6,7 @@
 #include "../src/construction/algorithms.hpp"
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
-#include "../src/fm_index/rank.hpp"
+#include "../src/fm_index/string.sdsl.hpp"
 #include "../src/fm_index/tree.hpp"
 #include "../src/fm_index/locate.hpp"
 
@@ -77,7 +77,7 @@ vector<string> _find_maximal_repeats(vector<string> sequences, int Lmin){
 
 void test_maximal_repeat(){
     int Lmin = 2;
-    auto str = SuccintString(PATH1_BWT);
+    auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     auto sequences = recover_text(fm_idx);
     for(auto rep: _find_maximal_repeats(sequences, Lmin)){
