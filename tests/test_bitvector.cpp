@@ -29,7 +29,7 @@ void test_many_sets(){
     uint64_t test_count = pow(10,6);;
     bit_vector bv(N, 0);
     vector<int> numbers;
-    bool print = true;
+    bool print = false;
     
     auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < test_count; i++){

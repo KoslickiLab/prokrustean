@@ -6,9 +6,12 @@
 #include <iostream>
 #include <algorithm>
 #include "../prokrustean.hpp"
-#include "../BitMagic/bm.h"
+#include "../sdsl/int_vector.hpp"
+#include "../sdsl/rank_support_v.hpp"
+#include "../sdsl/rrr_vector.hpp"
 
 using namespace std;
+using namespace sdsl;
 
 struct MaximalRepeatAnnotation {
     // 
@@ -28,35 +31,35 @@ struct SequenceAnnotation {
 
 struct ReprSuffixRank {
     //
-    bm::bvector<> bv;
+    sdsl::bit_vector bv;
     //
-    bm::bvector<>::rs_index_type* rs_idx;
+    sdsl::rank_support_v<> rb;
 
     ReprSuffixRank(){}
 
-    ReprSuffixRank(uint64_t seq_length, vector<MaximalRepeatAnnotation> &repeats){
-        this->bv.resize(seq_length);
-        auto _rs_idx(new bm::bvector<>::rs_index_type());
-        this->rs_idx = _rs_idx;
-
-        for(auto rep: repeats)
-        for(auto sa_idx: rep.repr_sa_indexes)
-        bv.set_bit(sa_idx);
-            
-        bv.build_rs_index(rs_idx);
+    void initialize(uint64_t seq_length, vector<MaximalRepeatAnnotation> &repeats){
+        bv.resize(seq_length);
+        for(auto rep: repeats){
+            for(auto sa_idx: rep.repr_sa_indexes){
+                bv[sa_idx]=true;
+            }
+        }
+        
+        rank_support_v<> _rb(&bv);
+        this->rb = _rb;
     }
     
     uint64_t get_repr_size(){
-        return bv.rank(bv.size(), *rs_idx);
+        return rb.rank(bv.size());
     }
 
     // 
     bool exists(uint64_t sa_idx){
-        return bv.get_bit(sa_idx);
+        return bv[sa_idx];
     }
 
     uint64_t rank(uint64_t sa_idx){
-        return bv.rank(sa_idx, *rs_idx);
+        return rb.rank(sa_idx);
     }
 };
 
@@ -67,7 +70,7 @@ private:
 
 public:
     void initialize_rank(uint64_t seq_length, vector<MaximalRepeatAnnotation> &repeats){
-        sa_rank=ReprSuffixRank(seq_length, repeats);
+        sa_rank.initialize(seq_length, repeats);
     }
 
     void initialize_repr_sa(vector<MaximalRepeatAnnotation> &repeats){

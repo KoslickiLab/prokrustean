@@ -75,26 +75,15 @@ void test_intervals(){
     SuffixArrayNode root = get_root(fm_idx);
     SuffixArrayNodeExtension ext = extend_node(fm_idx, root);
     ext = extend_node(fm_idx, ext.c_nodes[2]);
-    // ext = extend_node(fm_idx, ext.c_nodes[1]);
-    // ext = extend_node(fm_idx, ext.c_nodes[4]);
-    cout << "----- interval -----" << endl;
-    for(int l=0; l< ext.c_nodes.size(); l++){
-        auto node = ext.c_nodes[l];
-        cout << "left: ";
-        switch (l)
-        {
-        case 0: cout << "#"; break;
-        case 1: cout << "A"; break;
-        case 2: cout << "C"; break;
-        case 3: cout << "G"; break;
-        case 4: cout << "T"; break;
-        default: cout << "LAST"; break;
-        }
-        cout << endl;
-        //"AC"
-        for(int i=0; i< node.firsts.size(); i++){
-            auto sa_idx = node.firsts[i];
-            switch (i)
+
+    bool print = false;
+    //todo: assertions
+    if(print){
+        cout << "----- interval -----" << endl;
+        for(int l=0; l< ext.c_nodes.size(); l++){
+            auto node = ext.c_nodes[l];
+            cout << "left: ";
+            switch (l)
             {
             case 0: cout << "#"; break;
             case 1: cout << "A"; break;
@@ -103,9 +92,23 @@ void test_intervals(){
             case 4: cout << "T"; break;
             default: cout << "LAST"; break;
             }
-            cout << ": " << sa_idx << ", ";
+            cout << endl;
+            //"AC"
+            for(int i=0; i< node.firsts.size(); i++){
+                auto sa_idx = node.firsts[i];
+                switch (i)
+                {
+                case 0: cout << "#"; break;
+                case 1: cout << "A"; break;
+                case 2: cout << "C"; break;
+                case 3: cout << "G"; break;
+                case 4: cout << "T"; break;
+                default: cout << "LAST"; break;
+                }
+                cout << ": " << sa_idx << ", ";
+            }
+            cout << endl;   
         }
-        cout << endl;   
     }
 }
 

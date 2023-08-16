@@ -12,23 +12,19 @@ typedef uint64_t RepId;
 typedef uint64_t SeqId;
 typedef uint64_t Pos;  
 
-class MinCover {
-    bool is_rep;
-    uint64_t id;
+struct MinCover {
     uint64_t size;
-    vector<tuple<uint64_t, RepId>> mc_rep;
-public:
-    MinCover(){}
-
-    void addCovOcc(RepId id, Pos pos){
-    }
+    vector<tuple<Pos, RepId>> mc_rep;
 };
 
-class Prokrustean {
+struct Prokrustean {
     vector<MinCover> seq_mc;
     vector<MinCover> rep_mc;
-public:
-    Prokrustean(){}
+
+    void set_sizes(uint64_t seq_no, uint64_t rep_no){
+        seq_mc.resize(seq_no);
+        rep_mc.resize(rep_no);
+    }
 };
 
 #endif
