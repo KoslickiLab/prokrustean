@@ -23,6 +23,7 @@ public:
 	virtual uint64_t rank(SuffixArrayIdx i, CharId c) = 0;
 	//the order follows the character sequence
     virtual RankArray ranks(SuffixArrayIdx i) = 0;
+	virtual uint64_t select(uint64_t i, CharId c) = 0;
 	virtual uint64_t size() = 0;
 };
 

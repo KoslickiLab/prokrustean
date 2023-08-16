@@ -43,7 +43,7 @@ set<string> _distinct(vector<string> sequences, int L){
     return strings;
 }
 
-vector<string> _find_maximal_repeats(vector<string> sequences, int Lmin){
+vector<string> _find_maximal_repeats_naive(vector<string> sequences, int Lmin){
     int Lmax=0;
     for(auto seq:sequences){
         if(Lmax<seq.size()) 
@@ -80,26 +80,26 @@ void test_maximal_repeat(){
     auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     auto sequences = recover_text(fm_idx);
-    for(auto rep: _find_maximal_repeats(sequences, Lmin)){
-        cout << rep <<endl;
-    }
+    auto repeats_naive = _find_maximal_repeats_naive(sequences, Lmin);
 
     SuffixArrayNode root = get_root(fm_idx);
     vector<MaximalRepeatAnnotation> rep_annot = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
     auto sa = recover_suffix_array(fm_idx);
-    vector<string> repeats;
+    set<string> uniq_repeats;
     for(auto r: rep_annot){
-        cout << "r size: " << r.size << endl;
+        // cout << "r size: " << r.size << endl;
         for(auto sa_idx: r.repr_sa_indexes){
-            // auto str = sa[sa_idx].substr(1, r.size);
-            auto str = sa[sa_idx];
-            cout << "idx: " << sa_idx << " str: " << str << endl;
-            // repeats.push_back(str);
+            auto str = sa[sa_idx].substr(0, r.size);
+            // cout << "idx: " << sa_idx << " str: " << str << endl;
+            uniq_repeats.insert(str);
         }
     }
+    vector<string> repeats(uniq_repeats.begin(), uniq_repeats.end());
     sort(repeats.begin(), repeats.end());
-    for(auto r: repeats){
-        cout << r << endl;
+
+    assert(repeats_naive.size() == repeats.size());
+    for(int i=0; i<repeats.size(); i++){
+        assert(repeats_naive[i]==repeats[i]);
     }
 }
 

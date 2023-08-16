@@ -76,12 +76,16 @@ public:
     }
 
 	//the order follows the character sequence
-    virtual RankArray ranks(SuffixArrayIdx i){
+    RankArray ranks(SuffixArrayIdx i){
         RankArray ranks;
         for(auto c: characters){
             ranks.push_back(wt.rank(i, c));
         }
         return ranks;
+    }
+
+    uint64_t select(uint64_t i, CharId c){
+        return wt.select(i, characters[c]);
     }
 
 	virtual uint64_t size(){

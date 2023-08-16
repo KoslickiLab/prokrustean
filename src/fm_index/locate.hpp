@@ -38,7 +38,7 @@ index is position in the sequence,
 first: sa index
 second: actual suffix
 */
-vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no){
+vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no, bool with_term=true){
 	uint64_t L = seq_no;
 	uint64_t F = fm_idx.LF(L);
 
@@ -51,8 +51,10 @@ vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no)
 		F = fm_idx.LF(L);
 	}
 	// important: this can be misleading because F is randomly (in lexicographical order) chosen
-	string term(1, fm_idx.TERM);
-	sa.insert(sa.begin(), make_tuple(F, term));
+	if(with_term){
+		string term(1, fm_idx.TERM);
+		sa.insert(sa.begin(), make_tuple(F, term));
+	}
 	reverse(sa.begin(), sa.end());
 
 	return sa;
@@ -62,10 +64,10 @@ vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no)
 debugging purpose
 index is sa index
 */
-vector<string> recover_suffix_array(FmIndex &fm_idx){
+vector<string> recover_suffix_array(FmIndex &fm_idx, bool with_term=true){
 	vector<pair<uint64_t, string>> sa;
 	for(int i=0; i<fm_idx.seq_cnt(); i++){
-		for(auto pair: recover_suffix_array(fm_idx, i)){
+		for(auto pair: recover_suffix_array(fm_idx, i, with_term)){
 			sa.push_back(pair);
 		}
 	}
