@@ -83,12 +83,12 @@ void test_maximal_repeat(){
     auto repeats_naive = _find_maximal_repeats_naive(sequences, Lmin);
 
     SuffixArrayNode root = get_root(fm_idx);
-    vector<MaximalRepeatAnnotation> rep_annot = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
+    vector<MaximalRepeatAnnotation> rep_annot = navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx);
     auto sa = recover_suffix_array(fm_idx);
     set<string> uniq_repeats;
     for(auto r: rep_annot){
         // cout << "r size: " << r.size << endl;
-        for(auto sa_idx: r.repr_sa_indexes){
+        for(auto sa_idx: r.repr_indexes){
             auto str = sa[sa_idx].substr(0, r.size);
             // cout << "idx: " << sa_idx << " str: " << str << endl;
             uniq_repeats.insert(str);

@@ -17,16 +17,35 @@ struct MaximalRepeatAnnotation {
     // 
     uint64_t size;
 
-    //
-    vector<uint64_t> repr_sa_indexes;
+    vector<SuffixArrayIdx> repr_indexes;
+
+    SuffixArrayIdx first_repr_idx;
+};
+
+struct PositionAnnotation {
+    Pos pos; 
+    
+    SuffixArrayIdx sa_idx; 
+
+    // order desc for rep sizes
+    vector<MaximalRepeatAnnotation> reps;
+
+    // corresponding ids
+    vector<RepId> rep_ids;
 };
 
 struct SequenceAnnotation {
+    //
+    SeqId id;
+
     // 
     uint64_t size;
 
     //
-    vector<tuple<Pos, vector<RepId>>> annotations;
+    vector<PositionAnnotation> positions;
+
+    //
+    optional<string> sequence; 
 };
 
 struct ReprSuffixRank {
@@ -40,7 +59,7 @@ struct ReprSuffixRank {
     void initialize(uint64_t seq_length, vector<MaximalRepeatAnnotation> &repeats){
         bv.resize(seq_length);
         for(auto rep: repeats){
-            for(auto sa_idx: rep.repr_sa_indexes){
+            for(auto sa_idx: rep.repr_indexes){
                 bv[sa_idx]=true;
             }
         }
@@ -76,7 +95,7 @@ public:
     void initialize_repr_sa(vector<MaximalRepeatAnnotation> &repeats){
         repr_suffixes.resize(sa_rank.get_repr_size());
         for(uint64_t rep_id=0; rep_id< repeats.size(); rep_id++){
-            for(auto sa_idx: repeats[rep_id].repr_sa_indexes){
+            for(auto sa_idx: repeats[rep_id].repr_indexes){
                 uint64_t r = sa_rank.rank(sa_idx);
                 repr_suffixes[r].push_back(rep_id);
             }

@@ -13,17 +13,21 @@ typedef uint64_t SeqId;
 typedef uint64_t Pos;  
 
 struct MinCover {
+    uint64_t id;
+    bool is_rep;
     uint64_t size;
-    vector<tuple<Pos, RepId>> mc_rep;
+    vector<tuple<Pos, RepId>> mc_reps;
 };
 
 struct Prokrustean {
-    vector<MinCover> seq_mc;
-    vector<MinCover> rep_mc;
+    vector<MinCover> seq_mcs;
+    vector<MinCover> rep_mcs;
+    
+    optional<vector<string>> sequences;
 
     void set_sizes(uint64_t seq_no, uint64_t rep_no){
-        seq_mc.resize(seq_no);
-        rep_mc.resize(rep_no);
+        seq_mcs.resize(seq_no);
+        rep_mcs.resize(rep_no);
     }
 };
 

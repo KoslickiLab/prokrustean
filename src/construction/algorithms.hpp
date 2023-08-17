@@ -6,10 +6,10 @@
 
 using namespace std;
 
-Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1){
+Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_sequences=false){
     // step1: collect representative suffix array
     SuffixArrayNode root = get_root(fm_idx);
-    vector<MaximalRepeatAnnotation> repeats = navigate_tree<MaximalRepeatAnnotation, get_rep_annot>(root, Lmin, fm_idx);
+    vector<MaximalRepeatAnnotation> repeats = navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx);
 
     // step2 get repr structure
     auto repr_annotation = ReprSuffixAnnotation();
@@ -18,12 +18,20 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1){
     
     // step3 build structure
     // parallelize by sequences
-    vector<MinCover> covers;
+    Prokrustean pk;
+    pk.set_sizes(fm_idx.seq_cnt(), repeats.size());
     for(uint64_t i; i < fm_idx.seq_cnt(); i++){
-        SequenceAnnotation annot = get_seq_annot(i, fm_idx, repr_annotation);
-        get_min_covers(annot);
+        SequenceAnnotation annot = get_sequence_annotations(i, fm_idx, repr_annotation, repeats, recover_sequences);
+        vector<MinCover> mcs = get_min_covers(annot);
+        for(auto mc: mcs){
+            if(mc.is_rep){
+                pk.rep_mcs[mc.id] = mc;
+            } else {
+                pk.seq_mcs[mc.id] = mc;
+            }
+        }
     }
-    return Prokrustean();
+    return pk;
 }
 
 #endif
