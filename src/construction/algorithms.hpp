@@ -15,12 +15,13 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     auto repr_annotation = ReprSuffixAnnotation();
     repr_annotation.initialize_rank(fm_idx.size(), repeats);
     repr_annotation.initialize_repr_sa(repeats);
-    
+    int cnt = 0;
+
     // step3 build structure
     // parallelize by sequences
     Prokrustean pk;
-    pk.set_sizes(fm_idx.seq_cnt(), repeats.size());
-    for(uint64_t i; i < fm_idx.seq_cnt(); i++){
+    pk.set_sizes(fm_idx.seq_cnt(), repeats.size(), recover_sequences);
+    for(uint64_t i=0; i < fm_idx.seq_cnt(); i++){
         SequenceAnnotation annot = get_sequence_annotations(i, fm_idx, repr_annotation, repeats, recover_sequences);
         vector<MinCover> mcs = get_min_covers(annot);
         for(auto mc: mcs){
@@ -30,6 +31,8 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
                 pk.seq_mcs[mc.id] = mc;
             }
         }
+        if(recover_sequences)
+        pk.sequences.value()[i] = annot.sequence.value();
     }
     return pk;
 }

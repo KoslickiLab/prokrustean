@@ -9,6 +9,10 @@ using namespace std;
 #define CONSTRUCTION_ALGO_PROCEDURES_HPP_
 
 tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId>> distinct_extensions){
+    // cout << "-- distinct -- " << endl;
+    // for(auto ext: distinct_extensions){
+    //     cout << (int)get<0>(ext) << ", " << (int)get<1>(ext) << endl;
+    // }
     vector<tuple<int, CharId>> left_pair_info(char_max);
     vector<tuple<int, CharId>> right_pair_info(char_max);
     vector<CharId> left_repr_extensions;
@@ -39,6 +43,16 @@ tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, ve
         continue;
         right_repr_extensions.push_back(i);
     }
+    // cout << "left: ";
+    // for(auto ext: left_repr_extensions){
+    //     cout << (int)(ext);
+    // }
+    // cout<<endl;
+    // cout << "right: ";
+    // for(auto ext: left_repr_extensions){
+    //     cout << (int)(ext);
+    // }
+    // cout<<endl;
     return make_tuple(left_repr_extensions, right_repr_extensions);
 }
 
@@ -47,8 +61,10 @@ optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtensio
         tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
         // Remove possible duplications by set. Duplications cannot be predicted in advance.
         set<SuffixArrayIdx> uniq_repr_sa;
+        vector<SuffixArrayIdx> left_ext_indexes;
         for(auto l: get<0>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_l(l));
+            left_ext_indexes.push_back(l);
         }
         for(auto r: get<1>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_r(r));
@@ -57,8 +73,8 @@ optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtensio
         SuffixArrayIdx min_idx = repr_sa[0];
         for(auto i: repr_sa) 
         min_idx = i < min_idx? i: min_idx;
-        
-        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
+
+        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx, left_ext_indexes};
         return rep;
     } else {
         return nullopt;
@@ -74,9 +90,13 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
     uint64_t L = seq_id;
     uint64_t F = fm_idx.LF(L);
     string seq;
-    uint64_t seq_length;
+    uint64_t seq_length=0;
+    uint64_t repr_cnt=0;
     /* get seq length, recover seq */
     while(F >= fm_idx.seq_cnt()){
+        if(repr_sa.exists(F)){
+            repr_cnt++;
+        }
         if(recover_sequences){
             seq = fm_idx.get_character(L) + seq;
         }
@@ -85,12 +105,13 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
         seq_length++;
     }
 
-    vector<PositionAnnotation> locs;
+    uint64_t pos = seq_length-1;
+    uint64_t loc_idx = repr_cnt-1;
+    vector<PositionAnnotation> locs(repr_cnt);
     L = seq_id;
     F = fm_idx.LF(L);
-    uint64_t pos = seq_length-1;
     /* plot occurrences */
-    while(pos >= 0){
+    while(F >= fm_idx.seq_cnt()){
         auto v = repr_sa.get_repeats(F);
         if (v.has_value()){
             vector<RepId> rep_ids = v.value();
@@ -98,7 +119,8 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
             for(auto id: rep_ids){
                 reps.push_back(rep_annots[id]);
             }
-            locs.push_back({pos, F, reps, rep_ids});
+            locs[loc_idx]={pos, F, reps, rep_ids};
+            loc_idx--;
         }
         L = F;
         F = fm_idx.LF(L);
@@ -107,71 +129,160 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
     return {seq_id, seq_length, locs, seq};
 }
 
+void _print__get_min_cover__progress(vector<uint64_t> &curr_rep_indexes, 
+                                    stack<tuple<uint64_t, MinCover>> &ancestors, 
+                                    optional<tuple<uint64_t, MinCover>> &parent, 
+                                    uint64_t active_pos_idx,
+                                    SequenceAnnotation &seq_annot){
+    PositionAnnotation active_pos = seq_annot.positions[active_pos_idx];
+    uint64_t active_rep_idx = curr_rep_indexes[active_pos_idx];
+    MaximalRepeatAnnotation active_rep = active_pos.reps[active_rep_idx];
+
+    int txt_block_size = 5;
+    uint64_t max_rep=0;
+    cout<< "---- algo status -----"<<endl;
+    cout<< "ancestor("<<ancestors.size()<<")"<<endl;
+    if(parent.has_value())
+    cout<< "parent pos: "<< seq_annot.positions[get<0>(parent.value())].pos<<endl;
+    else
+    cout<<"parent empty"<<endl;
+    if(active_rep.first_repr_idx != active_pos.sa_idx){
+        cout << "active is not primary" << endl;
+    }
+    cout<< "pos   ";
+    for(auto p: seq_annot.positions){
+        if(max_rep<p.reps.size())
+        max_rep = p.reps.size();
+        string str = to_string(p.pos);
+        cout << str;
+        if(str.size()<txt_block_size)
+        cout << std::string(txt_block_size-str.size(), ' ');
+    }
+    cout<<endl;
+    for(int i=0; i<max_rep; i++){
+        string label = " - ";
+        cout<< label;
+        if(label.size()<txt_block_size)
+        cout << std::string(txt_block_size-label.size(), ' ');
+        for(int p=0; p<seq_annot.positions.size(); p++){
+            auto pos = seq_annot.positions[p];
+            string str;
+            if(i<pos.reps.size()){
+                str += to_string(pos.reps[i].size);
+                if(i==curr_rep_indexes[p]){
+                    str = ">"+str;
+                    if(p==active_pos_idx){
+                       str = str+"v"; 
+                    }
+                }
+                cout << str;
+                if(str.size()<txt_block_size)
+                cout << std::string(txt_block_size-str.size(), ' ');
+            } else {
+                cout << std::string(txt_block_size, ' ');
+            }
+            
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+}
 
 vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
     /* 
     input: annotations (grouped by positions, sorted by asc size.)
     variables:
-    * current rep reference for each pos: CURR(pos) -> rep. 
+    * current rep reference for each pos: CurrRep(pos) -> rep. 
+    * first not visited rep reference for each pos: NonVisitedRep(pos) -> rep. 
     * an ancestor stack and its topmost item (parent pos, parent rep).
     * active pos
+    * was_last_move_left
     operation: 
     * left(pos),right(pos)
-    * right(pos, rep) = (right(pos), CURR(right(pos)))
-    * left(pos, rep) = (left(pos), CURR(left(pos)))
+    * right(pos, rep) = (right(pos), CurrRep(right(pos)))
+    * left(pos, rep) = (left(pos), CurrRep(left(pos)))
     algo:
     make mc_rep(seq)
     set pos <- first pos, first rep
     set curr <- all first reps
-    iterate below until break
-    if moved_to_new_pos,
-        make mc_rep(rep)
-        if(rep not first){
-            add prev(rep) to mc_reps(rep)
-        }
-    else
-        moved_to_new_pos = true
+    set was_last_move_left <- false
+
+    **** iterate below until break ******
     (pos, rep) <- (active pos, curr(active pos))
-    if (pos, rep) includes right(pos, rep),
+    (pos, rep)_is_first_visit = NonVisitedRep(active pos) == rep
+    if (pos, rep)_is_first_visit,
+        NonVisitedRep(active pos) <- 1_larger(rep)
+        
+
+    (pos, rep)_is_first_visit = NOT was_last_move_left
+    was_last_move_left = false;
+
+    if NOT (pos, rep)_is_first_visit AND (pos, rep) is primary,
+        make mc_rep(rep)
+        if rep is not lowest(smallest at the pos)
+            ADD 1_smaller(rep) to (rep)->mc_reps
+    
+    **** active ⊃ right? ******
+    if (pos, rep)_is_first_visit
+            AND (pos, rep) primary 
+            AND (pos, rep) is NOT rightmost
+            AND (pos, rep) includes right(pos, rep)
         stack.push(pos, rep)
         (parent pos, parent rep) <- (pos, rep) 
         active pos <- right(pos).
         go to next iteration.
-    else if (parent pos, parent rep) includes right(pos, rep),
+
+    **** parent ⊃ right? ******
+    if parent exists 
+            AND (pos, rep)_is_first_visit
+            AND (parent pos, parent rep) includes right(pos, rep),
         active pos <- right(pos).
         go to next iteration.
+
+    **** parent ⊃ not only current interval but also the larger next rep? ******
+    if parent exists
+            AND (pos, rep) is NOT highest(NOT largest at the pos) 
+            AND (parent pos, parent rep) includes (pos, 1_larger(rep))
+        CurrRep(pos) <- 1_larger(rep)
+        go to next iteration
     
-    if (parent pos, parent rep) != null,
-        if not last rep,
-            CURR(pos) <- next(rep)
-            if (parent pos, parent rep) includes (pos, next(rep)),
-                go to next iteration
-        add rep to (parent rep).mc_reps
+    **** parent ⊃ current interval (already determined) ******
+    if parent exists 
+        Add rep to (parent rep)->mc_reps
         active pos <- left(pos)
-        moved_to_new_pos = false
-        if (pos, rep) == (parent pos, parent rep)
+        was_last_move_left = true
+        if active pos == parent pos
             parent pos <- stack.pop() (null if empty)
+        go to next iteration
+    
+    **** at this place no parent exists  ******
+    check parent does not exist
+
+    **** next interval ⊃ current interval ******
+    if active rep is NOT highest(NOT largests at the pos),
+        CurrRep(pos) <- next(rep)
+        go to next iteration
+    
+    **** current interval is highest ******
+    CurrRep(pos) <- null
+    Add rep to (seq)->mc_reps
+    if pos is rightmost
+        break
     else
-        if not last rep,
-            CURR(pos) <- next(rep)
-        else
-            CURR(pos) <- null
-            add rep to (seq).mc_reps
-            if pos is last
-                break
-            else
-                active pos <- right(pos).
+        active pos <- right(pos).
     go to next iteration
     */
-    
     MinCover seq_mc;
     seq_mc.id = seq_annot.id;
     seq_mc.size = seq_annot.size;
     seq_mc.is_rep = false;
-    vector<MinCover> mcs({seq_mc});
+    vector<MinCover> mcs;
 
-    if(seq_annot.positions.size()==0)
-    return mcs;
+    if(seq_annot.positions.size()==0){
+        mcs.push_back(seq_mc);
+        return mcs;
+    }
+    
 
     // position is already sorted
     for(auto p: seq_annot.positions){
@@ -181,103 +292,122 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
 
     // index is the position's index, value is the reps's index
     vector<uint64_t> curr_rep_indexes(seq_annot.positions.size());
+    vector<uint64_t> non_visited_rep_indexes(seq_annot.positions.size());
     stack<tuple<uint64_t, MinCover>> ancestors;
     optional<tuple<uint64_t, MinCover>> parent;
     uint64_t active_pos_idx = 0;
-    bool moved_to_new_pos_at_last_iter = true;
     while(true){
+        // _print__get_min_cover__progress(curr_rep_indexes, ancestors, parent, active_pos_idx, seq_annot);
         PositionAnnotation active_pos = seq_annot.positions[active_pos_idx];
         uint64_t active_rep_idx = curr_rep_indexes[active_pos_idx];
         MaximalRepeatAnnotation active_rep = active_pos.reps[active_rep_idx];
+        bool is_active_repr_sa_PRIMARY_in_the_rep = active_rep.first_repr_idx == active_pos.sa_idx;
+        bool is_active_position_rightmost = active_pos_idx+1 == seq_annot.positions.size();
+        bool is_active_rep_largest = active_rep_idx+1 == active_pos.reps.size();
+        bool is_active_first_visit = non_visited_rep_indexes[active_pos_idx] == active_rep_idx;
+        //visited
+        if(is_active_first_visit){
+            non_visited_rep_indexes[active_pos_idx] = active_rep_idx+1;
+        }
+        /* new mc */
         optional<MinCover> new_mc;
-        if(moved_to_new_pos_at_last_iter){
+        if(is_active_first_visit && is_active_repr_sa_PRIMARY_in_the_rep){
             //if the suffix array index is the same as the first repr suffix array index of the repeat.
-            bool rep_is_the_primary = active_rep.first_repr_idx == active_pos.sa_idx;
-            if(rep_is_the_primary){
-                MinCover rep_mc;
-                rep_mc.id = active_pos.rep_ids[active_rep_idx];
-                rep_mc.size = active_rep.size;
-                rep_mc.is_rep = true;
-                if(active_rep_idx>0){
-                    auto prev_rep_id = active_pos.rep_ids[active_rep_idx-1];
-                    Pos relative_pos = 0;
-                    rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));
-                }
-                new_mc = rep_mc;
-                mcs.push_back(rep_mc);
+            MinCover rep_mc;
+            rep_mc.id = active_pos.rep_ids[active_rep_idx];
+            rep_mc.size = active_rep.size;
+            rep_mc.is_rep = true;
+            if(active_rep_idx>0){
+                auto prev_rep_id = active_pos.rep_ids[active_rep_idx-1];
+                Pos relative_pos = 0;
+                rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));
             }
-        } else {
-            moved_to_new_pos_at_last_iter = true;
+            new_mc = rep_mc;
+            mcs.push_back(rep_mc);
         }
 
-        if(active_pos_idx+1 < seq_annot.positions.size()){
+        /**** active ⊃ right? ******/
+        if(is_active_first_visit && !is_active_position_rightmost && is_active_repr_sa_PRIMARY_in_the_rep){
             auto right_pos = seq_annot.positions[active_pos_idx+1];
             auto right_rep = right_pos.reps[curr_rep_indexes[active_pos_idx+1]];
-            // active includes right
-            if(right_pos.pos+right_rep.size <= active_pos.pos+active_rep.size){
+            // cout << "active inclusion?: a pos " << active_pos.pos << ", a size " << active_rep.size << ", r pos " << right_pos.pos << ", r size " << right_rep.size   << endl;
+            bool does_active_interval_include_right_interval = right_pos.pos + right_rep.size <= active_pos.pos + active_rep.size;
+            if(does_active_interval_include_right_interval){
                 //if the repeat becomes a parent, it should be primary.
                 assert(new_mc.has_value());
+                if(parent.has_value()){
+                    ancestors.push(parent.value());
+                }
                 parent = make_tuple(active_pos_idx, new_mc.value());
-                ancestors.push(parent.value());
                 active_pos_idx++;
                 continue;
-            } // parent includes right
-            else if(parent.has_value()) {
-                uint64_t parent_pos_idx = get<0>(parent.value());
-                MinCover parent_mc = get<1>(parent.value());
-                PositionAnnotation parent_pos = seq_annot.positions[parent_pos_idx];
-                MaximalRepeatAnnotation parent_rep = parent_pos.reps[curr_rep_indexes[parent_pos_idx]];
-                if(right_pos.pos+right_rep.size < parent_pos.pos+parent_rep.size){
-                    active_pos_idx++;
-                    continue;
-                }
             }
         }
 
-        if(parent.has_value()){
+        if(parent.has_value()) {
             uint64_t parent_pos_idx = get<0>(parent.value());
             MinCover parent_mc = get<1>(parent.value());
             PositionAnnotation parent_pos = seq_annot.positions[parent_pos_idx];
             MaximalRepeatAnnotation parent_rep = parent_pos.reps[curr_rep_indexes[parent_pos_idx]];
-            //not last rep
-            if(active_rep_idx+1 < active_pos.reps.size()){
+
+            /**** parent ⊃ right? ******/
+            if(is_active_first_visit && !is_active_position_rightmost){
+                auto right_pos = seq_annot.positions[active_pos_idx+1];
+                auto right_rep = right_pos.reps[curr_rep_indexes[active_pos_idx+1]];
+                bool does_parent_interval_include_right_interval = right_pos.pos+right_rep.size <= parent_pos.pos+parent_rep.size;
+                if(does_parent_interval_include_right_interval){
+                    active_pos_idx++;
+                    continue;
+                }
+            }
+        
+            /**** parent ⊃ not only current interval but also the larger next rep? ******/
+            if(!is_active_rep_largest){
                 // move to the next rep
                 curr_rep_indexes[active_pos_idx] = active_rep_idx+1;
                 auto next_rep = active_pos.reps[active_rep_idx+1];
                 // parent includes the next larger rep
-                if(active_pos.pos+next_rep.size < parent_pos.pos+parent_rep.size){
+                bool does_parent_interval_include_higher_interval = active_pos.pos+next_rep.size < parent_pos.pos+parent_rep.size;
+                if(does_parent_interval_include_higher_interval){
                     continue;
                 }
             }
-            // insert into parent
+        
+            /**** parent ⊃ current interval (already determined) ******/
             Pos relative_pos = active_pos.pos-parent_pos.pos;
             parent_mc.mc_reps.push_back(make_tuple(relative_pos, active_pos.rep_ids[active_rep_idx]));
-
-            //active_pos_idx cannot be 0 because parent would not exists
+            //active_pos_idx cannot be 0 because parent would not exist
             assert(active_pos_idx>0);
             active_pos_idx--;
-            
-            moved_to_new_pos_at_last_iter = false;
             if(active_pos_idx == parent_pos_idx){
-                if(ancestors.empty()) 
-                parent = nullopt;
-                else 
+                if(!ancestors.empty()) 
                 parent = ancestors.top();
+                else 
+                parent = nullopt;
             }
-        } else { // no parent
-            curr_rep_indexes[active_pos_idx] = active_rep_idx + 1;
+            continue;
+        }
 
-            if(active_rep_idx == active_pos.reps.size()){ 
-                Pos relative_pos = active_pos.pos;
-                seq_mc.mc_reps.push_back(make_tuple(relative_pos, active_pos.rep_ids[active_rep_idx]));
-                if(active_pos_idx == seq_annot.positions.size()){
-                    break;
-                } else {
-                    active_pos_idx++;
-                }
-            }
+        /**** at this place no parent exists  ******/
+        assert(!parent.has_value());
+        
+        /**** next interval ⊃ current interval ******/
+        if(!is_active_rep_largest){
+            curr_rep_indexes[active_pos_idx] = active_rep_idx + 1;
+            continue;
+        }
+    
+        /**** current interval is highest ******/
+        Pos relative_pos = active_pos.pos;
+        seq_mc.mc_reps.push_back(make_tuple(relative_pos, active_pos.rep_ids[active_rep_idx]));
+        if(is_active_position_rightmost){
+            break;
+        } else {
+            active_pos_idx++;
         }
     }
+    mcs.push_back(seq_mc);
+    return mcs;
 }
 
 #endif

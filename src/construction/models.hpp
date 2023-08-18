@@ -20,6 +20,16 @@ struct MaximalRepeatAnnotation {
     vector<SuffixArrayIdx> repr_indexes;
 
     SuffixArrayIdx first_repr_idx;
+
+    vector<SuffixArrayIdx> left_ext_repr_indexes;
+
+    bool is_left_ext(SuffixArrayIdx idx){
+        for(auto l: left_ext_repr_indexes){
+            if(idx==l)
+            return true;
+        }
+        return false;
+    }
 };
 
 struct PositionAnnotation {
@@ -100,6 +110,10 @@ public:
                 repr_suffixes[r].push_back(rep_id);
             }
         }
+    }
+
+    bool exists(uint64_t sa_idx){
+        return sa_rank.exists(sa_idx);
     }
 
     optional<vector<RepId>> get_repeats(uint64_t sa_idx){

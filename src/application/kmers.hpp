@@ -6,7 +6,7 @@
 using namespace std;
 
 vector<tuple<SeqId, Pos>> collect_distinct_kmer_pos(Prokrustean pk, unsigned int k){
-
+    
 }
 
 #endif
