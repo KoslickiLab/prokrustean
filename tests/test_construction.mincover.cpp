@@ -58,9 +58,9 @@ void test_distinct_kmers(){
 
     auto sequences = recover_text(fm_idx);
     vector<string> mers_naive = collect_kmers_naive(sequences, 2);
-    for(auto s: mers_naive){
-        cout << s << endl;
-    }
+    // for(auto s: mers_naive){
+    //     cout << s << endl;
+    // }
     for(int k=2; k<6; k++){
         // vector<string> mers_naive = collect_kmers_naive(sequences, k);
         // vector<string> mers_pk = collect_kmers_prokrustean(pk, sequences, k);

@@ -15,7 +15,6 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     auto repr_annotation = ReprSuffixAnnotation();
     repr_annotation.initialize_rank(fm_idx.size(), repeats);
     repr_annotation.initialize_repr_sa(repeats);
-    int cnt = 0;
 
     // step3 build structure
     // parallelize by sequences
