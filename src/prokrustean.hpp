@@ -75,7 +75,7 @@ void print_bare_prokrustean(Prokrustean pk){
         for(auto r: mc_reps){
             Pos pos = get<0>(r);
             RepId rid = get<1>(r);
-            cout << "(" << pos << ", " << pk.rep_mcs[rid].size<< ", R" << rid << ")" << " ";
+            cout << "(" << "pos: " << pos << ", " << "size: " << pk.rep_mcs[rid].size<< ", R" << rid << ")" << " ";
         }
         cout << endl;
     }

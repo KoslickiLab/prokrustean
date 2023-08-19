@@ -61,20 +61,24 @@ optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtensio
         tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
         // Remove possible duplications by set. Duplications cannot be predicted in advance.
         set<SuffixArrayIdx> uniq_repr_sa;
-        vector<SuffixArrayIdx> left_ext_indexes;
         for(auto l: get<0>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_l(l));
-            left_ext_indexes.push_back(l);
         }
         for(auto r: get<1>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_r(r));
         }
         vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
         SuffixArrayIdx min_idx = repr_sa[0];
-        for(auto i: repr_sa) 
-        min_idx = i < min_idx? i: min_idx;
+        for(auto i: repr_sa){
+            min_idx = i < min_idx? i: min_idx;
+        }
+        cout << "rep size: " <<ext.node.depth << " sa: "; 
+        for(auto i: repr_sa){
+            cout << i << ", ";
+        }
+        cout << endl;
 
-        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx, left_ext_indexes};
+        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
         return rep;
     } else {
         return nullopt;
@@ -119,6 +123,8 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
             for(auto id: rep_ids){
                 reps.push_back(rep_annots[id]);
             }
+            sort(rep_ids.begin(), rep_ids.end(),
+            [&rep_annots](uint64_t r1, uint64_t r2) {return rep_annots[r1].size < rep_annots[r2].size; });
             sort(reps.begin(), reps.end(),
             [](MaximalRepeatAnnotation r1, MaximalRepeatAnnotation r2) {return r1.size < r2.size; });
 
@@ -278,7 +284,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(false);
         }
         iter++;
-        _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
+        // _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
         /* setup variables */
         PositionAnnotation curr_pos = seq_annot.positions[curr_pos_idx];
         uint64_t curr_rep_idx = rep_layers[curr_pos_idx];
@@ -375,7 +381,6 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             rep_mc.size = curr_rep.size;
             rep_mc.is_rep = true;
             if(lower_exists){
-                cout << "Add lower" << endl;
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;
                 rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));

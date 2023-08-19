@@ -20,8 +20,6 @@ struct MaximalRepeatAnnotation {
     vector<SuffixArrayIdx> repr_indexes;
 
     SuffixArrayIdx first_repr_idx;
-
-    vector<SuffixArrayIdx> left_ext_repr_indexes;
 };
 
 struct PositionAnnotation {
@@ -95,11 +93,13 @@ public:
     }
 
     void initialize_repr_sa(vector<MaximalRepeatAnnotation> &repeats){
+        cout << "--- in suffix annotation --- " << endl;
         repr_suffixes.resize(sa_rank.get_repr_size());
-        for(uint64_t rep_id=0; rep_id< repeats.size(); rep_id++){
-            for(auto sa_idx: repeats[rep_id].repr_indexes){
+        for(uint64_t id=0; id<repeats.size(); id++){
+            for(auto sa_idx: repeats[id].repr_indexes){
                 uint64_t r = sa_rank.rank(sa_idx);
-                repr_suffixes[r].push_back(rep_id);
+                repr_suffixes[r].push_back(id);
+                cout << "sa: " << sa_idx<< ", " << "R" << id << "("<< repeats[id].size << ")" << endl;
             }
         }
     }
@@ -139,4 +139,24 @@ class ReprSuffixAnnotationParallel {
     }
 };
 
+void print_repeats(vector<MaximalRepeatAnnotation> repeats){
+    for(int i=0; i<repeats.size(); i++){
+        cout << "R" << i << "("<< repeats[i].size << ")" <<": ";
+        for(auto s: repeats[i].repr_indexes){
+            cout << s << ", ";
+        }
+        cout << endl;
+    }
+}
+
+void print_positions(vector<PositionAnnotation> positions){
+    cout << "---- print_positions ---- " << endl;
+    for(auto pos: positions){
+        cout << "sa: " << pos.sa_idx<< ", ";
+        for(int i=0; i< pos.reps.size(); i++){
+            cout << "R" << pos.rep_ids[i] << "("<< pos.reps[i].size << ")" << ", ";
+        }
+        cout << endl;
+    }
+}
 #endif

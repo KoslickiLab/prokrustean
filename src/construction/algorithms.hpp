@@ -10,6 +10,7 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     // step1: collect representative suffix array
     SuffixArrayNode root = get_root(fm_idx);
     vector<MaximalRepeatAnnotation> repeats = navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx);
+    // print_repeats(repeats);
 
     // step2 get repr structure
     auto repr_annotation = ReprSuffixAnnotation();
@@ -22,6 +23,7 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     pk.set_sizes(fm_idx.seq_cnt(), repeats.size(), recover_sequences);
     for(uint64_t i=0; i < fm_idx.seq_cnt(); i++){
         SequenceAnnotation annot = get_sequence_annotations(i, fm_idx, repr_annotation, repeats, recover_sequences);
+        // print_positions(annot.positions);
         vector<MinCover> mcs = get_min_covers(annot);
         for(auto mc: mcs){
             if(mc.is_rep){
