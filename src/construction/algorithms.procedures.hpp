@@ -496,6 +496,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
     // index is the position's index, value is the reps's index
     vector<uint64_t> rep_layers(seq_annot.positions.size(),0);
     vector<optional<uint64_t>> rep_layers_visited(seq_annot.positions.size(),nullopt);
+    vector<optional<uint64_t>> rep_layers_completed(seq_annot.positions.size(),nullopt);
     stack<tuple<uint64_t, uint64_t>> ancestors;
     uint64_t curr_pos_idx = 0;
     uint64_t iter = 0;
@@ -514,6 +515,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         // 1st visit(curr)
         // rep_layers_n_visited[curr_pos_idx] == curr_rep_idx;
         bool is_curr_first_visit = !(rep_layers_visited[curr_pos_idx].has_value() && rep_layers_visited[curr_pos_idx].value() == curr_rep_idx);
+        bool is_curr_completed = rep_layers_completed[curr_pos_idx].has_value() && rep_layers_completed[curr_pos_idx].value() == curr_rep_idx;
         // primary(curr)
         bool is_curr_primary = curr_rep.first_repr_idx == curr_pos.sa_idx;
         // ∃right
@@ -632,7 +634,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         if(possible_parent_exists && !possible_parent_include_upper_opt){
             mcs[parent_mc_idx_opt.value()].mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
             // parent_mc_opt.value().mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
-            
+            rep_layers_completed[curr_pos_idx]=curr_rep_idx;
             // the unique left-extensible parent found so no need to give focus 
             if(rep_layers[curr_pos_idx]+1<curr_pos.reps.size()){
                 rep_layers[curr_pos_idx]++;
@@ -664,9 +666,12 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             continue;
         }
 
+        if(!is_curr_completed && !upper_exists && !possible_parent_exists){
+            seq_mc.mc_reps.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
+        }
+
         /* 7. NOT ∃possible-parent, NOT ∃upper, ∃right?*/
         if(right_exists && !upper_exists && !possible_parent_exists){
-            seq_mc.mc_reps.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
             curr_pos_idx++;
             cout << "condition 7" << endl;
             continue;

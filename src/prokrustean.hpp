@@ -37,7 +37,9 @@ struct Prokrustean {
 void _print_rep(RepId rid, string str, int depth, Prokrustean &pk, vector<bool> &printed_rep){
     if(printed_rep[rid]){
         cout << string(2*depth, '-')<< str << " (" << "R" << rid << ")"<< endl;
-        cout << string(2*(depth+1), '-')<< "...dup skip..." << endl;
+        if(pk.rep_mcs[rid].mc_reps.size()>0){
+            cout << string(2*(depth+1), '-')<< "...dup skip..." << endl;
+        }
         return;
     }
     printed_rep[rid]=true;
