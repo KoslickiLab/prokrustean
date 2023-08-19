@@ -22,14 +22,6 @@ struct MaximalRepeatAnnotation {
     SuffixArrayIdx first_repr_idx;
 
     vector<SuffixArrayIdx> left_ext_repr_indexes;
-
-    bool is_left_ext(SuffixArrayIdx idx){
-        for(auto l: left_ext_repr_indexes){
-            if(idx==l)
-            return true;
-        }
-        return false;
-    }
 };
 
 struct PositionAnnotation {
