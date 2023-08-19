@@ -4,7 +4,7 @@
 #include "test_construction.repr.annot.cpp"
 #include "test_construction.maxrep.cpp"
 #include "test_construction.navigation.cpp"
-#include "test_construction.mincover.cpp"
+#include "test_construction.cpp"
 #include "test_construction.repr.rule.cpp"
 
 int main(void){

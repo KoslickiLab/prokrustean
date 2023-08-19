@@ -13,7 +13,7 @@
 using namespace std;
 using namespace sdsl;
 
-vector<string> collect_kmers_naive(vector<string> sequences, unsigned int k){
+vector<string> collect_distinct_kmers_naive(vector<string> sequences, unsigned int k){
     set<string> uniques;
     for(auto seq: sequences){
         for(int i=0; i<seq.size()-k; i++){
@@ -22,23 +22,8 @@ vector<string> collect_kmers_naive(vector<string> sequences, unsigned int k){
         }
     }
     vector<string> mers = vector(uniques.begin(), uniques.end());
-    sort(mers.begin(), mers.end());
     return mers;
 }
-
-vector<string> collect_kmers_prokrustean(Prokrustean pk, vector<string> sequences, unsigned int k){
-    vector<string> mers;
-    auto info = collect_distinct_kmer_pos(pk, k);
-    for(auto pair: info){
-        SeqId id = get<0>(pair);
-        Pos pos = get<1>(pair);
-        string mer = sequences[id].substr(pos, k);
-        mers.push_back(mer);
-    }
-    sort(mers.begin(), mers.end());
-    return mers;
-}
-
 
 void test_basic_construction(){
     int Lmin = 2;
@@ -52,24 +37,34 @@ void test_basic_construction(){
 }
 
 void test_distinct_kmers(){
-    int Lmin = 2;
+    int Lmin = 1;
     auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
-    Prokrustean pk = build_prokrustean(fm_idx, Lmin);
-
+    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     auto sequences = recover_text(fm_idx);
-    vector<string> mers_naive = collect_kmers_naive(sequences, 2);
+
+    for(int k=Lmin; k<7; k++){
+        cout << "k: " << k << endl;
+        vector<string> mers = collect_distinct_kmers(pk, k);
+        vector<string> mers_naive = collect_distinct_kmers_naive(sequences, k);
+        sort(mers.begin(), mers.end());
+        sort(mers_naive.begin(), mers_naive.end());
+        assert(mers_naive.size()==mers.size());
+        vector<string>::iterator mers_itr = mers.begin();
+        vector<string>::iterator mers_naive_itr = mers_naive.begin();
+        while(mers_itr<mers.end()){
+            assert(*mers_itr == *mers_naive_itr);
+            mers_itr++;
+            mers_naive_itr++;
+        }
+    }
+    
     // for(auto s: mers_naive){
     //     cout << s << endl;
     // }
-    for(int k=2; k<6; k++){
-        // vector<string> mers_naive = collect_kmers_naive(sequences, k);
-        // vector<string> mers_pk = collect_kmers_prokrustean(pk, sequences, k);
-        // assert(mers_naive.size()==mers_pk.size());
-        // for(int i=0; i<mers_pk.size(); i++){
-        //     assert(mers_naive[i]==mers_pk[i]);
-        // }
-    }
+    // for(auto mer: collect_distinct_kmer(pk, 2)){
+    //     cout << mer << endl;
+    // }
 }
 
 

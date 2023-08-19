@@ -10,7 +10,7 @@ using namespace std;
 
 typedef uint64_t RepId;
 typedef uint64_t SeqId;
-typedef uint64_t Pos;  
+typedef uint64_t Pos;
 
 struct MinCover {
     uint64_t id;
