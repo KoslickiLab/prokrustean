@@ -47,6 +47,7 @@ void test_basic_construction(){
     Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     // cout << "finished with mcs: " << pk.rep_mcs.size() << endl;
     print_prokrustean(pk);
+    print_bare_prokrustean(pk);
     
 }
 

@@ -65,4 +65,27 @@ void print_prokrustean(Prokrustean pk){
         cout << endl;
     }
 }
+
+void print_bare_prokrustean(Prokrustean pk){
+    for(uint64_t i=0; i<pk.seq_mcs.size(); i++){
+        auto mc_reps = pk.seq_mcs[i].mc_reps;
+        cout << "seq" << i << ", size " << pk.seq_mcs[i].size << ", reps " << mc_reps.size() << endl;
+        for(auto r: mc_reps){
+            Pos pos = get<0>(r);
+            RepId rid = get<1>(r);
+            cout << "(" << pos << ", " << pk.rep_mcs[rid].size<< ", R" << rid << ")" << " ";
+        }
+        cout << endl;
+    }
+    for(uint64_t i=0; i<pk.rep_mcs.size(); i++){
+        auto mc_reps = pk.rep_mcs[i].mc_reps;
+        cout << "rep" << i << ", size " << pk.rep_mcs[i].size << ", reps " << mc_reps.size() << endl;
+        for(auto r: mc_reps){
+            Pos pos = get<0>(r);
+            RepId rid = get<1>(r);
+            cout << "(" << pos << ", " << pk.rep_mcs[rid].size<< ", R" << rid << ")" << " ";
+        }
+        cout << endl;
+    }
+}
 #endif
