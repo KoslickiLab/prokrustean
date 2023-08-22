@@ -49,6 +49,8 @@ struct SuffixArrayNodeExtension {
     vector<SuffixArrayNode> c_nodes;
     // Each means the first sa index of W that corresponds to first sa index of cW for each character c.
     vector<optional<SuffixArrayIdx>> prev_c_firsts;
+    // suffixes such that both left and right extensions are terminations
+    vector<SuffixArrayIdx> both_ext_terms;
 
     vector<tuple<CharId, CharId>> distinct_extensions(){
         vector<tuple<CharId, CharId>> exts = {};
@@ -121,8 +123,19 @@ SuffixArrayNodeExtension extend_node(FmIndex &index, SuffixArrayNode &node){
         // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
         prev_c_firsts.push_back(prev_sa_idx);
     }
-    
-    return {node, c_nodes, prev_c_firsts};
+
+    vector<SuffixArrayIdx> both_ext_terms;
+    if(c_nodes[0].firsts[0]!=c_nodes[0].firsts[1]){
+        // both ends are termination. collect all
+        for(SuffixArrayIdx sa_idx=c_nodes[0].firsts[0]; sa_idx< c_nodes[0].firsts[1]; sa_idx++){
+            //revert the rank process
+            uint64_t rank = sa_idx - index.C[0] + 1;
+            SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, 0);
+            both_ext_terms.push_back(prev_sa_idx);
+        }
+    }
+
+    return {node, c_nodes, prev_c_firsts, both_ext_terms};
 };
 
 /*
@@ -146,6 +159,9 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
     std::stack<SuffixArrayNode> stack;
     vector<T> Ts;
     
+    int node_cnt=0;
+    int process_cnt=0;
+
     stack.push(root);
     while(!stack.empty()){
         auto node = stack.top();
@@ -157,6 +173,7 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
             if(t.has_value()) {
                 Ts.push_back(t.value());
             }
+            process_cnt++;
         }
 
         for(int i=0; i<ext.c_nodes.size(); i++){
@@ -167,6 +184,13 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
             if(child.interval_size()>1){
                 stack.push(child);
             }
+        }
+        node_cnt++;
+        // if(node_cnt%10000==0){
+        //     cout << "navigated " << node_cnt << endl;
+        // }
+        if(process_cnt>10000 && process_cnt%10000==0){
+            cout << "processed " << process_cnt << endl;
         }
     }
     return Ts;

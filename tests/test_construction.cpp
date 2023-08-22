@@ -67,8 +67,82 @@ void test_distinct_kmers(){
     // }
 }
 
+void test_real_data_ropebwt2(){
+    int Lmin = 30;
+    auto str = WaveletString(PATH1_SREAD_ROPEBWT2_BWT, '$');
+    auto fm_idx = FmIndex(str);
+    cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
+    vector<string> recovered_sequences = recover_text(fm_idx);
+    // cout << "1st seq: " << recover_text(fm_idx, 2) << endl;
+
+    std::ifstream file(PATH1_SREAD_ROPEBWT2_SEQ);
+    string line;
+    vector<string> sequences;
+
+    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
+    vector<string> mers = collect_distinct_kmers(pk, 40);
+    cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
+	// while(getline(file, line))
+	// {
+	// 	// cout<<line<<endl;
+    //     sequences.push_back(line);
+	// }
+    // file.close();
+    // int i = 1000;
+    // // cout << "seq " << i << " : " << sequences[i] << endl;
+    // i = 0;
+    // int found_cnt = 0;
+    // int not_found_cnt = 0;
+    // for(auto r_seq: recovered_sequences){
+    //     bool found = false;
+    //     auto r_seq_no_term = r_seq.substr(0, r_seq.size()-1);
+    //     for(auto seq: sequences){
+    //         if(r_seq_no_term==seq)
+    //         found = true;
+    //     }
+    //     if(found) found_cnt++;
+    //     else not_found_cnt++;
+    //     if(i>=1000){
+    //         cout << "seq " << i << ": " << sequences[i] << endl;
+    //     }
+    //     i++;
+    // }
+
+    // file.open()); //open a file to perform read operation using file object
+    // if (file.is_open()){   //checking whether the file is open
+    //     string tp;
+    //     while(getline(file, tp)){ //read data from file object and put it into string.
+    //         //  cout << tp << "\n"; //print the data of the string
+    //         sequences.push_back(tp);
+    //     }
+    //     file.close(); //close the file object.
+    // }
+    // cout << "found: "<< found_cnt << "not found: " << not_found_cnt << endl;
+    
+}
+
+void test_min_cover_algo(){
+    uint64_t s = 151;
+    vector<uint64_t> p = {0, 3, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 45, 47, 48, 53, 54, 55, 59, 62, 71, 75, 76, 79, 88, 99, 121, 122, 123, 128};
+    vector<uint64_t> sa = {94131, 93683, 17560, 66398, 302443, 300246, 290773, 249229, 68842, 12606, 42678, 177676, 77776, 35722, 156667, 10381, 162138, 28551, 124515, 201465, 82990, 54168, 243317, 26557, 114284, 164341, 169825, 251220, 31493, 133800, 219397, 229670, 272721, 280427, 52794, 235050, 192379, 140763, 293542, 67257, 184591, 13523, 44335, 183885, 90817};
+    vector<vector<uint64_t>> r = {{88, 89, 90}, {85, 86}, {72, 73, 74}, {71, 72, 73}, {70, 71, 72}, {69, 70}, {68, 69}, {67, 68, 69}, {66, 67, 68, 70}, {65, 66, 67}, {64, 65, 66}, {63, 64}, {62, 63, 64}, {61, 62, 63, 64}, {60, 61}, {59, 60}, {57, 58, 59, 60, 61, 63}, {56, 57, 58}, {55, 56}, {54, 55}, {52, 53}, {51, 52, 53, 54}, {50, 51}, {49, 50, 51}, {48, 49, 50, 51}, {47, 48, 49}, {45, 46, 47, 48}, {43, 44, 45}, {41, 42}, {40, 41, 42}, {35, 36, 37, 38}, {34, 35}, {33, 34, 35}, {29, 30}, {26, 27, 28}, {17, 18}, {13, 14, 15, 16, 17, 18}, {12, 13, 14}, {10}, {63}, {10}, {10}, {10}, {10}, {11}};
+    vector<vector<uint64_t>> f = {{94124, 94131, 94131}, {93676, 93683}, {17552, 17560, 17560}, {66383, 66398, 66398}, {302402, 302443, 302443}, {300204, 300246}, {290730, 290773}, {249186, 249229, 249229}, {68797, 68842, 68842, 68842}, {12558, 12606, 12606}, {42629, 42678, 42678}, {177626, 177676}, {77726, 77776, 77776}, {35669, 35722, 35722, 35722}, {156612, 156667}, {10326, 10381}, {162082, 162138, 162138, 162138, 162138, 162138}, {28492, 28551, 28551}, {124455, 124515}, {201403, 201465}, {82925, 82990}, {54099, 54168, 54168, 54168}, {243247, 243317}, {26487, 26557, 26557}, {114213, 114284, 114284, 114284}, {164268, 164341, 164341}, {169744, 169825, 169825, 169825}, {251138, 251220, 251220}, {31407, 31493}, {133712, 133800, 133800}, {219305, 219397, 219397, 219397}, {229578, 229670}, {272629, 272721, 272721}, {280335, 280427}, {52700, 52794, 52794}, {234953, 235050}, {192167, 192379, 192379, 192379, 192379, 192379}, {140550, 140763, 140763}, {293542}, {67257}, {184591}, {13521}, {44333}, {183883}, {90816}};
+    
+    vector<PositionAnnotation> a;
+    for(int i=0; i< p.size(); i++){
+        vector<MaximalRepeatAnnotation> m;
+        for(int j=0; j<r[i].size(); j++){
+            m.push_back({r[i][j], {}, f[i][j]});
+        }
+        a.push_back({p[i], sa[i], m, r[i]});
+    }
+    SequenceAnnotation annot = {0, s, a};
+    auto mc = get_min_covers(annot);
+}
 
 void main_construction_mc() {
-    test_basic_construction();
-    test_distinct_kmers();
+    // test_basic_construction();
+    // test_distinct_kmers();
+    test_real_data_ropebwt2();
+    // test_min_cover_algo();
 }

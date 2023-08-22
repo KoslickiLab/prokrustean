@@ -13,33 +13,37 @@ tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, ve
     // for(auto ext: distinct_extensions){
     //     cout << (int)get<0>(ext) << ", " << (int)get<1>(ext) << endl;
     // }
-    vector<tuple<int, CharId>> left_pair_info(char_max);
-    vector<tuple<int, CharId>> right_pair_info(char_max);
+    vector<int> left_cnts(char_max,0);
+    vector<CharId> left_paired_example(char_max);
+    vector<int> right_cnts(char_max,0);
+    vector<CharId> right_paired_example(char_max);
+
+    // vector<tuple<int, CharId>> left_pair_info(char_max);
+    // vector<tuple<int, CharId>> right_pair_info(char_max);
     vector<CharId> left_repr_extensions;
     vector<CharId> right_repr_extensions;
     for(auto pair:distinct_extensions){
         auto left = get<0>(pair);
         auto right = get<1>(pair);
-        left_pair_info[left] = make_tuple(get<0>(left_pair_info[left])+1, right);
-        right_pair_info[right] = make_tuple(get<0>(right_pair_info[right])+1, left);
+        left_cnts[left]++;
+        left_paired_example[left] = right;
+        right_cnts[right]++;
+        right_paired_example[right] = left;
     }
-    for(int i=1/*skip term*/; i<char_max; i++){ 
-        int left_cnt = get<0>(left_pair_info[i]);
-        CharId r = get<1>(left_pair_info[i]);
-        if(left_cnt==0) 
+    for(int i=1/*not termination*/; i<char_max; i++){ 
+        // cout << "left: " << i << ", left cnt" << left_cnt << ", right info: " << (int)r << endl;
+        if(left_cnts[i]==0) 
         continue;
         //left exclusive but not bi-exclusive
-        if(left_cnt==1 && r!=0 && get<0>(right_pair_info[r])>1)
+        if(left_cnts[i]==1 && left_paired_example[i]!=0 && right_cnts[left_paired_example[i]]>1)
         continue;
         left_repr_extensions.push_back(i);
     }
-    for(int i=1/*skip term*/; i<char_max; i++){ 
-        int right_cnt = get<0>(right_pair_info[i]);
-        CharId l = get<1>(right_pair_info[i]);
-        if(right_cnt==0) 
+    for(int i=1/*not termination*/; i<char_max; i++){ 
+        if(right_cnts[i]==0) 
         continue;
         //right exclusive but not bi-exclusive
-        if(right_cnt==1 && l!=0 && get<0>(left_pair_info[l])>1) 
+        if(right_cnts[i]==1 && right_paired_example[i]!=0 && left_cnts[right_paired_example[i]]>1) 
         continue;
         right_repr_extensions.push_back(i);
     }
@@ -61,22 +65,47 @@ optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtensio
         tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
         // Remove possible duplications by set. Duplications cannot be predicted in advance.
         set<SuffixArrayIdx> uniq_repr_sa;
+
         for(auto l: get<0>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_l(l));
         }
         for(auto r: get<1>(repr_extensions)){
             uniq_repr_sa.insert(ext.first_r(r));
         }
+        /*important. If termination is placed in both ends, all are representative. 
+        decide_repr_sa_extensions marks it by simply including 0 in left character. 
+        Then in here we should collect all suffixes where the form is #W#.
+        */
+        for(auto sa_idx: ext.both_ext_terms){
+            uniq_repr_sa.insert(sa_idx);
+        }
+
         vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
+        // if(repr_sa.size()==0){
+        //     cout << "repr_sa 0 case" << endl;
+        //     for(auto pair: ext.distinct_extensions()){
+        //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
+        //     }
+        //     cout << "repr ex left" << endl; 
+        //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+        //         cout << (int)left << endl;
+        //     }
+        //     cout << "repr ex right" << endl; 
+        //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+        //         cout << (int)left << endl;
+        //     }
+        //     assert(false);
+        // };
+        assert(repr_sa.size()>0);
         SuffixArrayIdx min_idx = repr_sa[0];
         for(auto i: repr_sa){
             min_idx = i < min_idx? i: min_idx;
         }
-        cout << "rep size: " <<ext.node.depth << " sa: "; 
-        for(auto i: repr_sa){
-            cout << i << ", ";
-        }
-        cout << endl;
+        // cout << "rep size: " <<ext.node.depth << " sa: "; 
+        // for(auto i: repr_sa){
+        //     cout << i << ", ";
+        // }
+        // cout << endl;
 
         MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
         return rep;
@@ -157,7 +186,7 @@ void _print__get_min_cover__progress(vector<uint64_t> &curr_rep_indexes,
     if(!ancestors.empty()){
         parent=ancestors.top();
     } 
-    int txt_block_size = 5;
+    int txt_block_size = 3;
     uint64_t max_rep=0;
     cout<< "---- algo status -----"<<endl;
     cout<< "ancestor("<<ancestors.size()<<")"<<endl;
@@ -199,6 +228,55 @@ void _print__get_min_cover__progress(vector<uint64_t> &curr_rep_indexes,
         cout<<endl;
     }
     cout<<endl;
+}
+
+void _print__seq_annot(SequenceAnnotation &seq_annot){   
+    // sample seq annot with error.
+    // vector<uint64_t> p = {0, 74 };
+    // vector<vector<uint64_t>> r = {{84}, {11}, {11, 123}};
+    // vector<vector<uint64_t>> f = {{84}, {11}, {11, 123}};
+    // vector<PositionAnnotation> a;
+    cout << "uint64_t s = " << seq_annot.size << ";" << endl;
+    cout << "vector<uint64_t> p = {";
+    for(int i=0; i<seq_annot.positions.size(); i++){
+        cout << seq_annot.positions[i].pos;
+        if(i+1< seq_annot.positions.size())
+        cout << ", ";
+    }
+    cout<< "};" <<endl;
+    cout << "vector<uint64_t> sa = {";
+    for(int i=0; i<seq_annot.positions.size(); i++){
+        cout << seq_annot.positions[i].sa_idx;
+        if(i+1< seq_annot.positions.size())
+        cout << ", ";
+    }
+    cout<< "};" <<endl;
+    cout << "vector<vector<uint64_t>> r = {";
+    for(int i=0; i<seq_annot.positions.size(); i++){
+        cout << "{";
+        for(int j=0; j<seq_annot.positions[i].reps.size(); j++){
+            cout << seq_annot.positions[i].reps[j].size;
+            if(j+1< seq_annot.positions[i].reps.size())
+            cout << ", ";
+        }
+        cout<< "}";
+        if(i+1< seq_annot.positions.size())
+        cout << ", ";
+    }
+    cout<< "};" <<endl;
+    cout << "vector<vector<uint64_t>> f = {";
+    for(int i=0; i<seq_annot.positions.size(); i++){
+        cout << "{";
+        for(int j=0; j<seq_annot.positions[i].reps.size(); j++){
+            cout << seq_annot.positions[i].reps[j].first_repr_idx;
+            if(j+1< seq_annot.positions[i].reps.size())
+            cout << ", ";
+        }
+        cout<< "}";
+        if(i+1< seq_annot.positions.size())
+        cout << ", ";
+    }
+    cout<< "};" <<endl;
 }
 
 vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
@@ -268,7 +346,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
     // set theoretical limit on iterations: each pair (pos, rep) does not visit the iteration as the 'curr' more than twice.
     uint64_t iter_lim = 0;
     for(auto p: seq_annot.positions){
-        iter_lim += 2*p.reps.size();
+        iter_lim += 3*p.reps.size(); //fix later
     }
 
     // index is the position's index, value is the reps's index
@@ -280,6 +358,8 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
     uint64_t iter = 0;
     while(true){
         if(iter==iter_lim){
+            _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
+            _print__seq_annot(seq_annot);
             cout << "Iteration limit: the loop may contain a flaw resulting in an infinite loop." << endl;
             assert(false);
         }
@@ -306,12 +386,12 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         if(!ancestors.empty()){
             parent=ancestors.top();
         }
-        
         bool possible_parent_exists = parent.has_value();
         optional<Pos> curr_relative_pos_to_parent_opt;
         // optional<MinCover> parent_mc_opt;
         optional<uint64_t> parent_pos_idx_opt;
         optional<uint64_t> parent_mc_idx_opt;
+        bool is_right_completed=false;
         // curr ⊃ right?
         bool curr_include_right_opt=false;
         // possible-parent ⊃ right?
@@ -330,6 +410,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(curr_pos_idx+1<rep_layers.size());
             auto right_rep = right_pos.reps[rep_layers[curr_pos_idx+1]];
             closing_pos_right_opt = right_pos.pos + right_rep.size;
+            is_right_completed = rep_layers_completed[curr_pos_idx+1].has_value() && rep_layers_completed[curr_pos_idx+1].value() == rep_layers[curr_pos_idx+1];
         }
         
         if(upper_exists){
@@ -396,14 +477,14 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(new_mc_idx_opt.has_value());
             ancestors.push(make_tuple(curr_pos_idx, new_mc_idx_opt.value()));
             curr_pos_idx++;
-            cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
             continue;
         }
 
         /* 2. possible-parent ⊃ upper? (∃possible-parent, ∃upper) */
         if(possible_parent_include_upper_opt){
             rep_layers[curr_pos_idx]++;
-            cout << "condition 2" << endl;
+            // cout << "condition 2" << endl;
             continue;
         }
         
@@ -416,13 +497,13 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             if(rep_layers[curr_pos_idx]+1<curr_pos.reps.size()){
                 rep_layers[curr_pos_idx]++;
             }
-            cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
         }
 
-        /* 4. possible-parent ⊃ right? (∃possible-parent, ∃right) */
-        if(possible_parent_include_right_opt){
+        /* 4. possible-parent ⊃ right? (∃possible-parent, ∃right, **!is_right_not_completed) */
+        if(possible_parent_include_right_opt && !is_right_completed){
             curr_pos_idx++;
-            cout << "condition 4" << endl;
+            // cout << "condition 4" << endl;
             continue;
         }
 
@@ -431,7 +512,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             //active_pos_idx cannot be 0 because parent would not exist
             curr_pos_idx = parent_pos_idx_opt.value();
             ancestors.pop();
-            cout << "condition 5" << endl;
+            // cout << "condition 5" << endl;
             continue;
         }
 
@@ -439,7 +520,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         /* 6. NOT ∃possible-parent, ∃upper? */
         if(upper_exists && !possible_parent_exists){
             rep_layers[curr_pos_idx]++;
-            cout << "condition 6" << endl;
+            // cout << "condition 6" << endl;
             continue;
         }
 
@@ -450,14 +531,14 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         /* 7. NOT ∃possible-parent, NOT ∃upper, ∃right?*/
         if(right_exists && !upper_exists && !possible_parent_exists){
             curr_pos_idx++;
-            cout << "condition 7" << endl;
+            // cout << "condition 7" << endl;
             continue;
         }
     
         /* 8. NOT ∃possible-parent, NOT ∃upper, ∃right, NOT 1st visit(curr)? */
         if(!is_curr_first_visit && !possible_parent_exists && !upper_exists && right_exists){
             curr_pos_idx++;
-            cout << "condition 8" << endl;
+            // cout << "condition 8" << endl;
             continue;
         }
 

@@ -34,3 +34,5 @@
 # Additional
 /build/*
 /tests/build/*
+*.DS_Store
+*.vscode/

@@ -99,7 +99,6 @@ public:
             for(auto sa_idx: repeats[id].repr_indexes){
                 uint64_t r = sa_rank.rank(sa_idx);
                 repr_suffixes[r].push_back(id);
-                cout << "sa: " << sa_idx<< ", " << "R" << id << "("<< repeats[id].size << ")" << endl;
             }
         }
     }

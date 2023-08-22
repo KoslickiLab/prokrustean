@@ -14,6 +14,8 @@ string PATH2_SEQ = "../data/2_sequences_unsorted.txt";
 string PATH2_BWT = "../data/2_ebwt.txt";
 string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
 string PATH3_BWT = "../data/3_ebwt.txt";
+string PATH1_SREAD_ROPEBWT2_SEQ = "../data/SRR20044276.001001.txt";
+string PATH1_SREAD_ROPEBWT2_BWT = "../data/SRR20044276.001001.bwt";
 
 // If parameter is not true, test fails
 // This check function would be provided by the test framework

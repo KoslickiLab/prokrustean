@@ -47,16 +47,17 @@ public:
         }
         
         bool only_ACGTN = true;
+        cout << "-- characters(" << characters.size() << ") --" << endl;
         for(auto c: characters){
             if(c!='A' && c!='C' && c!='G' && c!='T' && c!='N' && c!=term){
-                cout << "-- characters(" << characters.size() << ") --" << endl;
-                cout << "Warning: A symbol not in AGCTN and term is included. The code still runs but please check the data validity." << endl;
-                for(auto c: characters){
-                    cout << c << " ";
-                }
-                cout << endl;
+                cout << "Warning: A symbol (" << c <<") not in AGCTN and term is included. The code still runs though." << endl;
             }
         }
+        cout << "characters: ";
+        for(auto c: characters){
+            cout << c << " ";
+        }
+        cout << endl;
     }
 
     vector<char> get_characters(){
