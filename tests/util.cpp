@@ -7,15 +7,17 @@
 
 using namespace std;
 
-
 string PATH1_SEQ = "../data/1_sequences.txt";
 string PATH1_BWT = "../data/1_ebwt.txt";
 string PATH2_SEQ = "../data/2_sequences_unsorted.txt";
 string PATH2_BWT = "../data/2_ebwt.txt";
 string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
 string PATH3_BWT = "../data/3_ebwt.txt";
-string PATH1_SREAD_ROPEBWT2_SEQ = "../data/SRR20044276.001001.txt";
-string PATH1_SREAD_ROPEBWT2_BWT = "../data/SRR20044276.001001.bwt";
+string PERFORMANCE_DATA_FOLDER = "../../prokrustean_data";
+string PATH1_PERFORMANCE_SREAD_SEQ = PERFORMANCE_DATA_FOLDER+"/SRR20044276.001001.txt";
+string PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT = PERFORMANCE_DATA_FOLDER+"/SRR20044276.001001.bwt";
+string PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT = PERFORMANCE_DATA_FOLDER+"/SRR20044276.bwt";
+string PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT = PERFORMANCE_DATA_FOLDER+"/ER3450203_1.bwt";
 
 // If parameter is not true, test fails
 // This check function would be provided by the test framework

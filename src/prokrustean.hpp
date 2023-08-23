@@ -53,6 +53,8 @@ void _print_rep(RepId rid, string str, int depth, Prokrustean &pk, vector<bool> 
 
 void print_prokrustean(Prokrustean pk){
     assert(pk.sequences.has_value());
+    cout << "-- print prokrustean --" << endl;
+    cout << "rep no.: " << pk.rep_mcs.size() << endl;
     vector<bool> printed_rep(pk.rep_mcs.size());
     for(uint64_t i=0; i<pk.seq_mcs.size(); i++){
         auto mc_reps = pk.seq_mcs[i].mc_reps;

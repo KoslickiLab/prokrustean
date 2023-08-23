@@ -279,6 +279,27 @@ void _print__seq_annot(SequenceAnnotation &seq_annot){
     cout<< "};" <<endl;
 }
 
+void _print__mc_rep_addition(SequenceAnnotation &seq_annot, 
+                            PositionAnnotation curr_pos, 
+                            MaximalRepeatAnnotation curr_rep, 
+                            tuple<uint64_t, uint64_t> parent,
+                            string type){
+    if(seq_annot.sequence.has_value()){
+        auto repstr = seq_annot.sequence.value().substr(curr_pos.pos, curr_rep.size);
+        if(type=="seq"){
+            cout << "Added " << repstr << " to seq " << seq_annot.sequence.value() << endl;
+        } else if(type=="right") {
+            auto parentstr = seq_annot.sequence.value().substr(seq_annot.positions[get<0>(parent)].pos, get<1>(parent));
+            cout << "Added " << repstr << " to parent rep " << parentstr << endl;
+        } else if(type=="upper") {
+            auto childstr = seq_annot.sequence.value().substr(seq_annot.positions[get<0>(parent)].pos, get<1>(parent));
+            cout << "Added child " << childstr << " to rep " << repstr << endl;
+        }
+    } else {
+        cout << "cannot print seq" << endl;
+    }
+                                
+}
 vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
 /* Summary
     set pos=first pos
@@ -364,7 +385,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(false);
         }
         iter++;
-        // _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
+        _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
         /* setup variables */
         PositionAnnotation curr_pos = seq_annot.positions[curr_pos_idx];
         uint64_t curr_rep_idx = rep_layers[curr_pos_idx];
@@ -465,6 +486,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;
                 rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));
+                _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(curr_pos_idx, curr_pos.reps[curr_rep_idx-1].size), "upper");
             }
             mcs.push_back(rep_mc);
             // new_mc_opt = &mcs[mcs.size()-1];
@@ -477,33 +499,34 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(new_mc_idx_opt.has_value());
             ancestors.push(make_tuple(curr_pos_idx, new_mc_idx_opt.value()));
             curr_pos_idx++;
-            // cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
+            cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
             continue;
         }
 
         /* 2. possible-parent ⊃ upper? (∃possible-parent, ∃upper) */
         if(possible_parent_include_upper_opt){
             rep_layers[curr_pos_idx]++;
-            // cout << "condition 2" << endl;
+            cout << "condition 2 : upper " << closing_pos_upper_opt.value() << "<= parent" << closing_pos_parent_opt.value() << endl;
             continue;
         }
         
         /* 3. possible-parent NOT ⊃ upper? (∃possible-parent) */
         if(possible_parent_exists && !possible_parent_include_upper_opt){
             mcs[parent_mc_idx_opt.value()].mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
+            _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(get<0>(parent.value()), mcs[get<1>(parent.value())].size), "right");
             // parent_mc_opt.value().mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
             rep_layers_completed[curr_pos_idx]=curr_rep_idx;
             // the unique left-extensible parent found so no need to give focus 
             if(rep_layers[curr_pos_idx]+1<curr_pos.reps.size()){
                 rep_layers[curr_pos_idx]++;
             }
-            // cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
+            cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
         }
 
         /* 4. possible-parent ⊃ right? (∃possible-parent, ∃right, **!is_right_not_completed) */
         if(possible_parent_include_right_opt && !is_right_completed){
             curr_pos_idx++;
-            // cout << "condition 4" << endl;
+            cout << "condition 4 right is included" << endl;
             continue;
         }
 
@@ -512,7 +535,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             //active_pos_idx cannot be 0 because parent would not exist
             curr_pos_idx = parent_pos_idx_opt.value();
             ancestors.pop();
-            // cout << "condition 5" << endl;
+            cout << "condition 5 parent is now obsolete " << endl;
             continue;
         }
 
@@ -520,25 +543,27 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         /* 6. NOT ∃possible-parent, ∃upper? */
         if(upper_exists && !possible_parent_exists){
             rep_layers[curr_pos_idx]++;
-            // cout << "condition 6" << endl;
+            cout << "condition 6 go to upper" << endl;
             continue;
         }
 
         if(!is_curr_completed && !upper_exists && !possible_parent_exists){
+            cout << "condition seq Add to seq" << endl;
             seq_mc.mc_reps.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
+            _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(0, 0), "seq");
         }
 
         /* 7. NOT ∃possible-parent, NOT ∃upper, ∃right?*/
         if(right_exists && !upper_exists && !possible_parent_exists){
             curr_pos_idx++;
-            // cout << "condition 7" << endl;
+            cout << "condition 7 no upper go right" << endl;
             continue;
         }
     
         /* 8. NOT ∃possible-parent, NOT ∃upper, ∃right, NOT 1st visit(curr)? */
         if(!is_curr_first_visit && !possible_parent_exists && !upper_exists && right_exists){
             curr_pos_idx++;
-            // cout << "condition 8" << endl;
+            cout << "condition 8 no upper go right but no first visit" << endl;
             continue;
         }
 

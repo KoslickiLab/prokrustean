@@ -17,7 +17,12 @@ vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
         auto gaps = get_gaps_seq(pk, i, k);
         for(auto gap: gaps){
             for(auto interval: gap.chop(k)){
-                kmers.push_back(string.substr(interval.from, interval.size()));
+                assert(interval.from+interval.size() <= string.size());
+                auto mer = string.substr(interval.from, interval.size());
+                for(auto m: kmers){
+                    assert(mer != m);
+                }
+                kmers.push_back(mer);
             }
         }
     }
@@ -27,12 +32,21 @@ vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
             continue;
         }
         Occurrence rep_occ = rep_occs[i];
+        assert(rep_occ.from+rep_occ.size() <= pk.sequences.value()[rep_occ.seq_id].size());
         auto string = pk.sequences.value()[rep_occ.seq_id].substr(rep_occ.from, rep_occ.size());
         // cout<< string << endl;
         auto gaps = get_gaps_rep(pk, i, k);
         for(auto gap: gaps){
             for(auto interval: gap.chop(k)){
-                kmers.push_back(string.substr(interval.from, interval.size()));
+                assert(interval.from+interval.size()<=string.size());
+                auto mer = string.substr(interval.from, interval.size());
+                for(auto m: kmers){
+                    if(mer == m){
+                        cout << mer << " of " << string << endl;
+                    }
+                    assert(mer != m);
+                }
+                kmers.push_back(mer);
             }
         }
     }

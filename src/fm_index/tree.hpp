@@ -181,7 +181,7 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
             if(i==0) continue;
 
             auto child = ext.c_nodes[i];
-            if(child.interval_size()>1){
+            if(child.right_maximal()){
                 stack.push(child);
             }
         }
@@ -195,5 +195,6 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
     }
     return Ts;
 }
+
 
 #endif /* FM_INDEX_TREE_HPP_ */

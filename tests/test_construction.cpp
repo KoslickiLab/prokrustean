@@ -30,10 +30,14 @@ void test_basic_construction(){
     auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
-    // cout << "finished with mcs: " << pk.rep_mcs.size() << endl;
-    print_prokrustean(pk);
-    print_bare_prokrustean(pk);
-    
+    assert(pk.rep_mcs.size()>0);
+    assert(pk.seq_mcs.size()>0);
+    for(int i=0; i< pk.rep_mcs.size(); i++){
+        assert(pk.rep_mcs[i].id == i);
+    }
+    for(int i=0; i< pk.seq_mcs.size(); i++){
+        assert(pk.seq_mcs[i].id == i);
+    }
 }
 
 void test_distinct_kmers(){
@@ -42,21 +46,33 @@ void test_distinct_kmers(){
     auto fm_idx = FmIndex(str);
     Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     auto sequences = recover_text(fm_idx);
+    print_prokrustean(pk);
 
-    for(int k=Lmin; k<7; k++){
+    for(int k=2; k<7; k++){
         cout << "k: " << k << endl;
         vector<string> mers = collect_distinct_kmers(pk, k);
         vector<string> mers_naive = collect_distinct_kmers_naive(sequences, k);
         sort(mers.begin(), mers.end());
         sort(mers_naive.begin(), mers_naive.end());
-        assert(mers_naive.size()==mers.size());
+        cout << "-- naive --" << endl;
+        for(auto m: mers_naive){
+            cout << m << endl;
+        }
+        cout << "-- pk --" << endl;
+        for(auto m: mers){
+            cout << m << endl;
+        }
         vector<string>::iterator mers_itr = mers.begin();
         vector<string>::iterator mers_naive_itr = mers_naive.begin();
         while(mers_itr<mers.end()){
+            if(*mers_itr != *mers_naive_itr){
+                cout << "not matched: " << *mers_itr << ", " << *mers_naive_itr << endl;
+            }
             assert(*mers_itr == *mers_naive_itr);
             mers_itr++;
             mers_naive_itr++;
         }
+        assert(mers_naive.size()==mers.size());
     }
     
     // for(auto s: mers_naive){
@@ -67,61 +83,8 @@ void test_distinct_kmers(){
     // }
 }
 
-void test_real_data_ropebwt2(){
-    int Lmin = 30;
-    auto str = WaveletString(PATH1_SREAD_ROPEBWT2_BWT, '$');
-    auto fm_idx = FmIndex(str);
-    cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
-    vector<string> recovered_sequences = recover_text(fm_idx);
-    // cout << "1st seq: " << recover_text(fm_idx, 2) << endl;
-
-    std::ifstream file(PATH1_SREAD_ROPEBWT2_SEQ);
-    string line;
-    vector<string> sequences;
-
-    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
-    vector<string> mers = collect_distinct_kmers(pk, 40);
-    cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
-	// while(getline(file, line))
-	// {
-	// 	// cout<<line<<endl;
-    //     sequences.push_back(line);
-	// }
-    // file.close();
-    // int i = 1000;
-    // // cout << "seq " << i << " : " << sequences[i] << endl;
-    // i = 0;
-    // int found_cnt = 0;
-    // int not_found_cnt = 0;
-    // for(auto r_seq: recovered_sequences){
-    //     bool found = false;
-    //     auto r_seq_no_term = r_seq.substr(0, r_seq.size()-1);
-    //     for(auto seq: sequences){
-    //         if(r_seq_no_term==seq)
-    //         found = true;
-    //     }
-    //     if(found) found_cnt++;
-    //     else not_found_cnt++;
-    //     if(i>=1000){
-    //         cout << "seq " << i << ": " << sequences[i] << endl;
-    //     }
-    //     i++;
-    // }
-
-    // file.open()); //open a file to perform read operation using file object
-    // if (file.is_open()){   //checking whether the file is open
-    //     string tp;
-    //     while(getline(file, tp)){ //read data from file object and put it into string.
-    //         //  cout << tp << "\n"; //print the data of the string
-    //         sequences.push_back(tp);
-    //     }
-    //     file.close(); //close the file object.
-    // }
-    // cout << "found: "<< found_cnt << "not found: " << not_found_cnt << endl;
-    
-}
-
 void test_min_cover_algo(){
+    /* I recorded an error case */
     uint64_t s = 151;
     vector<uint64_t> p = {0, 3, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 45, 47, 48, 53, 54, 55, 59, 62, 71, 75, 76, 79, 88, 99, 121, 122, 123, 128};
     vector<uint64_t> sa = {94131, 93683, 17560, 66398, 302443, 300246, 290773, 249229, 68842, 12606, 42678, 177676, 77776, 35722, 156667, 10381, 162138, 28551, 124515, 201465, 82990, 54168, 243317, 26557, 114284, 164341, 169825, 251220, 31493, 133800, 219397, 229670, 272721, 280427, 52794, 235050, 192379, 140763, 293542, 67257, 184591, 13523, 44335, 183885, 90817};
@@ -140,9 +103,9 @@ void test_min_cover_algo(){
     auto mc = get_min_covers(annot);
 }
 
+
 void main_construction_mc() {
     // test_basic_construction();
-    // test_distinct_kmers();
-    test_real_data_ropebwt2();
+    test_distinct_kmers();
     // test_min_cover_algo();
 }

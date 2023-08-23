@@ -28,8 +28,9 @@ class WaveletString: public AbstractString{
 private:
     vector<char> characters;
     map<char, uint8_t> characters_inv;
-    wt_blcd<> wt;
+    // wt_blcd<> wt;
 public:
+    wt_blcd<> wt;
 	WaveletString(){}
 
 	/*
