@@ -34,6 +34,24 @@ struct Prokrustean {
     }
 };
 
+void print_prokrustean_statistics(Prokrustean pk){
+    cout << "--- pk stat ---" << endl;
+    cout << "seq mc: " << pk.seq_mcs.size() << endl;
+    uint64_t occurrence=0;
+    for(auto mc: pk.seq_mcs){
+        occurrence+=mc.mc_reps.size();
+    }
+    cout << "seq mc occurrences: " << occurrence << endl;
+
+    cout << "rep mc: " << pk.rep_mcs.size() << endl;
+    occurrence=0;
+    for(auto mc: pk.rep_mcs){
+        occurrence+=mc.mc_reps.size();
+    }
+    cout << "rep mc occurrences: " << occurrence << endl;
+    
+}
+
 void _print_rep(RepId rid, string str, int depth, Prokrustean &pk, vector<bool> &printed_rep){
     if(printed_rep[rid]){
         cout << string(2*depth, '-')<< str << " (" << "R" << rid << ")"<< endl;
