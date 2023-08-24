@@ -50,7 +50,7 @@ public:
             for (int j=0; j< seq.size(); j++){
                 // string suffix = seq.substr(j, seq.size()) + TERM;
                 string suffix = seq.substr(j, seq.size());
-                suffixes.push_back(make_tuple(global_idx, suffix));
+                suffixes.push_back(make_pair(global_idx, suffix));
                 global_idx++;
             }
             // string s(1, TERM);
