@@ -70,14 +70,18 @@ void test_real_data_ropebwt2(){
 }
 
 void test_real_data_gut_ropebwt2(){
+    int threads = 60;
     int Lmin = 30;
+    auto start = std::chrono::steady_clock::now();
     auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
+    cout << "bwt reading takes " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
     auto fm_idx = FmIndex(str);
     cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
     // vector<string> recovered_sequences = recover_text(fm_idx);
     // cout << "1st seq: " << recover_text(fm_idx, 2) << endl;
 
-    auto start = std::chrono::steady_clock::now();
+    start = std::chrono::steady_clock::now();
+    // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     vector<string> mers = collect_distinct_kmers(pk, 40);
     cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
@@ -101,6 +105,6 @@ void test_real_data_ful_ropebwt2(){
 
 void main_performance_construction() {
     test_real_data_ropebwt2();
-    // test_real_data_gut_ropebwt2();
+    test_real_data_gut_ropebwt2();
     test_real_data_ful_ropebwt2();
 }

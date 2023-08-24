@@ -188,7 +188,7 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
         // if(node_cnt%10000==0){
         //     cout << "navigated " << node_cnt << endl;
         // }
-        if(process_cnt>10000 && process_cnt%10000==0){
+        if(process_cnt>100000 && process_cnt%100000==0){
             cout << "processed " << process_cnt << endl;
         }
     }
