@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include "../fm_index/index.hpp"
 #include "../prokrustean.hpp"
 #include "../sdsl/int_vector.hpp"
 #include "../sdsl/rank_support_v.hpp"

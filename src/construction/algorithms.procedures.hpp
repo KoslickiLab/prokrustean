@@ -1,12 +1,11 @@
+#ifndef CONSTRUCTION_ALGO_PROCEDURES_HPP_
+#define CONSTRUCTION_ALGO_PROCEDURES_HPP_
 #include "models.hpp"
 #include "../fm_index/tree.hpp"
 #include <algorithm>
 #include <stack>
 
 using namespace std;
-
-#ifndef CONSTRUCTION_ALGO_PROCEDURES_HPP_
-#define CONSTRUCTION_ALGO_PROCEDURES_HPP_
 
 tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId>> distinct_extensions){
     // cout << "-- distinct -- " << endl;
@@ -113,6 +112,61 @@ optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtensio
         return nullopt;
     }
 }
+
+
+// optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtension &ext){
+//     if(ext.left_maximal() && ext.node.right_maximal()){
+//         tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
+//         // Remove possible duplications by set. Duplications cannot be predicted in advance.
+//         set<SuffixArrayIdx> uniq_repr_sa;
+
+//         for(auto l: get<0>(repr_extensions)){
+//             uniq_repr_sa.insert(ext.first_l(l));
+//         }
+//         for(auto r: get<1>(repr_extensions)){
+//             uniq_repr_sa.insert(ext.first_r(r));
+//         }
+//         /*important. If termination is placed in both ends, all are representative. 
+//         decide_repr_sa_extensions marks it by simply including 0 in left character. 
+//         Then in here we should collect all suffixes where the form is #W#.
+//         */
+//         for(auto sa_idx: ext.both_ext_terms){
+//             uniq_repr_sa.insert(sa_idx);
+//         }
+
+//         vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
+//         // if(repr_sa.size()==0){
+//         //     cout << "repr_sa 0 case" << endl;
+//         //     for(auto pair: ext.distinct_extensions()){
+//         //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
+//         //     }
+//         //     cout << "repr ex left" << endl; 
+//         //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+//         //         cout << (int)left << endl;
+//         //     }
+//         //     cout << "repr ex right" << endl; 
+//         //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+//         //         cout << (int)left << endl;
+//         //     }
+//         //     assert(false);
+//         // };
+//         assert(repr_sa.size()>0);
+//         SuffixArrayIdx min_idx = repr_sa[0];
+//         for(auto i: repr_sa){
+//             min_idx = i < min_idx? i: min_idx;
+//         }
+//         // cout << "rep size: " <<ext.node.depth << " sa: "; 
+//         // for(auto i: repr_sa){
+//         //     cout << i << ", ";
+//         // }
+//         // cout << endl;
+
+//         MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
+//         return rep;
+//     } else {
+//         return nullopt;
+//     }
+// }
 
 SequenceAnnotation get_sequence_annotations(SeqId seq_id, 
                                             FmIndex &fm_idx, 
@@ -385,7 +439,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(false);
         }
         iter++;
-        _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
+        // _print__get_min_cover__progress(rep_layers, ancestors, curr_pos_idx, seq_annot);
         /* setup variables */
         PositionAnnotation curr_pos = seq_annot.positions[curr_pos_idx];
         uint64_t curr_rep_idx = rep_layers[curr_pos_idx];
@@ -486,7 +540,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;
                 rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));
-                _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(curr_pos_idx, curr_pos.reps[curr_rep_idx-1].size), "upper");
+                // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(curr_pos_idx, curr_pos.reps[curr_rep_idx-1].size), "upper");
             }
             mcs.push_back(rep_mc);
             // new_mc_opt = &mcs[mcs.size()-1];
@@ -499,34 +553,34 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(new_mc_idx_opt.has_value());
             ancestors.push(make_tuple(curr_pos_idx, new_mc_idx_opt.value()));
             curr_pos_idx++;
-            cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
             continue;
         }
 
         /* 2. possible-parent ⊃ upper? (∃possible-parent, ∃upper) */
         if(possible_parent_include_upper_opt){
             rep_layers[curr_pos_idx]++;
-            cout << "condition 2 : upper " << closing_pos_upper_opt.value() << "<= parent" << closing_pos_parent_opt.value() << endl;
+            // cout << "condition 2 : upper " << closing_pos_upper_opt.value() << "<= parent" << closing_pos_parent_opt.value() << endl;
             continue;
         }
         
         /* 3. possible-parent NOT ⊃ upper? (∃possible-parent) */
         if(possible_parent_exists && !possible_parent_include_upper_opt){
             mcs[parent_mc_idx_opt.value()].mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
-            _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(get<0>(parent.value()), mcs[get<1>(parent.value())].size), "right");
-            // parent_mc_opt.value().mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
+            // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(get<0>(parent.value()), mcs[get<1>(parent.value())].size), "right");
+            
             rep_layers_completed[curr_pos_idx]=curr_rep_idx;
             // the unique left-extensible parent found so no need to give focus 
             if(rep_layers[curr_pos_idx]+1<curr_pos.reps.size()){
                 rep_layers[curr_pos_idx]++;
             }
-            cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
         }
 
         /* 4. possible-parent ⊃ right? (∃possible-parent, ∃right, **!is_right_not_completed) */
         if(possible_parent_include_right_opt && !is_right_completed){
             curr_pos_idx++;
-            cout << "condition 4 right is included" << endl;
+            // cout << "condition 4 right is included" << endl;
             continue;
         }
 
@@ -535,7 +589,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             //active_pos_idx cannot be 0 because parent would not exist
             curr_pos_idx = parent_pos_idx_opt.value();
             ancestors.pop();
-            cout << "condition 5 parent is now obsolete " << endl;
+            // cout << "condition 5 parent is now obsolete " << endl;
             continue;
         }
 
@@ -543,27 +597,27 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         /* 6. NOT ∃possible-parent, ∃upper? */
         if(upper_exists && !possible_parent_exists){
             rep_layers[curr_pos_idx]++;
-            cout << "condition 6 go to upper" << endl;
+            // cout << "condition 6 go to upper" << endl;
             continue;
         }
 
         if(!is_curr_completed && !upper_exists && !possible_parent_exists){
-            cout << "condition seq Add to seq" << endl;
+            // cout << "condition seq Add to seq" << endl;
             seq_mc.mc_reps.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
-            _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(0, 0), "seq");
+            // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(0, 0), "seq");
         }
 
         /* 7. NOT ∃possible-parent, NOT ∃upper, ∃right?*/
         if(right_exists && !upper_exists && !possible_parent_exists){
             curr_pos_idx++;
-            cout << "condition 7 no upper go right" << endl;
+            // cout << "condition 7 no upper go right" << endl;
             continue;
         }
     
         /* 8. NOT ∃possible-parent, NOT ∃upper, ∃right, NOT 1st visit(curr)? */
         if(!is_curr_first_visit && !possible_parent_exists && !upper_exists && right_exists){
             curr_pos_idx++;
-            cout << "condition 8 no upper go right but no first visit" << endl;
+            // cout << "condition 8 no upper go right but no first visit" << endl;
             continue;
         }
 

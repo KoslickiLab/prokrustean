@@ -37,7 +37,8 @@ void _compare_lcp_recovered_vs_tree(FmIndex &fm_idx){
     lcp_str.erase(unique(lcp_str.begin(), lcp_str.end() ), lcp_str.end());
     
     SuffixArrayNode root = get_root(fm_idx);
-    auto pairs = navigate_tree<tuple<uint64_t, uint64_t>, _get_lcp>(root, 0, fm_idx);
+    vector<tuple<uint64_t, uint64_t>> pairs;
+    navigate_tree<tuple<uint64_t, uint64_t>, _get_lcp>(root, 0, fm_idx, pairs);
     vector<string> tree_lcp_str;
     for(auto p: pairs){
         uint64_t depth = get<0>(p);

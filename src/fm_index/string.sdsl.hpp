@@ -52,13 +52,16 @@ public:
         for(auto c: characters){
             if(c!='A' && c!='C' && c!='G' && c!='T' && c!='N' && c!=term){
                 cout << "Warning: A symbol (" << c <<") not in AGCTN and term is included. The code still runs though." << endl;
+                only_ACGTN = false;
             }
         }
-        cout << "characters: ";
-        for(auto c: characters){
-            cout << c << " ";
+        if(!only_ACGTN){
+            cout << "characters: ";
+            for(auto c: characters){
+                cout << c << " ";
+            }
+            cout << endl;
         }
-        cout << endl;
     }
 
     vector<char> get_characters(){

@@ -14,6 +14,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_real_data_ropebwt2(){
+    int threads = 4;
     int Lmin = 30;
     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     auto fm_idx = FmIndex(str);
@@ -25,9 +26,10 @@ void test_real_data_ropebwt2(){
     string line;
     vector<string> sequences;
 
-    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
-    vector<string> mers = collect_distinct_kmers(pk, 40);
-    cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
+    // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
+    Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, true);
+    // vector<string> mers = collect_distinct_kmers(pk, 40);
+    // cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
 	// while(getline(file, line))
 	// {
 	// 	// cout<<line<<endl;
@@ -84,21 +86,21 @@ void test_real_data_gut_ropebwt2(){
 }
 
 void test_real_data_ful_ropebwt2(){
+    int threads = 16;
     int Lmin = 30;
     auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     auto fm_idx = FmIndex(str);
     cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
-    // vector<string> recovered_sequences = recover_text(fm_idx);
-    // cout << "1st seq: " << recover_text(fm_idx, 2) << endl;
 
     auto start = std::chrono::steady_clock::now();
-    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
+    // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
+    Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, true);
     vector<string> mers = collect_distinct_kmers(pk, 40);
     cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
 }
 
-void main_construction_mc() {
-    // test_real_data_ropebwt2();
+void main_performance_construction() {
+    test_real_data_ropebwt2();
     // test_real_data_gut_ropebwt2();
     // test_real_data_ful_ropebwt2();
 }

@@ -61,6 +61,6 @@ void test_many_sets(){
     if(print) std::cout << "rank(ms)=" << (std::chrono::steady_clock::now()-start).count()/1000000 << std::endl;
 }
 
-void main_bitvector() {
+void main_performance_bitvector() {
     test_many_sets();
 }

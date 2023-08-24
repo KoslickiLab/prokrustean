@@ -3,7 +3,7 @@
 
 int main(void){
     cout << "--- bitvector ---" << endl;
-    main_bitvector();
+    main_performance_bitvector();
     cout << "--- construction ---" << endl;
-    main_construction_mc();
+    main_performance_construction();
 }

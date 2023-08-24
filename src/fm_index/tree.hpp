@@ -153,11 +153,10 @@ SuffixArrayNode get_root(FmIndex &index){
 template<class T> using NodeFunc = optional<T>(*)(SuffixArrayNodeExtension&);
 
 template<class T, NodeFunc<T> process_node>
-vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
+void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &Ts){
     Lmin = Lmin >= 1? Lmin : 1;
 
     std::stack<SuffixArrayNode> stack;
-    vector<T> Ts;
     
     int node_cnt=0;
     int process_cnt=0;
@@ -193,7 +192,33 @@ vector<T> navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx){
             cout << "processed " << process_cnt << endl;
         }
     }
-    return Ts;
+}
+
+
+vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
+    std::stack<SuffixArrayNode> stack;
+    vector<SuffixArrayNode> nodes;
+
+    stack.push(root);
+    while(!stack.empty()){
+        auto node = stack.top();
+        stack.pop();
+        if(node.depth>=depth_max){
+            nodes.push_back(node);
+        } else {
+            auto ext = extend_node(fm_idx, node);
+            for(int i=0; i<ext.c_nodes.size(); i++){
+                // terminal
+                if(i==0) continue;
+
+                auto child = ext.c_nodes[i];
+                if(child.right_maximal()){
+                    stack.push(child);
+                }
+            }
+        }
+    }
+    return nodes;
 }
 
 
