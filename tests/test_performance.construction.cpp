@@ -70,7 +70,7 @@ void test_real_data_ropebwt2(){
 }
 
 void test_real_data_gut_ropebwt2(){
-    int threads = 60;
+    int threads = 32;
     int Lmin = 30;
     auto start = std::chrono::steady_clock::now();
     auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
@@ -82,7 +82,7 @@ void test_real_data_gut_ropebwt2(){
 
     start = std::chrono::steady_clock::now();
     // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
-    Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
+    Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, false);
     vector<string> mers = collect_distinct_kmers(pk, 40);
     cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
     // cout << "results count: " << results.size() <<endl;
