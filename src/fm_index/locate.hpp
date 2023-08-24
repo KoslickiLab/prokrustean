@@ -1,6 +1,6 @@
 #include "index.hpp"
 #include <algorithm>
-
+#include <tuple>
 using namespace std;
 
 #ifndef FM_INDEX_LOCATE_HPP_

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <tuple>
 
 #ifndef TEST_UTIL_CPP
 #define TEST_UTIL_CPP

@@ -4,6 +4,7 @@
 #include "../fm_index/tree.hpp"
 #include <algorithm>
 #include <stack>
+#include <tuple>
 
 using namespace std;
 

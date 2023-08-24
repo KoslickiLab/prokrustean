@@ -1,6 +1,7 @@
 #ifndef APPLICATION_UTIL_HPP_
 #define APPLICATION_UTIL_HPP_
 #include <algorithm>
+#include <tuple>
 #include "../prokrustean.hpp"
 
 struct Interval{

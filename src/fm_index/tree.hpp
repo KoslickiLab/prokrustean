@@ -1,13 +1,13 @@
+#ifndef FM_INDEX_TREE_HPP_
+#define FM_INDEX_TREE_HPP_
+
 #include "index.hpp"
 #include <algorithm>
 #include <limits>
 #include <stack>
+#include <tuple>
 
 using namespace std;
-
-#ifndef FM_INDEX_TREE_HPP_
-#define FM_INDEX_TREE_HPP_
-
 /*
  * representation of a right-maximal substring (SA node) as a list of STRING intervals
  */
