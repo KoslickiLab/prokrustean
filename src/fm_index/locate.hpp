@@ -46,14 +46,14 @@ vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no,
 	vector<pair<uint64_t, string>> sa;
 	while(F >= fm_idx.seq_cnt()){
 		seq = fm_idx.get_character(L) + seq;
-		sa.push_back(make_tuple(F, seq));
+		sa.push_back(make_pair(F, seq));
 		L = F;
 		F = fm_idx.LF(L);
 	}
 	// important: this can be misleading because F is randomly (in lexicographical order) chosen
 	if(with_term){
 		string term(1, fm_idx.TERM);
-		sa.insert(sa.begin(), make_tuple(F, term));
+		sa.insert(sa.begin(), make_pair(F, term));
 	}
 	reverse(sa.begin(), sa.end());
 
