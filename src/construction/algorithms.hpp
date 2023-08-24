@@ -50,6 +50,7 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
 }
 
 Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads, uint64_t Lmin=1, bool recover_sequences=false){
+    cout << "start with seq: " << fm_idx.seq_cnt() << ", total length " << fm_idx.size() << ", Lmin " << Lmin << ", threads " << num_threads << endl;
     // step1: collect representative suffix array
     int subtree_depth = 3+(int)(num_threads/10);
     subtree_depth = subtree_depth > Lmin? Lmin :subtree_depth;
@@ -83,14 +84,14 @@ Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads
         repeats.insert(repeats.end(), r.begin(), r.end());
     }
     futures.clear();
-    cout << "repeat(" << repeats.size() << ") collection completed, " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    cout << "step1 completed (repeats " << repeats.size() << "): " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
     
     // step2 get repr structure
     start = std::chrono::steady_clock::now();
     auto repr_annotation = ReprSuffixAnnotation();
     repr_annotation.initialize_rank(fm_idx.size(), repeats);
     repr_annotation.initialize_repr_sa(repeats);
-    cout << "repr conversion completed, " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    cout << "step2 completed (repr conversion): " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
 
     // step3 build structure
     auto func__collect_min_covers = //lambda function for distributing tasks to threads
@@ -141,7 +142,7 @@ Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads
         fut3[i].wait();
     }
 
-    cout << "pk construction completed, " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    cout << "step3 completed: " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
     return pk;
 }
 #endif

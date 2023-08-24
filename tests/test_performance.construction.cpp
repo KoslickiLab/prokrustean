@@ -70,7 +70,7 @@ void test_real_data_ropebwt2(){
 }
 
 void test_real_data_gut_ropebwt2(){
-    int threads = 32;
+    int threads = 64;
     int Lmin = 30;
     auto start = std::chrono::steady_clock::now();
     auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
@@ -104,7 +104,7 @@ void test_real_data_ful_ropebwt2(){
 }
 
 void main_performance_construction() {
-    test_real_data_ropebwt2();
+    // test_real_data_ropebwt2();
     test_real_data_gut_ropebwt2();
-    test_real_data_ful_ropebwt2();
+    // test_real_data_ful_ropebwt2();
 }
