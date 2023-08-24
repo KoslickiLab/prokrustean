@@ -120,24 +120,24 @@ public:
 
 
 
-class ReprSuffixAnnotationParallel {
-    /* thread safe imple*/
-    vector<vector<RepId>> repr_suffixes;
+// class ReprSuffixAnnotationParallel {
+//     /* thread safe imple*/
+//     vector<vector<RepId>> repr_suffixes;
 
-    ReprSuffixAnnotationParallel(uint64_t repr_size){
-        repr_suffixes.resize(repr_size);
-    }
+//     ReprSuffixAnnotationParallel(uint64_t repr_size){
+//         repr_suffixes.resize(repr_size);
+//     }
 
-    // 
-    void set_repeats(vector<MaximalRepeatAnnotation> &repeats, uint64_t from, uint64_t to){
+//     // 
+//     void set_repeats(vector<MaximalRepeatAnnotation> &repeats, uint64_t from, uint64_t to){
 
-    }
+//     }
 
-    // 
-    vector<RepId> get_repeats(uint64_t sa_idx){
+//     // 
+//     vector<RepId> get_repeats(uint64_t sa_idx){
 
-    }
-};
+//     }
+// };
 
 void print_repeats(vector<MaximalRepeatAnnotation> repeats){
     for(int i=0; i<repeats.size(); i++){

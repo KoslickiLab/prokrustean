@@ -54,8 +54,8 @@ vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
     return kmers;
 }
 
-vector<tuple<SeqId, Pos>> collect_distinct_kmer_pos(Prokrustean pk, unsigned int k){
+// vector<tuple<SeqId, Pos>> collect_distinct_kmer_pos(Prokrustean pk, unsigned int k){
 
-}
+// }
 
 #endif

@@ -130,7 +130,7 @@ Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads
     Prokrustean pk;
     pk.set_sizes(fm_idx.seq_cnt(), repeats.size(), recover_sequences);
     vector<SeqId> seq_ids(fm_idx.seq_cnt());
-    iota(seq_ids.begin(), seq_ids.end(), 1);
+    iota(seq_ids.begin(), seq_ids.end(), 0);
     // run threads
     vector<future<void>> fut3;
     for(int i=0; i<num_threads; i++){
