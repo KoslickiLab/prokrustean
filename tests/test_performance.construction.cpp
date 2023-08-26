@@ -29,6 +29,7 @@ void test_real_data_ropebwt2(){
     // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, true);
     print_prokrustean_statistics(pk);
+    print_single_rep_to_single_rep_relationships(pk);
     // vector<string> mers = collect_distinct_kmers(pk, 40);
     // cout << "mers count: " << mers.size() << " ex: " << mers[0] <<endl;
 	// while(getline(file, line))
@@ -83,10 +84,11 @@ void test_real_data_gut_ropebwt2(){
     // Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
     Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, false);
     print_prokrustean_statistics(pk);
+    print_single_rep_to_single_rep_relationships(pk);
 }
 
 void test_real_data_ful_ropebwt2(){
-    int threads = 16;
+    int threads = 32;
     int Lmin = 30;
     auto start = std::chrono::steady_clock::now();
     cout << "bwt -> wt start " << endl;
@@ -96,10 +98,28 @@ void test_real_data_ful_ropebwt2(){
     
     Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, true);
     print_prokrustean_statistics(pk);
+    print_single_rep_to_single_rep_relationships(pk);
+}
+
+void test_gtdb_gca019_ropebwt2(){
+    int threads = 4;
+    // int Lmin = 5;
+    auto start = std::chrono::steady_clock::now();
+    cout << "bwt -> wt start " << endl;
+    auto str = WaveletString(PATH4_PERFORMANCE_GENOME_GCA_019_ROPEBWT2_BWT, '$');
+    cout << "bwt -> wt completed " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    auto fm_idx = FmIndex(str);
+
+    vector<int> Ls = {10, 15, 20, 25, 30, 35, 40, 45, 50};
+    for(auto Lmin: Ls){    
+        Prokrustean pk = build_prokrustean_parallel(fm_idx, threads, Lmin, true);
+        print_prokrustean_statistics(pk);
+    }
 }
 
 void main_performance_construction() {
     test_real_data_ropebwt2();
     test_real_data_gut_ropebwt2();
-    // test_real_data_ful_ropebwt2();
+    test_real_data_ful_ropebwt2();
+    // test_gtdb_gca019_ropebwt2();
 }

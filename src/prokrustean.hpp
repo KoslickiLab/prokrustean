@@ -110,4 +110,18 @@ void print_bare_prokrustean(Prokrustean pk){
         cout << endl;
     }
 }
+
+void print_single_rep_to_single_rep_relationships(Prokrustean pk){
+    int cnt = 0;
+    for(auto mc: pk.rep_mcs){
+        if(mc.mc_reps.size()==1){
+            auto unique_repid = get<1>(mc.mc_reps[0]);
+            if(pk.rep_mcs[unique_repid].mc_reps.size()>0){
+                cnt++;
+            }
+        }
+    }
+    cout << "-- print_single_rep_to_single_rep_relationships --" << endl;
+    cout << "total: " << cnt << endl;
+}
 #endif
