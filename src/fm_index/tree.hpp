@@ -216,12 +216,12 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
             }
         }
         node_cnt++;
-        if(node_cnt%10000==0){
-            cout << "navigated " << node_cnt << endl;
-        }
-        if(process_cnt>100000 && process_cnt%100000==0){
-            cout << "processed " << process_cnt << endl;
-        }
+        // if(node_cnt%10000==0){
+        //     cout << "navigated " << node_cnt << endl;
+        // }
+        // if(process_cnt>100000 && process_cnt%100000==0){
+        //     cout << "processed " << process_cnt << endl;
+        // }
     }
     // Ts.resize(T_idx+1);
 }
