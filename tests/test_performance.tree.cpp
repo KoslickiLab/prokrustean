@@ -254,16 +254,27 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
         stack.pop();
 
         start_extend_node = std::chrono::steady_clock::now();
-        start_extend_node_stage = std::chrono::steady_clock::now();
+        
         vector<RankArray> left_p_ranks(node.firsts.size());
         RankArray rank_array(c_max);
+        
         for(int i=0; i<node.firsts.size(); i++){
             if(i==0 || node.firsts[i-1]!=node.firsts[i]){
-                rank_array = fm_idx.STRING->ranks(node.firsts[i]);  
+                start_extend_node_stage = std::chrono::steady_clock::now();
+                CharId cid=0;
+                for(auto c: fm_idx.characters){
+                    // rank_array[cid]=wt.rank(node.firsts[i], c);
+                    rank_array[cid]=fm_idx.STRING->rank(node.firsts[i], cid);
+                    
+                    cid++;
+                }
+                // rank_array = fm_idx.STRING->ranks(node.firsts[i]);  
+                extend_node_acc1+= std::chrono::steady_clock::now()-start_extend_node_stage;
+                
             } 
             left_p_ranks[i]=rank_array;
         }
-        extend_node_acc1+= std::chrono::steady_clock::now()-start_extend_node_stage;
+        
 
         start_extend_node_stage = std::chrono::steady_clock::now();
         vector<SuffixArrayNode> c_nodes(fm_idx.characters.size());
@@ -312,19 +323,23 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
         extend_node_acc+= std::chrono::steady_clock::now()-start_extend_node;
 
         start_process_node = std::chrono::steady_clock::now();
-        auto annot = get_repeat_annotations(ext);
-        if(annot.has_value()){
+        if(ext.left_maximal() && ext.node.right_maximal()){
+
+            auto annot = get_repeat_annotations(ext);
             maximal_cnt++;
-            annots.push_back(annot.value());
+            annots.push_back(annot);
         }
+        
         process_node_acc+= std::chrono::steady_clock::now()-start_process_node;
 
         start_process_node = std::chrono::steady_clock::now();
         if(ext.left_maximal() && ext.node.right_maximal()){
-            auto repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
-            maximal_cnt++;
+            vector<bool> repr_sa_exists_left_chars(ext.c_nodes.size());
+            vector<bool> repr_sa_exists_right_chars(ext.c_nodes.size());
+            decide_repr_sa_extensions(ext, repr_sa_exists_left_chars, repr_sa_exists_right_chars);
         }
         process_node_acc1+= std::chrono::steady_clock::now()-start_process_node;
+        
 
         for(int i=0; i<ext.c_nodes.size(); i++){
             // terminal
@@ -350,8 +365,9 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
         max_node_cnt = max_node_cnt<nodes.size()? nodes.size(): max_node_cnt;
         node_cnt++;
     }
-    cout << "max node count: " << max_node_cnt;
-    cout << "node visiteds: " << node_cnt;
+    cout << "max stack node count: " << max_node_cnt;
+    cout << ", maximal count: " << maximal_cnt;
+    cout << ", node visiteds: " << node_cnt;
     cout << ", extend_node: " << extend_node_acc.count()/1000000 << "ms";
     cout << ", process_node: " << process_node_acc.count()/1000000 << "ms" << endl;
     cout << "ext1: " << extend_node_acc1.count()/1000000 << "ms";
@@ -361,7 +377,6 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
     cout << ", process decide: " << process_node_acc1.count()/1000000 << "ms";
     
     cout << endl;
-    cout << "dummy" << maximal_cnt;
 }
 
 
@@ -409,6 +424,7 @@ void test_tree_exploration_investigation(){
     start = std::chrono::steady_clock::now();
     vector<MaximalRepeatAnnotation> repeats;
     navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx, repeats);
+    cout << "max node count: " << repeats.size();
     cout << "original navi : " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 

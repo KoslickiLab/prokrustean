@@ -8,110 +8,153 @@
 
 using namespace std;
 
-tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId>> distinct_extensions){
-    // cout << "-- distinct -- " << endl;
-    // for(auto ext: distinct_extensions){
-    //     cout << (int)get<0>(ext) << ", " << (int)get<1>(ext) << endl;
-    // }
-    vector<int> left_cnts(char_max,0);
-    vector<CharId> left_paired_example(char_max);
-    vector<int> right_cnts(char_max,0);
-    vector<CharId> right_paired_example(char_max);
+// tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions(int char_max, vector<tuple<CharId, CharId>> distinct_extensions){
+//     // cout << "-- distinct -- " << endl;
+//     // for(auto ext: distinct_extensions){
+//     //     cout << (int)get<0>(ext) << ", " << (int)get<1>(ext) << endl;
+//     // }
+//     vector<int> left_cnts(char_max,0);
+//     vector<CharId> left_paired_example(char_max);
+//     vector<int> right_cnts(char_max,0);
+//     vector<CharId> right_paired_example(char_max);
 
-    // vector<tuple<int, CharId>> left_pair_info(char_max);
-    // vector<tuple<int, CharId>> right_pair_info(char_max);
-    vector<CharId> left_repr_extensions;
-    vector<CharId> right_repr_extensions;
-    for(auto pair:distinct_extensions){
-        auto left = get<0>(pair);
-        auto right = get<1>(pair);
-        left_cnts[left]++;
-        left_paired_example[left] = right;
-        right_cnts[right]++;
-        right_paired_example[right] = left;
+//     // vector<tuple<int, CharId>> left_pair_info(char_max);
+//     // vector<tuple<int, CharId>> right_pair_info(char_max);
+//     vector<CharId> left_repr_extensions;
+//     vector<CharId> right_repr_extensions;
+//     for(auto pair:distinct_extensions){
+//         auto left = get<0>(pair);
+//         auto right = get<1>(pair);
+//         left_cnts[left]++;
+//         left_paired_example[left] = right;
+//         right_cnts[right]++;
+//         right_paired_example[right] = left;
+//     }
+//     for(int i=1/*not termination*/; i<char_max; i++){ 
+//         // cout << "left: " << i << ", left cnt" << left_cnt << ", right info: " << (int)r << endl;
+//         if(left_cnts[i]==0) 
+//         continue;
+//         //left exclusive but not bi-exclusive
+//         if(left_cnts[i]==1 && left_paired_example[i]!=0 && right_cnts[left_paired_example[i]]>1)
+//         continue;
+//         left_repr_extensions.push_back(i);
+//     }
+//     for(int i=1/*not termination*/; i<char_max; i++){ 
+//         if(right_cnts[i]==0) 
+//         continue;
+//         //right exclusive but not bi-exclusive
+//         if(right_cnts[i]==1 && right_paired_example[i]!=0 && left_cnts[right_paired_example[i]]>1) 
+//         continue;
+//         right_repr_extensions.push_back(i);
+//     }
+//     // cout << "left: ";
+//     // for(auto ext: left_repr_extensions){
+//     //     cout << (int)(ext);
+//     // }
+//     // cout<<endl;
+//     // cout << "right: ";
+//     // for(auto ext: left_repr_extensions){
+//     //     cout << (int)(ext);
+//     // }
+//     // cout<<endl;
+//     return make_tuple(left_repr_extensions, right_repr_extensions);
+// }
+
+void decide_repr_sa_extensions(SuffixArrayNodeExtension ext, vector<bool> &repr_sa_exists_left_chars, vector<bool> &repr_sa_exists_right_chars){
+    int char_no = ext.c_nodes.size();
+    
+    /* iterations start from 1 meaning terminator is not considered for repr sa.*/
+    for(CharId r=1; r<char_no; r++){
+        uint64_t r_interval_cnt = ext.node.firsts[r+1]-ext.node.firsts[r];
+        if(r_interval_cnt==0){
+            continue;
+        }
+        for(CharId l=1; l<char_no; l++){
+            // r -> l exclusiveness
+            if(r_interval_cnt==ext.c_nodes[l].firsts[r+1]-ext.c_nodes[l].firsts[r]){
+                // l -> r exclusiveness
+                if(ext.c_nodes[l].interval_size() == ext.c_nodes[l].firsts[r+1]-ext.c_nodes[l].firsts[r]){
+                    repr_sa_exists_right_chars[r] = true;
+                    repr_sa_exists_left_chars[l] = true;
+                }
+                // the only exception is when r -> l exclusive but l -> r,r' diverged. Then r cannot be included.
+                break;
+            } else {
+                repr_sa_exists_right_chars[r] = true;
+            }
+        }
     }
-    for(int i=1/*not termination*/; i<char_max; i++){ 
-        // cout << "left: " << i << ", left cnt" << left_cnt << ", right info: " << (int)r << endl;
-        if(left_cnts[i]==0) 
-        continue;
-        //left exclusive but not bi-exclusive
-        if(left_cnts[i]==1 && left_paired_example[i]!=0 && right_cnts[left_paired_example[i]]>1)
-        continue;
-        left_repr_extensions.push_back(i);
+
+    for(CharId l=1; l<char_no; l++){
+        if(ext.c_nodes[l].interval_size()==0){
+            continue;
+        }
+        for(CharId r=1; r<char_no; r++){
+            // l -> r exclusiveness
+            if(ext.c_nodes[l].interval_size()==ext.c_nodes[l].firsts[r+1]-ext.c_nodes[l].firsts[r]){
+                // first, bi-exclusiveness was considered above.
+                // second, the l->r but r!->l also skips it
+                break;
+            } else {
+                repr_sa_exists_left_chars[l] = true;
+            }
+        }
     }
-    for(int i=1/*not termination*/; i<char_max; i++){ 
-        if(right_cnts[i]==0) 
-        continue;
-        //right exclusive but not bi-exclusive
-        if(right_cnts[i]==1 && right_paired_example[i]!=0 && left_cnts[right_paired_example[i]]>1) 
-        continue;
-        right_repr_extensions.push_back(i);
-    }
-    // cout << "left: ";
-    // for(auto ext: left_repr_extensions){
-    //     cout << (int)(ext);
-    // }
-    // cout<<endl;
-    // cout << "right: ";
-    // for(auto ext: left_repr_extensions){
-    //     cout << (int)(ext);
-    // }
-    // cout<<endl;
-    return make_tuple(left_repr_extensions, right_repr_extensions);
 }
 
-optional<MaximalRepeatAnnotation> get_repeat_annotations(SuffixArrayNodeExtension &ext){
-    if(ext.left_maximal() && ext.node.right_maximal()){
-        tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions());
-        // Remove possible duplications by set. Duplications cannot be predicted in advance.
-        set<SuffixArrayIdx> uniq_repr_sa;
 
-        for(auto l: get<0>(repr_extensions)){
-            uniq_repr_sa.insert(ext.first_l(l));
-        }
-        for(auto r: get<1>(repr_extensions)){
-            uniq_repr_sa.insert(ext.first_r(r));
-        }
-        /*important. If termination is placed in both ends, all are representative. 
-        decide_repr_sa_extensions marks it by simply including 0 in left character. 
-        Then in here we should collect all suffixes where the form is #W#.
-        */
-        for(auto sa_idx: ext.both_ext_terms){
-            uniq_repr_sa.insert(sa_idx);
-        }
+MaximalRepeatAnnotation get_repeat_annotations(SuffixArrayNodeExtension &ext){
+    int char_no = ext.c_nodes.size();
+    // vector<optional<SuffixArrayIdx>> prev_c_firsts(char_no);
+    // suffixes such that both left and right extensions are terminations
+    // vector<SuffixArrayIdx> both_ext_terms;
 
-        vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
-        // if(repr_sa.size()==0){
-        //     cout << "repr_sa 0 case" << endl;
-        //     for(auto pair: ext.distinct_extensions()){
-        //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
-        //     }
-        //     cout << "repr ex left" << endl; 
-        //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-        //         cout << (int)left << endl;
-        //     }
-        //     cout << "repr ex right" << endl; 
-        //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-        //         cout << (int)left << endl;
-        //     }
-        //     assert(false);
-        // };
-        assert(repr_sa.size()>0);
-        SuffixArrayIdx min_idx = repr_sa[0];
-        for(auto i: repr_sa){
-            min_idx = i < min_idx? i: min_idx;
+    vector<bool> repr_sa_exists_left_chars(char_no, false);
+    vector<bool> repr_sa_exists_right_chars(char_no, false);
+    decide_repr_sa_extensions(ext, repr_sa_exists_left_chars, repr_sa_exists_right_chars);
+    
+    // Remove possible duplications by set. Duplications cannot be predicted in advance.
+    int cnt = 0;
+    for(auto exists: repr_sa_exists_left_chars) if(exists) cnt++;
+    for(auto exists: repr_sa_exists_right_chars) if(exists) cnt++;
+    vector<SuffixArrayIdx> repr_sa(cnt);
+    int last_idx=0;
+    for(CharId l=0; l<char_no; l++){
+        if(repr_sa_exists_left_chars[l]){
+            assert(ext.prev_c_firsts[l].has_value());
+            repr_sa[last_idx]=ext.prev_c_firsts[l].value();
+            last_idx++;
         }
-        // cout << "rep size: " <<ext.node.depth << " sa: "; 
-        // for(auto i: repr_sa){
-        //     cout << i << ", ";
-        // }
-        // cout << endl;
-
-        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
-        return rep;
-    } else {
-        return nullopt;
     }
+    for(CharId r=0; r<char_no; r++){
+        if(repr_sa_exists_right_chars[r]){
+            SuffixArrayIdx r_idx = ext.first_r(r);
+            bool dup=false;
+            for(auto l_idx: repr_sa) if(l_idx==r_idx) dup=true;
+            if(!dup) repr_sa[last_idx]=r_idx;
+            last_idx++; 
+        }
+    }
+    if(last_idx+1 < repr_sa.size()){
+        repr_sa.resize(last_idx+1);
+    }
+
+    /*important. If termination is placed in both ends, all are representative. 
+    decide_repr_sa_extensions marks it by simply including 0 in left character. 
+    Then in here we should collect all suffixes where the form is #W#.
+    */
+    for(auto sa_idx: ext.both_ext_terms){
+        //push back is expensive but believed to have little amount
+        repr_sa.push_back(sa_idx);
+    }
+
+    assert(repr_sa.size()>0);
+    SuffixArrayIdx min_idx = repr_sa[0];
+    for(auto i: repr_sa){
+        min_idx = i < min_idx? i: min_idx;
+    }
+    
+    return {ext.node.depth, repr_sa, min_idx};
 }
 
 
@@ -203,9 +246,9 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
         auto v = repr_sa.get_repeats(F);
         if (v.has_value()){
             vector<RepId> rep_ids = v.value();
-            vector<MaximalRepeatAnnotation> reps;
-            for(auto id: rep_ids){
-                reps.push_back(rep_annots[id]);
+            vector<MaximalRepeatAnnotation> reps(rep_ids.size());
+            for(int i=0; i< rep_ids.size(); i++){
+                reps[i]=rep_annots[rep_ids[i]];
             }
             sort(rep_ids.begin(), rep_ids.end(),
             [&rep_annots](uint64_t r1, uint64_t r2) {return rep_annots[r1].size < rep_annots[r2].size; });

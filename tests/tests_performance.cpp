@@ -5,8 +5,8 @@
 int main(void){
     // cout << "--- bitvector ---" << endl;
     // main_performance_bitvector();
-    // cout << "--- construction ---" << endl;
-    // main_performance_construction();
-    cout << "--- tree ---" << endl;
-    main_performance_tree();
+    cout << "--- construction ---" << endl;
+    main_performance_construction();
+    // cout << "--- tree ---" << endl;
+    // main_performance_tree();
 }

@@ -17,7 +17,9 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     vector<MaximalRepeatAnnotation> repeats;
     navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx, repeats);
     // print_repeats(repeats);
-    cout << "repeat(" << repeats.size() << ") collection completed, " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    cout << "repeat(" << repeats.size() << ") collection completed, ";
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s (";
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms)" << endl;
     
     // step2 get repr structure
     start = std::chrono::steady_clock::now();
@@ -84,7 +86,9 @@ Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads
         repeats.insert(repeats.end(), r.begin(), r.end());
     }
     futures.clear();
-    cout << "step1 completed (repeats " << repeats.size() << "): " << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s" << endl;
+    cout << "repeat(" << repeats.size() << ") collection completed, ";
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000/1000 << "s (";
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms)" << endl;
     
     // step2 get repr structure
     start = std::chrono::steady_clock::now();

@@ -82,9 +82,11 @@ public:
 
 	//the order follows the character sequence
     RankArray ranks(SuffixArrayIdx i){
-        RankArray ranks;
+        RankArray ranks(characters.size());
+        CharId cid=0;
         for(auto c: characters){
-            ranks.push_back(wt.rank(i, c));
+            ranks[cid]=wt.rank(i, c);
+            cid++;
         }
         return ranks;
     }

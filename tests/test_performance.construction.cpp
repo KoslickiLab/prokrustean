@@ -119,7 +119,7 @@ void test_gtdb_gca019_ropebwt2(){
 
 void main_performance_construction() {
     test_real_data_ropebwt2();
-    test_real_data_gut_ropebwt2();
-    test_real_data_ful_ropebwt2();
+    // test_real_data_gut_ropebwt2();
+    // test_real_data_ful_ropebwt2();
     // test_gtdb_gca019_ropebwt2();
 }

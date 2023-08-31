@@ -31,7 +31,11 @@ struct SuffixArrayNode {
     }
 
     bool right_maximal(){
-        return distinct_extensions().size()>1 || /*suffix count*/ firsts[1]-firsts[0]>1;
+        int cnt=0;
+        for(int i=0; i<firsts.size()-1; i++){
+            if(firsts[i]<firsts[i+1]) cnt++;
+        }
+        return cnt>1 || /*suffix count*/ firsts[1]-firsts[0]>1;
     }
 
     SuffixArrayIdx get_valid_first(){
@@ -83,36 +87,45 @@ struct SuffixArrayNodeExtension {
     }
 };
 
+
+struct WorkSpace{
+    vector<RankArray> left_p_ranks;
+};
 /*
 * Input: suffix tree node N.
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
-SuffixArrayNodeExtension extend_node(FmIndex &index, SuffixArrayNode &node){
-    vector<RankArray> left_p_ranks;
+void extend_node(FmIndex &index, SuffixArrayNode &node, SuffixArrayNodeExtension &ext){
+    int p_rank_size = 1+index.characters.size();
+    vector<RankArray> left_p_ranks(p_rank_size);
     RankArray rank_array;
     for(int i=0; i<node.firsts.size(); i++){
         if(i==0 || node.firsts[i-1]!=node.firsts[i]){
             rank_array = index.STRING->ranks(node.firsts[i]);  
         } 
-        left_p_ranks.push_back(rank_array);
+        left_p_ranks[i]=rank_array;
     }
 
-    vector<SuffixArrayNode> c_nodes;
-    for(int c=0; c < index.STRING->get_characters().size(); c++){
-        vector<uint64_t> firsts;
+    // vector<SuffixArrayNode> c_nodes(index.characters.size());
+    for(int c=0; c < index.character_cnt; c++){
+        vector<uint64_t> firsts(p_rank_size);
+        int i=0;
         for(auto p_rank:left_p_ranks){
             uint64_t sa_idx = index.C[c]+p_rank[c];
-            firsts.push_back(sa_idx);
+            // firsts[i]=sa_idx;
+            ext.c_nodes[c].firsts[i]=sa_idx;
+            i++;
         }
-        c_nodes.push_back({firsts, node.depth+1});
+        // ext.c_nodes[c]={firsts, node.depth+1};
+        ext.c_nodes[c].depth=node.depth+1;
     }
 
-    vector<optional<SuffixArrayIdx>> prev_c_firsts;
-    for(int c=0; c < c_nodes.size(); c++){
-        SuffixArrayNode c_node = c_nodes[c];
+    // vector<optional<SuffixArrayIdx>> prev_c_firsts(ext.c_nodes.size());
+    for(int c=0; c < ext.c_nodes.size(); c++){
+        SuffixArrayNode c_node = ext.c_nodes[c];
 
         if(c_node.interval_size()==0){
-            prev_c_firsts.push_back(nullopt);
+            ext.prev_c_firsts[c]=nullopt;
             continue;
         }
 
@@ -121,21 +134,23 @@ SuffixArrayNodeExtension extend_node(FmIndex &index, SuffixArrayNode &node){
         uint64_t rank = sa_idx - index.C[c] + 1;
         SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
         // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
-        prev_c_firsts.push_back(prev_sa_idx);
+        ext.prev_c_firsts[c]=prev_sa_idx;
     }
 
-    vector<SuffixArrayIdx> both_ext_terms;
-    if(c_nodes[0].firsts[0]!=c_nodes[0].firsts[1]){
+    // vector<SuffixArrayIdx> both_ext_terms;
+    ext.both_ext_terms.clear();
+    if(ext.c_nodes[0].firsts[0]!=ext.c_nodes[0].firsts[1]){
         // both ends are termination. collect all
-        for(SuffixArrayIdx sa_idx=c_nodes[0].firsts[0]; sa_idx< c_nodes[0].firsts[1]; sa_idx++){
+        for(SuffixArrayIdx sa_idx=ext.c_nodes[0].firsts[0]; sa_idx< ext.c_nodes[0].firsts[1]; sa_idx++){
             //revert the rank process
             uint64_t rank = sa_idx - index.C[0] + 1;
             SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, 0);
-            both_ext_terms.push_back(prev_sa_idx);
+            ext.both_ext_terms.push_back(prev_sa_idx);
         }
     }
 
-    return {node, c_nodes, prev_c_firsts, both_ext_terms};
+    ext.node = node;
+    // return {node, c_nodes, prev_c_firsts, both_ext_terms};
 };
 
 /*
@@ -150,7 +165,7 @@ SuffixArrayNode get_root(FmIndex &index){
     return {firsts, 0};
 };
 
-template<class T> using NodeFunc = optional<T>(*)(SuffixArrayNodeExtension&);
+template<class T> using NodeFunc = T(*)(SuffixArrayNodeExtension&);
 
 template<class T, NodeFunc<T> process_node>
 void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &Ts){
@@ -161,17 +176,33 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
     int node_cnt=0;
     int process_cnt=0;
 
+    // vector<SuffixArrayNode> c_nodes(fm_idx.characters.size());
+    SuffixArrayNodeExtension ext;
+    ext.c_nodes.resize(fm_idx.character_cnt);
+    for(int i=0; i< fm_idx.characters.size(); i++){
+        ext.c_nodes[i].firsts.resize(fm_idx.character_cnt+1);
+    }
+    ext.prev_c_firsts.resize(fm_idx.character_cnt);
+    // int T_idx=0;
+    // int min_margin_size=1000;
+    // Ts.resize(min_margin_size);
+    
     stack.push(root);
     while(!stack.empty()){
         auto node = stack.top();
         stack.pop();
 
-        auto ext = extend_node(fm_idx, node);
-        if(ext.node.depth>=Lmin){
-            optional<T> t = process_node(ext);
-            if(t.has_value()) {
-                Ts.push_back(t.value());
-            }
+        extend_node(fm_idx, node, ext);
+        if(ext.node.depth>=Lmin && ext.left_maximal()){
+            T t = process_node(ext);
+            Ts.push_back(t);
+            // Ts[T_idx]=t;
+            // T_idx++;
+            // for performance
+            // if(T_idx==Ts.size()){
+            //     int margin_size = 0.01*Ts.size() > min_margin_size? 0.01*Ts.size() : min_margin_size;
+            //     Ts.resize(Ts.size()+margin_size);
+            // }
             process_cnt++;
         }
 
@@ -185,19 +216,27 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
             }
         }
         node_cnt++;
-        // if(node_cnt%10000==0){
-        //     cout << "navigated " << node_cnt << endl;
-        // }
-        // if(process_cnt>100000 && process_cnt%100000==0){
-        //     cout << "processed " << process_cnt << endl;
-        // }
+        if(node_cnt%10000==0){
+            cout << "navigated " << node_cnt << endl;
+        }
+        if(process_cnt>100000 && process_cnt%100000==0){
+            cout << "processed " << process_cnt << endl;
+        }
     }
+    // Ts.resize(T_idx+1);
 }
 
 
 vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
     std::stack<SuffixArrayNode> stack;
     vector<SuffixArrayNode> nodes;
+    // vector<SuffixArrayNode> c_nodes(fm_idx.characters.size());
+    SuffixArrayNodeExtension ext;
+    ext.c_nodes.resize(fm_idx.characters.size());
+    for(int i=0; i< fm_idx.characters.size(); i++){
+        ext.c_nodes[i].firsts.resize(fm_idx.character_cnt+1);
+    }
+    ext.prev_c_firsts.resize(fm_idx.characters.size());
 
     stack.push(root);
     while(!stack.empty()){
@@ -206,7 +245,7 @@ vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int
         if(node.depth>=depth_max){
             nodes.push_back(node);
         } else {
-            auto ext = extend_node(fm_idx, node);
+            extend_node(fm_idx, node, ext);
             for(int i=0; i<ext.c_nodes.size(); i++){
                 // terminal
                 if(i==0) continue;

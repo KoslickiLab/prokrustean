@@ -36,6 +36,7 @@ public:
 	FmIndex(AbstractString &string, char TERM='#'){
 		this->STRING = &string;
 		this->characters = STRING->get_characters();
+		this->character_cnt = this->characters.size();
         this->C = get_c_array(string);
 		this->TERM = TERM;
     }
@@ -44,6 +45,7 @@ public:
     CArray C;
 	AbstractString* STRING;
 	vector<char> characters;
+	int character_cnt;
 
     uint64_t LF(uint64_t r){
         // cout << STRING[r] << endl;
