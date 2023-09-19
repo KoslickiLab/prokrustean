@@ -172,6 +172,10 @@ vector<SuffixArrayNode> _extend_node__full_but_prev_l(FmIndex &index, SuffixArra
 
 void _navigate_tree(SuffixArrayNode &root, FmIndex &fm_idx, WaveletString &wt, int scenario_no){
     int node_cnt = 0;
+    int left_maximal_cnt = 0;
+    int node_cnt_thres = 0;
+    int left_maximal_cnt_thres = 0;
+    int threshold = 20;
 
     std::stack<SuffixArrayNode> stack;
     
@@ -201,6 +205,14 @@ void _navigate_tree(SuffixArrayNode &root, FmIndex &fm_idx, WaveletString &wt, i
         default:
             assert(false);
         }
+
+        int distinct = 0;
+        for(auto interval:c_nodes){
+            if(interval.interval_size()>0){
+                distinct++;
+            }
+        }
+        bool left_maximal = distinct>1 || c_nodes[0].interval_size()>1;
         
         for(int i=0; i<c_nodes.size(); i++){
             // terminal
@@ -211,10 +223,17 @@ void _navigate_tree(SuffixArrayNode &root, FmIndex &fm_idx, WaveletString &wt, i
                 stack.push(child);
             }
         }
+        
         node_cnt++;
+        if(left_maximal) left_maximal_cnt++;
+        if(node.depth >= threshold){
+            node_cnt_thres++;
+            if(left_maximal) left_maximal_cnt_thres++;
+        }
     }
-
-    cout << "node visiteds: " << node_cnt << endl;
+    cout << "threshold: " << threshold << endl;
+    cout << "node visiteds: " << node_cnt << ", " << node_cnt_thres << "(" << (float)node_cnt_thres/node_cnt << ")" << endl;
+    cout << "node left maximal: " << left_maximal_cnt << ", " << left_maximal_cnt_thres << "(" << (float)left_maximal_cnt_thres/left_maximal_cnt << ")" << endl;
 }
 
 
@@ -222,6 +241,10 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
     int node_cnt = 0;
     int max_node_cnt = 0;
     int maximal_cnt = 0;
+    int left_maximal_cnt = 0;
+    int node_cnt_thres = 0;
+    int left_maximal_cnt_thres = 0;
+    int threshold = 20;
     int c_max = fm_idx.characters.size();
     int first_max = root.firsts.size();
     auto start_extend_node = std::chrono::steady_clock::now();
@@ -349,9 +372,26 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
         nodes[curr_idx] = nullopt;
         max_node_cnt = max_node_cnt<nodes.size()? nodes.size(): max_node_cnt;
         node_cnt++;
+        
+        int distinct = 0;
+        for(auto interval:c_nodes){
+            if(interval.interval_size()>0){
+                distinct++;
+            }
+        }
+        bool left_maximal = distinct>1 || c_nodes[0].interval_size()>1;
+        if(left_maximal) left_maximal_cnt++;
+        if(node.depth >= threshold){
+            node_cnt_thres++;
+            if(left_maximal) left_maximal_cnt_thres++;
+        }
     }
+    cout << ", node visiteds: " << node_cnt;
+    cout << ", node visiteds thres("<< threshold << "): " << node_cnt_thres << "("<< (float)node_cnt_thres/node_cnt <<")";
+    cout << ", node left max: " << left_maximal_cnt;
+    cout << ", node left max thres("<< threshold << "): " << left_maximal_cnt_thres << "("<< (float)left_maximal_cnt_thres/left_maximal_cnt <<")";
+    cout << endl;
     cout << "max node count: " << max_node_cnt;
-    cout << "node visiteds: " << node_cnt;
     cout << ", extend_node: " << extend_node_acc.count()/1000000 << "ms";
     cout << ", process_node: " << process_node_acc.count()/1000000 << "ms" << endl;
     cout << "ext1: " << extend_node_acc1.count()/1000000 << "ms";
@@ -397,7 +437,9 @@ void test_compare_various_tree_exploration(){
 
 void test_tree_exploration_investigation(){
     int Lmin = 1;
-    auto str = WaveletString(PATH1_PERFORMANCE_SREAD_SEQ, '$');
+    // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_SEQ, '$');
+    auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
+    
     auto fm_idx = FmIndex(str);
     cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
 

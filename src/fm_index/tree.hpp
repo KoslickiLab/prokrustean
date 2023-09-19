@@ -160,12 +160,13 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
     
     int node_cnt=0;
     int process_cnt=0;
+    int not_left_maximal_cnt=0;
 
     stack.push(root);
     while(!stack.empty()){
         auto node = stack.top();
         stack.pop();
-
+        
         auto ext = extend_node(fm_idx, node);
         if(ext.node.depth>=Lmin){
             optional<T> t = process_node(ext);
@@ -173,6 +174,9 @@ void navigate_tree(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, vector<T> &
                 Ts.push_back(t.value());
             }
             process_cnt++;
+        }
+        if(!ext.left_maximal()){
+            not_left_maximal_cnt++;
         }
 
         for(int i=0; i<ext.c_nodes.size(); i++){
