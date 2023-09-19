@@ -14,6 +14,8 @@ file(GLOB test_SRC "*.cpp")
 
 add_executable(${PROJECT_NAME} tests.cpp)
 
+# add_executable(${PROJECT_NAME} tests_performance.cpp)
+
 # target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 # target_link_libraries(${PROJECT_NAME} example ${Boost_LIBRARIES})
 # add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${PROJECT_NAME})

@@ -1,6 +1,6 @@
-#include "test_performance.bitvector.cpp"
-#include "test_performance.construction.cpp"
-#include "test_performance.tree.cpp"
+#include "test_bitvector.cpp"
+#include "test_construction.cpp"
+#include "test_tree.cpp"
 
 int main(void){
     // cout << "--- bitvector ---" << endl;
