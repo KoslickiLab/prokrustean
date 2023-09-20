@@ -28,6 +28,7 @@ class WaveletString: public AbstractString{
 private:
     vector<char> characters;
     map<char, uint8_t> characters_inv;
+    int characters_cnt;
     // wt_blcd<> wt;
 public:
     wt_blcd<> wt;
@@ -42,7 +43,7 @@ public:
         for(uint8_t c=0; c < std::numeric_limits<uint8_t>::max(); c++){
             if(wt.rank(wt.size(),c)>0) characters.push_back(c);
         }
-
+        characters_cnt=characters.size();
         for(int i=0; i< characters.size(); i++){
             characters_inv[characters[i]] = i;
         }
@@ -81,6 +82,22 @@ public:
     }
 
 	//the order follows the character sequence
+    void ranks_new(SuffixArrayIdx i, RankArray& ranks){
+        for(int cid=0; cid < characters_cnt; cid++){
+            ranks[cid]=wt.rank(i, characters[cid]);
+        }
+    }
+
+    void ranks(CharId c, vector<SuffixArrayIdx> &firsts, vector<uint64_t> &ext_ranks){
+        for(int i=0; i< characters_cnt+1; i++){
+            if(i==0||firsts[i-1]!=firsts[i]){
+                ext_ranks[i]=wt.rank(firsts[i], characters[c]);
+            } else {
+                ext_ranks[i]=ext_ranks[i-1];
+            }
+        }
+    }
+
     RankArray ranks(SuffixArrayIdx i){
         RankArray ranks;
         for(auto c: characters){

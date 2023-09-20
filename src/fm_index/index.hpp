@@ -11,7 +11,7 @@ typedef uint8_t CharId;
 typedef uint64_t SuffixArrayIdx;
 //C array of fm index. Each index is CharId 
 typedef vector<uint64_t> CArray;
-typedef vector<SuffixArrayIdx> RankArray;
+typedef vector<uint64_t> RankArray;
 
 class AbstractString{
 public:
@@ -23,6 +23,8 @@ public:
 	virtual uint64_t rank(SuffixArrayIdx i, CharId c) = 0;
 	//the order follows the character sequence
     virtual RankArray ranks(SuffixArrayIdx i) = 0;
+	virtual void ranks_new(SuffixArrayIdx i, RankArray& ranks) = 0;
+	virtual void ranks(CharId c, vector<SuffixArrayIdx> &firsts, vector<uint64_t> &ext_ranks)=0;
 	virtual uint64_t select(uint64_t i, CharId c) = 0;
 	virtual uint64_t size() = 0;
 };
@@ -36,6 +38,7 @@ public:
 	FmIndex(AbstractString &string, char TERM='#'){
 		this->STRING = &string;
 		this->characters = STRING->get_characters();
+		this->characters_cnt = this->characters.size();
         this->C = get_c_array(string);
 		this->TERM = TERM;
     }
@@ -44,6 +47,7 @@ public:
     CArray C;
 	AbstractString* STRING;
 	vector<char> characters;
+	int characters_cnt;
 
     uint64_t LF(uint64_t r){
         // cout << STRING[r] << endl;
