@@ -49,7 +49,7 @@ struct SuffixArrayNodeExtension_NEW {
         c_nodes=vector<SuffixArrayNode_NEW>(characters_cnt);
         c_nodes_open=vector<bool>(characters_cnt);
         c_first_ranks= vector<uint64_t>(characters_cnt+1);
-        prev_c_firsts=vector<optional<SuffixArrayIdx>>(characters_cnt);
+        // prev_c_firsts=vector<optional<SuffixArrayIdx>>(characters_cnt);
         for(int i=0; i<characters_cnt; i++){
             c_nodes[i].firsts=vector<SuffixArrayIdx>(characters_cnt+1);
         }
@@ -77,15 +77,18 @@ struct SuffixArrayNodeExtension_NEW {
     vector<uint64_t> c_first_ranks;
     
     // Each means the first sa index of W that corresponds to first sa index of cW for each character c.
-    vector<optional<SuffixArrayIdx>> prev_c_firsts;
+    // vector<optional<SuffixArrayIdx>> prev_c_firsts;
     // suffixes such that both left and right extensions are terminations
     vector<SuffixArrayIdx> both_ext_terms;
+    
+    // for profiling purposes
+    vector<int> any_measure;
 
-     SuffixArrayIdx first_l(CharId c){
-        assert(prev_c_firsts[c].has_value());
-        // cout << "first l: " << prev_c_firsts[c].value() << endl;
-        return prev_c_firsts[c].value();
-    }
+    // SuffixArrayIdx first_l(CharId c){
+    //     assert(prev_c_firsts[c].has_value());
+    //     // cout << "first l: " << prev_c_firsts[c].value() << endl;
+    //     return prev_c_firsts[c].value();
+    // }
 
     SuffixArrayIdx first_r(CharId c){
         return node.firsts[c];
@@ -96,7 +99,9 @@ struct SuffixArrayNodeExtension_NEW {
 * Input: suffix tree node N.
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
-void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt){
+void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
+    auto start = std::chrono::steady_clock::now();
+
     // push node to left maximal. everytime only one left child found, update node.
     bool left_maximal=false;
     bool left_maximal_checked=false;
@@ -123,14 +128,14 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
                         ext.node.firsts[i]=index.C[c]+ext.c_first_ranks[i];
                     }
                     left_maximal=false;
-                    cnt++;
+                    ext.any_measure[0]++;
                     // jump to next phase
                     break;
                 } else {
                     left_maximal_checked=true;
                 }
             }
-
+            
             // update c_nodes, especially right maximal
             ext.c_nodes_open[c]=true;
             ext.c_nodes[c].right_maximal=false;
@@ -151,20 +156,22 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
         }
     }
 
-    for(int c=0; c < index.characters_cnt; c++){
-        if(!ext.c_nodes_open[c]){
-            ext.prev_c_firsts[c]=nullopt;
-            continue;
-        } 
+    ext.any_measure[5]+=(std::chrono::steady_clock::now()-start).count();
 
-        //revert the rank process
-        SuffixArrayIdx sa_idx = ext.c_nodes[c].get_valid_first();
-        uint64_t rank = sa_idx - index.C[c] + 1;
-        SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
-        // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
-        ext.prev_c_firsts[c]=prev_sa_idx;
-    }
+    // for(int c=0; c < index.characters_cnt; c++){
+    //     if(!ext.c_nodes_open[c]){
+    //         ext.prev_c_firsts[c]=nullopt;
+    //         continue;
+    //     } 
 
+    //     //revert the rank process
+    //     SuffixArrayIdx sa_idx = ext.c_nodes[c].get_valid_first();
+    //     uint64_t rank = sa_idx - index.C[c] + 1;
+    //     SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
+    //     // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
+    //     ext.prev_c_firsts[c]=prev_sa_idx;
+    // }
+    
     ext.both_ext_terms.clear();
     if(ext.c_nodes_open[0] && ext.c_nodes[0].firsts[0]!=ext.c_nodes[0].firsts[1]){
         // both ends are termination. collect all
@@ -189,41 +196,41 @@ SuffixArrayNode_NEW get_root_new(FmIndex &index){
     return {firsts, 0};
 };
 
-template<class T> using NodeFunc_NEW = optional<T>(*)(SuffixArrayNodeExtension_NEW&);
+template<class T> using NodeFunc_NEW = void(*)(FmIndex&, SuffixArrayNodeExtension_NEW&, vector<T>&);
 
 template<class T, NodeFunc_NEW<T> process_node>
 void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vector<T> &Ts){
     Lmin = Lmin >= 1? Lmin : 1;
 
-    // vector<SuffixArrayNode_NEW> container;
-    // container.reserve(10000);
-    // std::stack<SuffixArrayNode_NEW,vector<SuffixArrayNode_NEW>> stack(container);
     stack<SuffixArrayNode_NEW> stack;
     
     SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
-    
-    int node_cnt=0;
-    int process_cnt=0;
-    int left_push_cnt=0;
+    ext.any_measure=vector<int>(10,0);
+    auto start = std::chrono::steady_clock::now();
 
     stack.push(root);
     while(!stack.empty()){
+        start = std::chrono::steady_clock::now();
         ext.node = stack.top();
         stack.pop();
+        ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
         
-        // push_node_to_left_maximal(fm_idx, node, left_push_cnt);
-        extend_node_new(fm_idx, ext, left_push_cnt);
+        
+        start = std::chrono::steady_clock::now();
+        extend_node_new(fm_idx, ext);
+        ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
         if(ext.node.depth>=Lmin){
-            optional<T> t = process_node(ext);
-            if(t.has_value()) {
-                Ts.push_back(t.value());
-            }
-            process_cnt++;
+            start = std::chrono::steady_clock::now();
+            process_node(fm_idx, ext, Ts);
+            // optional<T> t = process_node(fm_idx, ext, Ts);
+            // if(t.has_value()) {
+            //     Ts.push_back(t.value());
+            // }
+            ext.any_measure[3]+=(std::chrono::steady_clock::now()-start).count();
+            
         }
-        // if(!ext.left_maximal()){
-        //     not_left_maximal_cnt++;
-        // }
-
+        
+        start = std::chrono::steady_clock::now();
         for(int i=0; i<fm_idx.characters_cnt; i++){
             // terminal
             if(i==0) continue;
@@ -234,7 +241,7 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
                 stack.push(ext.c_nodes[i]);
             }
         }
-        node_cnt++;
+        ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
         // if(node_cnt%10000==0){
         //     cout << "navigated " << node_cnt << endl;
         // }
@@ -242,7 +249,10 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
         //     cout << "processed " << process_cnt << endl;
         // }
     }
-    cout << "left pushed " << left_push_cnt << endl;
+    cout << "left pushed " << ext.any_measure[0] << endl;
+    for(int i=0; i<ext.any_measure.size(); i++){
+        cout << "measure " << i << ": " << ext.any_measure[i]/1000000 << "ms" << endl;
+    }
 }
 
 
@@ -260,7 +270,7 @@ vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_
         if(node.depth>=depth_max){
             nodes.push_back(node);
         } else {
-            extend_node_new(fm_idx, ext, cnt);
+            extend_node_new(fm_idx, ext);
             for(int i=0; i<ext.c_nodes.size(); i++){
                 // terminal
                 if(i==0) continue;

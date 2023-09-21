@@ -58,65 +58,28 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
     }
 }
 
-tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions_new(int char_max, vector<tuple<CharId, CharId>> distinct_extensions){
-    // cout << "-- distinct -- " << endl;
-    // for(auto ext: distinct_extensions){
-    //     cout << (int)get<0>(ext) << ", " << (int)get<1>(ext) << endl;
-    // }
-    vector<int> left_cnts(char_max,0);
-    vector<CharId> left_paired_example(char_max);
-    vector<int> right_cnts(char_max,0);
-    vector<CharId> right_paired_example(char_max);
-
-    // vector<tuple<int, CharId>> left_pair_info(char_max);
-    // vector<tuple<int, CharId>> right_pair_info(char_max);
-    vector<CharId> left_repr_extensions;
-    vector<CharId> right_repr_extensions;
-    for(auto pair:distinct_extensions){
-        auto left = get<0>(pair);
-        auto right = get<1>(pair);
-        left_cnts[left]++;
-        left_paired_example[left] = right;
-        right_cnts[right]++;
-        right_paired_example[right] = left;
-    }
-    for(int i=1/*not termination*/; i<char_max; i++){ 
-        // cout << "left: " << i << ", left cnt" << left_cnt << ", right info: " << (int)r << endl;
-        if(left_cnts[i]==0) 
-        continue;
-        //left exclusive but not bi-exclusive
-        if(left_cnts[i]==1 && left_paired_example[i]!=0 && right_cnts[left_paired_example[i]]>1)
-        continue;
-        left_repr_extensions.push_back(i);
-    }
-    for(int i=1/*not termination*/; i<char_max; i++){ 
-        if(right_cnts[i]==0) 
-        continue;
-        //right exclusive but not bi-exclusive
-        if(right_cnts[i]==1 && right_paired_example[i]!=0 && left_cnts[right_paired_example[i]]>1) 
-        continue;
-        right_repr_extensions.push_back(i);
-    }
-    // cout << "left: ";
-    // for(auto ext: left_repr_extensions){
-    //     cout << (int)(ext);
-    // }
-    // cout<<endl;
-    // cout << "right: ";
-    // for(auto ext: left_repr_extensions){
-    //     cout << (int)(ext);
-    // }
-    // cout<<endl;
-    return make_tuple(left_repr_extensions, right_repr_extensions);
-}
-
-optional<MaximalRepeatAnnotation> report_repr_sa(SuffixArrayNodeExtension_NEW &ext){
+void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<MaximalRepeatAnnotation> &outs){
+    auto start = std::chrono::steady_clock::now();
     decide_repr_sa_new(ext);
+    ext.any_measure[6]+=(std::chrono::steady_clock::now()-start).count();
 
+    start = std::chrono::steady_clock::now();
     set<SuffixArrayIdx> uniq_repr_sa;
     for(int c=0; c<ext.characters_cnt; c++){
         if(ext.repr_sa_workspace.left_repr[c]){
-            uniq_repr_sa.insert(ext.first_l(c));
+            //revert the rank process
+            SuffixArrayIdx sa_idx=0;
+            for(int i=0; i<ext.characters_cnt; i++){
+                if(ext.c_nodes[c].firsts[i]<ext.c_nodes[c].firsts[i+1]) {
+                    sa_idx=ext.c_nodes[c].firsts[i];
+                    break;
+                }
+            }
+            assert(sa_idx!=0);
+            uint64_t rank = sa_idx - index.C[c] + 1;
+            SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
+            uniq_repr_sa.insert(prev_sa_idx);
+            // uniq_repr_sa.insert(ext.first_l(c));
         }
         if(ext.repr_sa_workspace.right_repr[c]){
             uniq_repr_sa.insert(ext.first_r(c));
@@ -132,6 +95,8 @@ optional<MaximalRepeatAnnotation> report_repr_sa(SuffixArrayNodeExtension_NEW &e
     }
 
     vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
+
+    ext.any_measure[7]+=(std::chrono::steady_clock::now()-start).count();
     // if(repr_sa.size()==0){
     //     cout << "repr_sa 0 case" << endl;
     //     for(auto pair: ext.distinct_extensions()){
@@ -147,19 +112,21 @@ optional<MaximalRepeatAnnotation> report_repr_sa(SuffixArrayNodeExtension_NEW &e
     //     }
     //     assert(false);
     // };
+    start = std::chrono::steady_clock::now();
     assert(repr_sa.size()>0);
     SuffixArrayIdx min_idx = repr_sa[0];
     for(auto i: repr_sa){
         min_idx = i < min_idx? i: min_idx;
     }
+    
     // cout << "rep size: " <<ext.node.depth << " sa: "; 
     // for(auto i: repr_sa){
     //     cout << i << ", ";
     // }
     // cout << endl;
 
-    MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
-    return rep;
+    outs.push_back({ext.node.depth, repr_sa, min_idx});
+    ext.any_measure[8]+=(std::chrono::steady_clock::now()-start).count();
 }
 
 
