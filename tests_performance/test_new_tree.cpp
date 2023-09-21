@@ -16,7 +16,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_comparison(){
-    int Lmin = 30;
+    int Lmin = 1;
     // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     auto start = std::chrono::steady_clock::now();

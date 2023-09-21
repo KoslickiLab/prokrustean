@@ -100,9 +100,11 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
     // push node to left maximal. everytime only one left child found, update node.
     bool left_maximal=false;
     bool left_maximal_checked=false;
+    bool same_interval_size_with_the_child=false;
     int right_distinct=0;
     while(!left_maximal){
         left_maximal=true;
+        left_maximal_checked=false;
         for(int c=0; c<index.characters_cnt; c++){
             // this function updates c_first_ranks that is, for a target left c, the list of ranks of firsts for each right character.
             index.STRING->ranks(c, ext.node.firsts, ext.c_first_ranks);
@@ -111,14 +113,31 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
                 ext.c_nodes_open[c]=false;
                 continue;
             }
+            // check if left non-maximal
+            if(c!=0 && !left_maximal_checked){
+                bool same_interval_size_with_the_child = ext.node.firsts[ext.characters_cnt]-ext.node.firsts[0] == ext.c_first_ranks[ext.characters_cnt]-ext.c_first_ranks[0];
+                if(same_interval_size_with_the_child){
+                    // move to the child directly
+                    ext.node.depth=ext.node.depth+1;
+                    for(int i=0; i<index.characters_cnt+1; i++){
+                        ext.node.firsts[i]=index.C[c]+ext.c_first_ranks[i];
+                    }
+                    left_maximal=false;
+                    cnt++;
+                    // jump to next phase
+                    break;
+                } else {
+                    left_maximal_checked=true;
+                }
+            }
 
-            // update c_nodes
+            // update c_nodes, especially right maximal
             ext.c_nodes_open[c]=true;
             ext.c_nodes[c].right_maximal=false;
+            ext.c_nodes[c].depth=ext.node.depth+1;
             right_distinct=0;
             for(int i=0; i<index.characters_cnt+1; i++){
                 ext.c_nodes[c].firsts[i]=index.C[c]+ext.c_first_ranks[i];
-                ext.c_nodes[c].depth=ext.node.depth+1;
                 
                 // recognize if right character interval exists
                 if(i==0 || ext.c_nodes[c].firsts[i] == ext.c_nodes[c].firsts[i-1]) 
@@ -128,20 +147,6 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
                 if(right_distinct>1 || (i==1 && ext.c_nodes[c].firsts[i] - ext.c_nodes[c].firsts[i-1]>1)){
                     ext.c_nodes[c].right_maximal=true;
                 }
-            }
-            // assert(ext.node.interval_size >= ext.c_nodes[c].interval_size);
-            // check if left maximal.
-            if(!left_maximal_checked 
-            && c!=0 // terminal is not the case
-            && // interval comparison
-            ext.node.firsts[ext.characters_cnt]-ext.node.firsts[0] == ext.c_nodes[c].firsts[ext.characters_cnt]-ext.c_nodes[c].firsts[0]){
-                // left non-maximal
-                ext.node = ext.c_nodes[c];
-                left_maximal=false;
-                cnt++;
-                break;
-            } else {
-                left_maximal_checked=true;
             }
         }
     }
