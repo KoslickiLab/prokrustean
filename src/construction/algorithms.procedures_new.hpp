@@ -61,57 +61,54 @@ tuple<vector<CharId>, vector<CharId>> decide_repr_sa_extensions_new(int char_max
 }
 
 optional<MaximalRepeatAnnotation> get_repeat_annotations_new(SuffixArrayNodeExtension_NEW &ext){
-    if(ext.left_maximal() && ext.node.right_maximal()){
-        tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions_new(ext.c_nodes.size(), ext.distinct_extensions());
-        // Remove possible duplications by set. Duplications cannot be predicted in advance.
-        set<SuffixArrayIdx> uniq_repr_sa;
+    tuple<vector<CharId>, vector<CharId>> repr_extensions = decide_repr_sa_extensions_new(ext.c_nodes.size(), ext.distinct_extensions());
+    // Remove possible duplications by set. Duplications cannot be predicted in advance.
+    set<SuffixArrayIdx> uniq_repr_sa;
 
-        for(auto l: get<0>(repr_extensions)){
-            uniq_repr_sa.insert(ext.first_l(l));
-        }
-        for(auto r: get<1>(repr_extensions)){
-            uniq_repr_sa.insert(ext.first_r(r));
-        }
-        /*important. If termination is placed in both ends, all are representative. 
-        decide_repr_sa_extensions marks it by simply including 0 in left character. 
-        Then in here we should collect all suffixes where the form is #W#.
-        */
-        for(auto sa_idx: ext.both_ext_terms){
-            uniq_repr_sa.insert(sa_idx);
-        }
-
-        vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
-        // if(repr_sa.size()==0){
-        //     cout << "repr_sa 0 case" << endl;
-        //     for(auto pair: ext.distinct_extensions()){
-        //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
-        //     }
-        //     cout << "repr ex left" << endl; 
-        //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-        //         cout << (int)left << endl;
-        //     }
-        //     cout << "repr ex right" << endl; 
-        //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-        //         cout << (int)left << endl;
-        //     }
-        //     assert(false);
-        // };
-        assert(repr_sa.size()>0);
-        SuffixArrayIdx min_idx = repr_sa[0];
-        for(auto i: repr_sa){
-            min_idx = i < min_idx? i: min_idx;
-        }
-        // cout << "rep size: " <<ext.node.depth << " sa: "; 
-        // for(auto i: repr_sa){
-        //     cout << i << ", ";
-        // }
-        // cout << endl;
-
-        MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
-        return rep;
-    } else {
-        return nullopt;
+    for(auto l: get<0>(repr_extensions)){
+        uniq_repr_sa.insert(ext.first_l(l));
     }
+    for(auto r: get<1>(repr_extensions)){
+        uniq_repr_sa.insert(ext.first_r(r));
+    }
+    /*important. If termination is placed in both ends, all are representative. 
+    decide_repr_sa_extensions marks it by simply including 0 in left character. 
+    Then in here we should collect all suffixes where the form is #W#.
+    */
+    for(auto sa_idx: ext.both_ext_terms){
+        uniq_repr_sa.insert(sa_idx);
+    }
+
+    vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
+    // if(repr_sa.size()==0){
+    //     cout << "repr_sa 0 case" << endl;
+    //     for(auto pair: ext.distinct_extensions()){
+    //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
+    //     }
+    //     cout << "repr ex left" << endl; 
+    //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+    //         cout << (int)left << endl;
+    //     }
+    //     cout << "repr ex right" << endl; 
+    //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
+    //         cout << (int)left << endl;
+    //     }
+    //     assert(false);
+    // };
+    assert(repr_sa.size()>0);
+    SuffixArrayIdx min_idx = repr_sa[0];
+    for(auto i: repr_sa){
+        min_idx = i < min_idx? i: min_idx;
+    }
+    // cout << "rep size: " <<ext.node.depth << " sa: "; 
+    // for(auto i: repr_sa){
+    //     cout << i << ", ";
+    // }
+    // cout << endl;
+
+    MaximalRepeatAnnotation rep = {ext.node.depth, repr_sa, min_idx};
+    return rep;
+    
 }
 
 

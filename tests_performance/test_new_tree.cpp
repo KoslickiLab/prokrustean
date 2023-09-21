@@ -17,12 +17,13 @@ using namespace sdsl;
 
 void test_comparison(){
     int Lmin = 1;
-    // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_SEQ, '$');
+    // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-    auto fm_idx = FmIndex(str);
-    cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
-
     auto start = std::chrono::steady_clock::now();
+    auto fm_idx = FmIndex(str);
+    cout << "bwt $ cout: " << fm_idx.seq_cnt() << " wv tree took " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+
+    
     SuffixArrayNode root = get_root(fm_idx);
     vector<MaximalRepeatAnnotation> repeats;
     SuffixArrayNode_NEW root_new = get_root_new(fm_idx);
@@ -40,6 +41,22 @@ void test_comparison(){
     cout << "repeats are same: " << repeats.size() << endl;
 }
 
+void test_memory_reserved_stack(){
+    std::vector<int> myVector;
+    myVector.reserve(100);
+    
+    std::stack<int, std::vector<int>> myStack(myVector);
+    cout << "stack size: "<< myStack.size() << endl;
+    // Now push and pop without incurring dynamic allocations up to 100 elements
+    myStack.push(1);
+    cout << "stack size: "<< myStack.size() << endl;
+    myStack.push(2);
+    cout << "stack size: "<< myStack.size() << endl;
+    myStack.pop();
+    cout << "stack size: "<< myStack.size() << endl;
+}
+
 void main_performance_new_tree() {
     test_comparison();
+    // test_memory_reserved_stack();
 }

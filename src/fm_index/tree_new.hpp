@@ -16,6 +16,7 @@ struct SuffixArrayNode_NEW {
     // ex firsts[0] => sa location of starting terminator
     vector<SuffixArrayIdx> firsts;
     uint64_t depth;
+    bool right_maximal;
 
     vector<CharId> distinct_extensions(){
         vector<CharId> exts = {};
@@ -30,9 +31,9 @@ struct SuffixArrayNode_NEW {
         return firsts[firsts.size()-1]-firsts[0];
     }
 
-    bool right_maximal(){
-        return distinct_extensions().size()>1 || /*suffix count*/ firsts[1]-firsts[0]>1;
-    }
+    // bool right_maximal(){
+    //     return distinct_extensions().size()>1 || /*suffix count*/ firsts[1]-firsts[0]>1;
+    // }
 
     SuffixArrayIdx get_valid_first(){
         for(int i=0; i<firsts.size()-1; i++){
@@ -43,19 +44,70 @@ struct SuffixArrayNode_NEW {
     }
 };
 
+struct ReprSuffixArrayIndexWorkspace {
+    // cWa -> c and a pairs. Like 2D structure.
+    // vector<tuple<CharId, CharId>> distinct_pairs;
+    // whether the corresponding distinct pair is open
+    // vector<bool> distinct_pairs_open;
+    // For each character c, how many distinct cW form exists. e.g. AWT, AWG -> left cnt is 2
+    vector<int> left_cnts;
+    // For each character c, example of a of cWa form - only meaningful when exclusive
+    vector<CharId> left_paired_example;
+    // For each character a, how many distinct Wa form exists.
+    vector<int> right_cnts;
+    // For each character a, example of c of cWa form.
+    vector<CharId> right_paired_example;
+    // For each c, if representative.
+    vector<bool> left_repr;
+    // For each a, if representative.
+    vector<bool> right_repr;
+};
+
 struct SuffixArrayNodeExtension_NEW {
+    /* Includes all information required to process, so that memory is reused.*/
+    SuffixArrayNodeExtension_NEW(int characters_cnt){
+        c_nodes=vector<SuffixArrayNode_NEW>(characters_cnt);
+        c_nodes_open=vector<bool>(characters_cnt);
+        c_first_ranks= vector<uint64_t>(characters_cnt+1);
+        prev_c_firsts=vector<optional<SuffixArrayIdx>>(characters_cnt);
+        for(int i=0; i<characters_cnt; i++){
+            c_nodes[i].firsts=vector<SuffixArrayIdx>(characters_cnt+1);
+        }
+        this->characters_cnt=characters_cnt;
+        this->repr_sa_workspace.left_cnts=vector<int>(characters_cnt);
+        this->repr_sa_workspace.left_paired_example=vector<CharId>(characters_cnt);
+        this->repr_sa_workspace.right_cnts=vector<int>(characters_cnt);
+        this->repr_sa_workspace.right_paired_example=vector<CharId>(characters_cnt);
+        this->repr_sa_workspace.left_repr=vector<bool>(characters_cnt);
+        this->repr_sa_workspace.right_repr=vector<bool>(characters_cnt);
+    }
+
+    // The node in interest
     SuffixArrayNode_NEW node;
-    // left extended intervals. Each means sa intervals of cW for each character c.
+    // left extensions. Each means sa intervals of cW for each character c.
     vector<SuffixArrayNode_NEW> c_nodes;
-    // vector<bool> c_nodes_exist;
+    // whether the corresponding c_node is open (the branch exists)
+    vector<bool> c_nodes_open;
+    
+    ReprSuffixArrayIndexWorkspace repr_sa_workspace;
+
+    // alphabet size
+    int characters_cnt;
+    // temporary first ranks gathered when c_nodes are computed
+    vector<uint64_t> c_first_ranks;
+    
     // Each means the first sa index of W that corresponds to first sa index of cW for each character c.
     vector<optional<SuffixArrayIdx>> prev_c_firsts;
     // suffixes such that both left and right extensions are terminations
     vector<SuffixArrayIdx> both_ext_terms;
 
+    // bool left_maximal;
     vector<tuple<CharId, CharId>> distinct_extensions(){
         vector<tuple<CharId, CharId>> exts = {};
         for(int i=0; i<c_nodes.size(); i++){
+            if(!c_nodes_open[i]){
+                continue;
+            }
             for(auto r: c_nodes[i].distinct_extensions()){
                 exts.push_back(make_tuple(i, r));    
             }
@@ -63,15 +115,17 @@ struct SuffixArrayNodeExtension_NEW {
         return exts;
     }
 
-    bool left_maximal(){
-        int distinct = 0;
-        for(auto interval:c_nodes){
-            if(interval.interval_size()>0){
-                distinct++;
-            }
-        }
-        return distinct>1 || /*prefix count*/ c_nodes[0].interval_size()>1;
-    }
+    // bool left_maximal(){
+    //     int distinct = 0;
+    //     for(int i=0; i<c_nodes.size(); i++){
+    //         if(!c_nodes_valid[i]){
+    //             continue;
+    //         }
+    //         assert(c_nodes[i].interval_size()>0);
+    //         distinct++;
+    //     }
+    //     return distinct>1 || /*prefix count*/ (c_nodes_valid[0] && c_nodes[0].interval_size()>1);
+    // }
 
      SuffixArrayIdx first_l(CharId c){
         assert(prev_c_firsts[c].has_value());
@@ -84,91 +138,72 @@ struct SuffixArrayNodeExtension_NEW {
     }
 };
 
-void push_node_to_left_maximal(FmIndex &index, SuffixArrayNode_NEW &node, int &cnt){
-    vector<uint64_t> ext_ranks(index.characters_cnt+1);
-    vector<SuffixArrayNode_NEW> c_nodes(index.characters_cnt);
-    vector<bool> c_nodes_exist(index.characters_cnt);
+/*
+* Input: suffix tree node N.
+* Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
+*/
+void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt){
+    // push node to left maximal
     bool left_maximal=false;
+    int right_distinct=0;
     while(!left_maximal){
         left_maximal=true;
         for(int c=0; c<index.characters_cnt; c++){
-            index.STRING->ranks(c, node.firsts, ext_ranks);
+            index.STRING->ranks(c, ext.node.firsts, ext.c_first_ranks);
             // interval empty
-            if(ext_ranks[0]==ext_ranks[index.characters_cnt]){
-                c_nodes_exist[c]=false;
+            if(ext.c_first_ranks[0]==ext.c_first_ranks[index.characters_cnt]){
+                ext.c_nodes_open[c]=false;
                 continue;
             }
-            c_nodes_exist[c]=true;
-            c_nodes[c]=SuffixArrayNode_NEW();
-            c_nodes[c].firsts=vector<SuffixArrayIdx>(index.characters_cnt+1);
+            ext.c_nodes_open[c]=true;
+            ext.c_nodes[c].right_maximal=false;
+            right_distinct=0;
             for(int i=0; i<index.characters_cnt+1; i++){
-                c_nodes[c].firsts[i]=index.C[c]+ext_ranks[i];
-                c_nodes[c].depth=node.depth+1;
+                ext.c_nodes[c].firsts[i]=index.C[c]+ext.c_first_ranks[i];
+                ext.c_nodes[c].depth=ext.node.depth+1;
+                if(i==0 || ext.c_nodes[c].firsts[i] == ext.c_nodes[c].firsts[i-1]) 
+                continue;
+                right_distinct++;
+                if(right_distinct>1 || (i==1 && ext.c_nodes[c].firsts[i] - ext.c_nodes[c].firsts[i-1]>1)){
+                    ext.c_nodes[c].right_maximal=true;
+                }
             }
-            assert(node.interval_size() >= c_nodes[c].interval_size());
-            if(c!=0 && node.interval_size()==c_nodes[c].interval_size()){
+            assert(ext.node.interval_size() >= ext.c_nodes[c].interval_size());
+            if(c!=0 && ext.node.interval_size()==ext.c_nodes[c].interval_size()){
                 // left non-maximal
-                node = c_nodes[c];
+                ext.node = ext.c_nodes[c];
                 left_maximal=false;
                 cnt++;
                 break;
             }
         }
     }
-}
-/*
-* Input: suffix tree node N.
-* Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
-*/
-SuffixArrayNodeExtension_NEW extend_node_new(FmIndex &index, SuffixArrayNode_NEW &node){
-    vector<RankArray> left_p_ranks(index.characters_cnt+1);
-    RankArray rank_array(index.characters_cnt);
-    for(int i=0; i<index.characters_cnt+1; i++){
-        if(i==0 || node.firsts[i-1]!=node.firsts[i]){
-            index.STRING->ranks_new(node.firsts[i], rank_array);
-        } 
-        left_p_ranks[i]=rank_array;
-    }
 
-    vector<SuffixArrayNode_NEW> c_nodes(index.characters_cnt);
+
     for(int c=0; c < index.characters_cnt; c++){
-        vector<uint64_t> firsts(index.characters_cnt+1);
-        for(int i=0; i<index.characters_cnt+1; i++){
-            uint64_t sa_idx = index.C[c]+left_p_ranks[i][c];
-            firsts[i]=sa_idx;
-        }
-        c_nodes[c]={firsts, node.depth+1};
-    }
-
-    vector<optional<SuffixArrayIdx>> prev_c_firsts;
-    for(int c=0; c < c_nodes.size(); c++){
-        SuffixArrayNode_NEW c_node = c_nodes[c];
-
-        if(c_node.interval_size()==0){
-            prev_c_firsts.push_back(nullopt);
+        if(!ext.c_nodes_open[c]){
+            ext.prev_c_firsts[c]=nullopt;
             continue;
-        }
+        } 
 
         //revert the rank process
-        SuffixArrayIdx sa_idx = c_node.get_valid_first();
+        SuffixArrayIdx sa_idx = ext.c_nodes[c].get_valid_first();
         uint64_t rank = sa_idx - index.C[c] + 1;
         SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
         // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
-        prev_c_firsts.push_back(prev_sa_idx);
+        ext.prev_c_firsts[c]=prev_sa_idx;
     }
 
-    vector<SuffixArrayIdx> both_ext_terms;
-    if(c_nodes[0].firsts[0]!=c_nodes[0].firsts[1]){
+    ext.both_ext_terms.clear();
+    if(ext.c_nodes_open[0] && ext.c_nodes[0].firsts[0]!=ext.c_nodes[0].firsts[1]){
         // both ends are termination. collect all
-        for(SuffixArrayIdx sa_idx=c_nodes[0].firsts[0]; sa_idx< c_nodes[0].firsts[1]; sa_idx++){
+        for(SuffixArrayIdx sa_idx=ext.c_nodes[0].firsts[0]; sa_idx< ext.c_nodes[0].firsts[1]; sa_idx++){
             //revert the rank process
             uint64_t rank = sa_idx - index.C[0] + 1;
             SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, 0);
-            both_ext_terms.push_back(prev_sa_idx);
+            ext.both_ext_terms.push_back(prev_sa_idx);
         }
     }
-
-    return {node, c_nodes, prev_c_firsts, both_ext_terms};
 };
 
 /*
@@ -189,20 +224,24 @@ template<class T, NodeFunc_NEW<T> process_node>
 void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vector<T> &Ts){
     Lmin = Lmin >= 1? Lmin : 1;
 
-    std::stack<SuffixArrayNode_NEW> stack;
+    // vector<SuffixArrayNode_NEW> container;
+    // container.reserve(10000);
+    // std::stack<SuffixArrayNode_NEW,vector<SuffixArrayNode_NEW>> stack(container);
+    stack<SuffixArrayNode_NEW> stack;
+    
+    SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
     
     int node_cnt=0;
     int process_cnt=0;
-    int not_left_maximal_cnt=0;
     int left_push_cnt=0;
 
     stack.push(root);
     while(!stack.empty()){
-        auto node = stack.top();
+        ext.node = stack.top();
         stack.pop();
         
-        push_node_to_left_maximal(fm_idx, node, left_push_cnt);
-        auto ext = extend_node_new(fm_idx, node);
+        // push_node_to_left_maximal(fm_idx, node, left_push_cnt);
+        extend_node_new(fm_idx, ext, left_push_cnt);
         if(ext.node.depth>=Lmin){
             optional<T> t = process_node(ext);
             if(t.has_value()) {
@@ -210,17 +249,18 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
             }
             process_cnt++;
         }
-        if(!ext.left_maximal()){
-            not_left_maximal_cnt++;
-        }
+        // if(!ext.left_maximal()){
+        //     not_left_maximal_cnt++;
+        // }
 
-        for(int i=0; i<ext.c_nodes.size(); i++){
+        for(int i=0; i<fm_idx.characters_cnt; i++){
             // terminal
             if(i==0) continue;
 
-            auto child = ext.c_nodes[i];
-            if(child.right_maximal()){
-                stack.push(child);
+            if(!ext.c_nodes_open[i]) continue;
+
+            if(ext.c_nodes[i].right_maximal){
+                stack.push(ext.c_nodes[i]);
             }
         }
         node_cnt++;
@@ -231,13 +271,16 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
         //     cout << "processed " << process_cnt << endl;
         // }
     }
-    cout << "left pushed " << left_push_cnt << ", non left maximal: " << not_left_maximal_cnt << endl;
+    cout << "left pushed " << left_push_cnt << endl;
 }
 
 
 vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_idx, int depth_max){
     std::stack<SuffixArrayNode_NEW> stack;
     vector<SuffixArrayNode_NEW> nodes;
+    int cnt=0;
+
+    SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
 
     stack.push(root);
     while(!stack.empty()){
@@ -246,13 +289,15 @@ vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_
         if(node.depth>=depth_max){
             nodes.push_back(node);
         } else {
-            auto ext = extend_node_new(fm_idx, node);
+            extend_node_new(fm_idx, ext, cnt);
             for(int i=0; i<ext.c_nodes.size(); i++){
                 // terminal
                 if(i==0) continue;
 
+                if(!ext.c_nodes_open[i]) continue;
+
                 auto child = ext.c_nodes[i];
-                if(child.right_maximal()){
+                if(child.right_maximal){
                     stack.push(child);
                 }
             }
