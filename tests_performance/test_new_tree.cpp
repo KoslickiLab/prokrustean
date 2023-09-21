@@ -16,7 +16,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_comparison(){
-    int Lmin = 1;
+    int Lmin = 30;
     // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     auto start = std::chrono::steady_clock::now();
@@ -30,7 +30,8 @@ void test_comparison(){
     vector<MaximalRepeatAnnotation> repeats_new;
     
     start = std::chrono::steady_clock::now();
-    navigate_tree_new<MaximalRepeatAnnotation, get_repeat_annotations_new>(root_new, Lmin, fm_idx, repeats_new);
+    // navigate_tree_new<MaximalRepeatAnnotation, get_repeat_annotations_new>(root_new, Lmin, fm_idx, repeats_new);
+    navigate_tree_new<MaximalRepeatAnnotation, report_repr_sa>(root_new, Lmin, fm_idx, repeats_new);
     cout << "new algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 
     start = std::chrono::steady_clock::now();
@@ -39,6 +40,11 @@ void test_comparison(){
 
     assert(repeats.size()==repeats_new.size());
     cout << "repeats are same: " << repeats.size() << endl;
+    
+    for(int i=0; i<repeats.size(); i++){
+        assert(repeats[i].repr_indexes.size()==repeats_new[i].repr_indexes.size());
+    }
+    cout << "repeats reprs are same"  << endl;
 }
 
 void test_memory_reserved_stack(){

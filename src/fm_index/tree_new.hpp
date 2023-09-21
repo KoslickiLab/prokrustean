@@ -18,15 +18,6 @@ struct SuffixArrayNode_NEW {
     uint64_t depth;
     bool right_maximal;
 
-    vector<CharId> distinct_extensions(){
-        vector<CharId> exts = {};
-        for(int i=0; i<firsts.size()-1; i++){
-            if(firsts[i]<firsts[i+1]) 
-                exts.push_back(i);
-        }
-        return exts;
-    }
-
     uint64_t interval_size(){
         return firsts[firsts.size()-1]-firsts[0];
     }
@@ -45,10 +36,6 @@ struct SuffixArrayNode_NEW {
 };
 
 struct ReprSuffixArrayIndexWorkspace {
-    // cWa -> c and a pairs. Like 2D structure.
-    // vector<tuple<CharId, CharId>> distinct_pairs;
-    // whether the corresponding distinct pair is open
-    // vector<bool> distinct_pairs_open;
     // For each character c, how many distinct cW form exists. e.g. AWT, AWG -> left cnt is 2
     vector<int> left_cnts;
     // For each character c, example of a of cWa form - only meaningful when exclusive
@@ -101,32 +88,6 @@ struct SuffixArrayNodeExtension_NEW {
     // suffixes such that both left and right extensions are terminations
     vector<SuffixArrayIdx> both_ext_terms;
 
-    // bool left_maximal;
-    vector<tuple<CharId, CharId>> distinct_extensions(){
-        vector<tuple<CharId, CharId>> exts = {};
-        for(int i=0; i<c_nodes.size(); i++){
-            if(!c_nodes_open[i]){
-                continue;
-            }
-            for(auto r: c_nodes[i].distinct_extensions()){
-                exts.push_back(make_tuple(i, r));    
-            }
-        }
-        return exts;
-    }
-
-    // bool left_maximal(){
-    //     int distinct = 0;
-    //     for(int i=0; i<c_nodes.size(); i++){
-    //         if(!c_nodes_valid[i]){
-    //             continue;
-    //         }
-    //         assert(c_nodes[i].interval_size()>0);
-    //         distinct++;
-    //     }
-    //     return distinct>1 || /*prefix count*/ (c_nodes_valid[0] && c_nodes[0].interval_size()>1);
-    // }
-
      SuffixArrayIdx first_l(CharId c){
         assert(prev_c_firsts[c].has_value());
         // cout << "first l: " << prev_c_firsts[c].value() << endl;
@@ -143,32 +104,38 @@ struct SuffixArrayNodeExtension_NEW {
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
 void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt){
-    // push node to left maximal
+    // push node to left maximal. everytime only one left child found, update node.
     bool left_maximal=false;
     int right_distinct=0;
     while(!left_maximal){
         left_maximal=true;
         for(int c=0; c<index.characters_cnt; c++){
+            // this function updates c_first_ranks that is, for a target left c, the list of ranks of firsts for each right character.
             index.STRING->ranks(c, ext.node.firsts, ext.c_first_ranks);
-            // interval empty
+            // interval is empty -> left node for c is empty
             if(ext.c_first_ranks[0]==ext.c_first_ranks[index.characters_cnt]){
                 ext.c_nodes_open[c]=false;
                 continue;
             }
+
+            // update c_nodes
             ext.c_nodes_open[c]=true;
             ext.c_nodes[c].right_maximal=false;
             right_distinct=0;
             for(int i=0; i<index.characters_cnt+1; i++){
                 ext.c_nodes[c].firsts[i]=index.C[c]+ext.c_first_ranks[i];
                 ext.c_nodes[c].depth=ext.node.depth+1;
+                // recognize if right character interval exists
                 if(i==0 || ext.c_nodes[c].firsts[i] == ext.c_nodes[c].firsts[i-1]) 
                 continue;
+                // compute right maximal
                 right_distinct++;
                 if(right_distinct>1 || (i==1 && ext.c_nodes[c].firsts[i] - ext.c_nodes[c].firsts[i-1]>1)){
                     ext.c_nodes[c].right_maximal=true;
                 }
             }
             assert(ext.node.interval_size() >= ext.c_nodes[c].interval_size());
+            // check if left maximal.
             if(c!=0 && ext.node.interval_size()==ext.c_nodes[c].interval_size()){
                 // left non-maximal
                 ext.node = ext.c_nodes[c];
@@ -178,7 +145,6 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
             }
         }
     }
-
 
     for(int c=0; c < index.characters_cnt; c++){
         if(!ext.c_nodes_open[c]){
