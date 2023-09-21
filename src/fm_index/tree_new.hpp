@@ -15,16 +15,9 @@ struct SuffixArrayNode_NEW {
     // |characters| + 1 sa positions. The last element is not corresponding to any character
     // ex firsts[0] => sa location of starting terminator
     vector<SuffixArrayIdx> firsts;
+    SuffixArrayIdx valid_first;
     uint64_t depth;
     bool right_maximal;
-
-    uint64_t interval_size(){
-        return firsts[firsts.size()-1]-firsts[0];
-    }
-
-    // bool right_maximal(){
-    //     return distinct_extensions().size()>1 || /*suffix count*/ firsts[1]-firsts[0]>1;
-    // }
 
     SuffixArrayIdx get_valid_first(){
         for(int i=0; i<firsts.size()-1; i++){
@@ -106,6 +99,7 @@ struct SuffixArrayNodeExtension_NEW {
 void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt){
     // push node to left maximal. everytime only one left child found, update node.
     bool left_maximal=false;
+    bool left_maximal_checked=false;
     int right_distinct=0;
     while(!left_maximal){
         left_maximal=true;
@@ -125,6 +119,7 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
             for(int i=0; i<index.characters_cnt+1; i++){
                 ext.c_nodes[c].firsts[i]=index.C[c]+ext.c_first_ranks[i];
                 ext.c_nodes[c].depth=ext.node.depth+1;
+                
                 // recognize if right character interval exists
                 if(i==0 || ext.c_nodes[c].firsts[i] == ext.c_nodes[c].firsts[i-1]) 
                 continue;
@@ -134,14 +129,19 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, int &cnt
                     ext.c_nodes[c].right_maximal=true;
                 }
             }
-            assert(ext.node.interval_size() >= ext.c_nodes[c].interval_size());
+            // assert(ext.node.interval_size >= ext.c_nodes[c].interval_size);
             // check if left maximal.
-            if(c!=0 && ext.node.interval_size()==ext.c_nodes[c].interval_size()){
+            if(!left_maximal_checked 
+            && c!=0 // terminal is not the case
+            && // interval comparison
+            ext.node.firsts[ext.characters_cnt]-ext.node.firsts[0] == ext.c_nodes[c].firsts[ext.characters_cnt]-ext.c_nodes[c].firsts[0]){
                 // left non-maximal
                 ext.node = ext.c_nodes[c];
                 left_maximal=false;
                 cnt++;
                 break;
+            } else {
+                left_maximal_checked=true;
             }
         }
     }
