@@ -17,6 +17,8 @@ using namespace sdsl;
 
 void test_comparison(){
     int Lmin = 1;
+    // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
+
     // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     auto start = std::chrono::steady_clock::now();
@@ -34,6 +36,20 @@ void test_comparison(){
     navigate_tree_new<MaximalRepeatAnnotation, report_repr_sa>(root_new, Lmin, fm_idx, repeats_new);
     cout << "new algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 
+    int repr_cnt=0;
+    int repr_distinct_cnt=0;
+    auto repr_distinct = vector<bool>(str.size());
+    for(int i=0; i<repeats_new.size(); i++){
+        for(auto idx: repeats_new[i].repr_indexes){
+            repr_cnt++;
+            if(!repr_distinct[idx]){
+                repr_distinct_cnt++;
+                repr_distinct[idx]=true;
+            }
+        }
+    }
+    cout << "repeats reprs cnt: "<< repr_cnt <<", distinct count: " << repr_distinct_cnt  << endl;
+
     start = std::chrono::steady_clock::now();
     navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx, repeats);
     cout << "original algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
@@ -44,7 +60,7 @@ void test_comparison(){
     for(int i=0; i<repeats.size(); i++){
         assert(repeats[i].repr_indexes.size()==repeats_new[i].repr_indexes.size());
     }
-    cout << "repeats reprs are same"  << endl;
+    cout << "repeats reprs are same" << endl;
 }
 
 void test_memory_reserved_stack(){
@@ -62,7 +78,64 @@ void test_memory_reserved_stack(){
     cout << "stack size: "<< myStack.size() << endl;
 }
 
+struct RepMcDummy{
+    int size;
+};
+
+class AtomicRepIdGenerator {
+    int curr_rep_id;
+    std::vector<RepMcDummy>* rep_mcs;
+
+    std::atomic_flag lock = ATOMIC_FLAG_INIT; // Used as a spinlock for vector push_back
+
+public:
+    AtomicRepIdGenerator(std::vector<RepMcDummy> &rep_mcs) : curr_rep_id(0), rep_mcs(&rep_mcs) {}
+
+    int generateNumber() {
+        int number = 0;
+        // Spinlock to ensure that push_back is thread-safe
+        while (lock.test_and_set(std::memory_order_acquire));
+        number = curr_rep_id;
+        curr_rep_id++;
+        (*rep_mcs).push_back(RepMcDummy());
+        lock.clear(std::memory_order_release);  // release lock
+
+        return number;
+    }
+};
+
+void worker(AtomicRepIdGenerator& generator) {
+    for (int i = 0; i < 10000; ++i) {
+        int number = generator.generateNumber();
+        // std::cout << "Generated number: " << number << " by thread: " << std::this_thread::get_id() << "\n";
+        // std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Just to space out the output
+    }
+}
+
+
+void test_atomic_rep_id() {
+    vector<RepMcDummy> rep_mcs;
+    AtomicRepIdGenerator generator(rep_mcs);
+
+    auto start = std::chrono::steady_clock::now();
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < 12; ++i) {
+        threads.emplace_back(worker, std::ref(generator));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    
+    std::cout << "size of rep mc:" << rep_mcs.size() << endl;
+
+    cout << "elapsed: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+}
+
+
 void main_performance_new_tree() {
     test_comparison();
     // test_memory_reserved_stack();
+    // test_atomic_rep_id();
 }

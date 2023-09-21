@@ -8,9 +8,13 @@
 
 using namespace std;
 
-typedef uint64_t RepId;
-typedef uint64_t SeqId;
-typedef uint64_t Pos;
+/* Important: the types were fixed due to the purpose of the work. Need to be adjusted based on needs */
+
+typedef uint32_t RepId; // 4,294,967,295
+typedef uint32_t SeqId; // 4,294,967,295
+typedef uint32_t Id; // 4,294,967,295 Both RepId SeqId
+typedef uint64_t Pos; // 4,294,967,295 == Sequence max length
+typedef uint16_t Size; //65,535 maximal repeat size
 
 struct MinCover {
     uint64_t id;

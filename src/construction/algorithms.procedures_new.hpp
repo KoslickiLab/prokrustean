@@ -59,11 +59,11 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
 }
 
 void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<MaximalRepeatAnnotation> &outs){
-    auto start = std::chrono::steady_clock::now();
+    // auto start = std::chrono::steady_clock::now();
     decide_repr_sa_new(ext);
-    ext.any_measure[6]+=(std::chrono::steady_clock::now()-start).count();
+    // ext.any_measure[6]+=(std::chrono::steady_clock::now()-start).count();
 
-    start = std::chrono::steady_clock::now();
+    // start = std::chrono::steady_clock::now();
     set<SuffixArrayIdx> uniq_repr_sa;
     for(int c=0; c<ext.characters_cnt; c++){
         if(ext.repr_sa_workspace.left_repr[c]){
@@ -96,7 +96,7 @@ void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<Ma
 
     vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
 
-    ext.any_measure[7]+=(std::chrono::steady_clock::now()-start).count();
+    // ext.any_measure[7]+=(std::chrono::steady_clock::now()-start).count();
     // if(repr_sa.size()==0){
     //     cout << "repr_sa 0 case" << endl;
     //     for(auto pair: ext.distinct_extensions()){
@@ -112,7 +112,7 @@ void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<Ma
     //     }
     //     assert(false);
     // };
-    start = std::chrono::steady_clock::now();
+    // start = std::chrono::steady_clock::now();
     assert(repr_sa.size()>0);
     SuffixArrayIdx min_idx = repr_sa[0];
     for(auto i: repr_sa){
@@ -126,7 +126,7 @@ void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<Ma
     // cout << endl;
 
     outs.push_back({ext.node.depth, repr_sa, min_idx});
-    ext.any_measure[8]+=(std::chrono::steady_clock::now()-start).count();
+    // ext.any_measure[8]+=(std::chrono::steady_clock::now()-start).count();
 }
 
 
