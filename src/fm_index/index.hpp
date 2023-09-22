@@ -41,16 +41,11 @@ public:
 
         this->C = get_c_array(string);
 		this->char_abundances = get_abundences(this->C);
-		this->char_id_rank = get_char_ids_by_abundence_desc(this->char_abundances);
+		this->characters_ranked_by_abundance = get_char_ids_by_abundence_desc(this->char_abundances);
 		cout << "total length: " << this->STRING->size() << endl;
 		cout << "abundences:";
 		for(int c=0; c<characters_cnt; c++){
 			cout << " " << STRING->get_characters()[c]<< ":" << this->char_abundances[c];
-		}
-		cout << endl;
-		cout << "character rank by abundence:";
-		for(auto c: this->char_id_rank){
-			cout << " " << STRING->get_characters()[c];
 		}
 		cout << endl;
     }
@@ -61,7 +56,7 @@ public:
 	// vector<char> characters;
 	int characters_cnt;
 	vector<uint64_t> char_abundances;
-	vector<CharId> char_id_rank; // rank by abundances
+	vector<CharId> characters_ranked_by_abundance; // rank by abundances
 
     uint64_t LF(uint64_t r){
         // cout << STRING[r] << endl;
@@ -98,7 +93,6 @@ private:
 			for(int j=0; j<i; j++){
 				c_array[i] += r[j];
 			}
-			cout << "C: " <<  c_array[i] << endl;
 		}
 		return c_array;
 	}

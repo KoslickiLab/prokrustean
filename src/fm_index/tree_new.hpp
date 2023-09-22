@@ -19,6 +19,7 @@ struct SuffixArrayNode_NEW {
     uint64_t depth;
     bool right_maximal;
 
+    /*deprecated*/
     SuffixArrayIdx get_valid_first(){
         for(int i=0; i<firsts.size()-1; i++){
             if(firsts[i]<firsts[i+1]) 
@@ -32,11 +33,11 @@ struct ReprSuffixArrayIndexWorkspace {
     // For each character c, how many distinct cW form exists. e.g. AWT, AWG -> left cnt is 2
     vector<int> left_cnts;
     // For each character c, example of a of cWa form - only meaningful when exclusive
-    vector<CharId> left_paired_first;
+    vector<CharId> left_paired_a_char;
     // For each character a, how many distinct Wa form exists.
     vector<int> right_cnts;
     // For each character a, example of c of cWa form.
-    vector<CharId> right_paired_first;
+    vector<CharId> right_paired_c_char;
     // For each c, if representative.
     vector<bool> left_repr;
     // For each a, if representative.
@@ -57,9 +58,9 @@ struct SuffixArrayNodeExtension_NEW {
         }
         this->characters_cnt=characters_cnt;
         this->repr_space.left_cnts=vector<int>(characters_cnt);
-        this->repr_space.left_paired_first=vector<CharId>(characters_cnt);
+        this->repr_space.left_paired_a_char=vector<CharId>(characters_cnt);
         this->repr_space.right_cnts=vector<int>(characters_cnt);
-        this->repr_space.right_paired_first=vector<CharId>(characters_cnt);
+        this->repr_space.right_paired_c_char=vector<CharId>(characters_cnt);
         this->repr_space.left_repr=vector<bool>(characters_cnt);
         this->repr_space.right_repr=vector<bool>(characters_cnt);
     }
@@ -102,13 +103,19 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
     bool left_maximal=false;
     bool left_maximal_checked=false;
     bool same_interval_size_with_the_child=false;
-    bool interval_exhausted=false;
     int right_distinct=0;
+    uint64_t amount_of_interval_left_to_be_captured=0;
     while(!left_maximal){
         left_maximal=true;
         left_maximal_checked=false;
-        interval_exhausted=false;
-        for(int c=0; c<index.characters_cnt; c++){
+        // start from node interval
+        amount_of_interval_left_to_be_captured=ext.node.firsts[index.characters_cnt]-ext.node.firsts[0];
+        for(auto c: index.characters_ranked_by_abundance){
+            if(amount_of_interval_left_to_be_captured==0){
+                ext.c_nodes_open[c]=false;
+                continue;
+            }
+
             // auto start2 = std::chrono::steady_clock::now();
             index.STRING->ranks(c, ext.node.firsts, ext.c_first_ranks);
             // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start2).count();
@@ -117,6 +124,9 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
             if(ext.c_first_ranks[0]==ext.c_first_ranks[index.characters_cnt]){
                 ext.c_nodes_open[c]=false;
                 continue;
+            } else {
+                amount_of_interval_left_to_be_captured -= ext.c_first_ranks[ext.characters_cnt]-ext.c_first_ranks[0];
+                assert(amount_of_interval_left_to_be_captured>=0);
             }
             // check if left non-maximal. if yes, then casually move to the only branch.
             if(c!=0 && !left_maximal_checked){

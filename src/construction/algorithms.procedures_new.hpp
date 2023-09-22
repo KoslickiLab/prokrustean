@@ -13,10 +13,6 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
     for(int i=0; i<ext.characters_cnt; i++){
         ext.repr_space.left_cnts[i]=0;
         ext.repr_space.right_cnts[i]=0;
-        ext.repr_space.left_paired_first[i]=ext.characters_cnt;//max
-        ext.repr_space.right_paired_first[i]=ext.characters_cnt;//max
-        ext.repr_space.left_repr[i]=false;
-        ext.repr_space.right_repr[i]=false;
     }
     // for each letter
     for(int c=0; c < ext.characters_cnt; c++){
@@ -27,9 +23,9 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
         for(int a=0; a<ext.characters_cnt; a++){
             if(ext.c_nodes[c].firsts[a]<ext.c_nodes[c].firsts[a+1]){
                 ext.repr_space.left_cnts[c]++;
-                ext.repr_space.left_paired_first[c]=a<ext.repr_space.left_paired_first[c]?a:ext.repr_space.left_paired_first[c];
+                ext.repr_space.left_paired_a_char[c]=a;
                 ext.repr_space.right_cnts[a]++;
-                ext.repr_space.right_paired_first[a]=c<ext.repr_space.right_paired_first[a]?c:ext.repr_space.right_paired_first[a];
+                ext.repr_space.right_paired_c_char[a]=c;
             }
         }
     }
@@ -40,8 +36,8 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
             ext.repr_space.left_repr[i]=false;
         } //left exclusive but not bi-exclusive
         else if(ext.repr_space.left_cnts[i]==1 
-        && ext.repr_space.left_paired_first[i]!=0 
-        && ext.repr_space.right_cnts[ext.repr_space.left_paired_first[i]]>1){
+        && ext.repr_space.left_paired_a_char[i]!=0 
+        && ext.repr_space.right_cnts[ext.repr_space.left_paired_a_char[i]]>1){
             ext.repr_space.left_repr[i]=false;
         } else {
             ext.repr_space.left_repr[i]=true;
@@ -53,8 +49,8 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
             ext.repr_space.right_repr[i]=false;
         } //right exclusive but not bi-exclusive
         else if(ext.repr_space.right_cnts[i]==1 
-        && ext.repr_space.right_paired_first[i]!=0 
-        && ext.repr_space.left_cnts[ext.repr_space.right_paired_first[i]]>1) {
+        && ext.repr_space.right_paired_c_char[i]!=0 
+        && ext.repr_space.left_cnts[ext.repr_space.right_paired_c_char[i]]>1) {
             ext.repr_space.right_repr[i]=false;
         } else {
             ext.repr_space.right_repr[i]=true;
@@ -64,9 +60,7 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
 
 
 void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<MaximalRepeatAnnotation> &outs){
-    // auto start = std::chrono::steady_clock::now();
     decide_repr_sa_new(ext);
-    // ext.any_measure[6]+=(std::chrono::steady_clock::now()-start).count();
 
     ext.repr_space.uniq_repr_sa.clear();
     for(int c=0; c<ext.characters_cnt; c++){
@@ -88,9 +82,10 @@ void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<Ma
                 }
             }
             assert(sa_idx!=0);
-            uint64_t rank = sa_idx - index.C[c] + 1;
             // auto start2 = std::chrono::steady_clock::now();
+            uint64_t rank = sa_idx - index.C[c] + 1;
             SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
+            // ext.any_measure[6]+=(std::chrono::steady_clock::now()-start2).count();
             
             // here, check if the suffix array picked by the right letter a of cWa is duplicated.
             // this cannot be checked in advance..
