@@ -56,13 +56,11 @@ public:
                 only_ACGTN = false;
             }
         }
-        if(!only_ACGTN){
-            cout << "characters: ";
-            for(auto c: characters){
-                cout << c << " ";
-            }
-            cout << endl;
+        cout << "characters: ";
+        for(auto c: characters){
+            cout << c << " ";
         }
+        cout << endl;
     }
 
     vector<char> get_characters(){

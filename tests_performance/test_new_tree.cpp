@@ -16,7 +16,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_comparison(){
-    int Lmin = 30;
+    int Lmin = 10;
     // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
 
     auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');

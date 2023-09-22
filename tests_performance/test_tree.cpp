@@ -13,7 +13,7 @@
 using namespace std;
 using namespace sdsl;
 
-vector<SuffixArrayNode> _extend_node__only_interval(WaveletString &str, CArray C, SuffixArrayNode &node){
+vector<SuffixArrayNode> _extend_node__only_interval(WaveletString &str, vector<uint64_t> C, SuffixArrayNode &node){
     vector<RankArray> left_p_ranks;
     RankArray rank_array;
     for(int i=0; i<node.firsts.size(); i++){
@@ -36,7 +36,7 @@ vector<SuffixArrayNode> _extend_node__only_interval(WaveletString &str, CArray C
 };
 
 
-vector<SuffixArrayNode> _extend_node__wt(WaveletString &str, CArray C, SuffixArrayNode &node){
+vector<SuffixArrayNode> _extend_node__wt(WaveletString &str, vector<uint64_t> C, SuffixArrayNode &node){
     vector<RankArray> left_p_ranks;
     RankArray rank_array;
     for(int i=0; i<node.firsts.size(); i++){
@@ -245,7 +245,7 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
     int node_cnt_thres = 0;
     int left_maximal_cnt_thres = 0;
     int threshold = 20;
-    int c_max = fm_idx.characters.size();
+    int c_max = fm_idx.characters_cnt;
     int first_max = root.firsts.size();
     auto start_extend_node = std::chrono::steady_clock::now();
     auto start_extend_node_stage = std::chrono::steady_clock::now();
@@ -289,8 +289,8 @@ void _navigate_tree_components_record(SuffixArrayNode &root, FmIndex &fm_idx, wt
         extend_node_acc1+= std::chrono::steady_clock::now()-start_extend_node_stage;
 
         start_extend_node_stage = std::chrono::steady_clock::now();
-        vector<SuffixArrayNode> c_nodes(fm_idx.characters.size());
-        for(int c=0; c < fm_idx.characters.size(); c++){
+        vector<SuffixArrayNode> c_nodes(fm_idx.characters_cnt);
+        for(int c=0; c < fm_idx.characters_cnt; c++){
             vector<uint64_t> firsts(left_p_ranks.size());
             for(int f=0; f< left_p_ranks.size(); f++){
                 uint64_t sa_idx = fm_idx.C[c]+left_p_ranks[f][c];

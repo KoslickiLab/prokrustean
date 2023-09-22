@@ -10,7 +10,6 @@ using namespace std;
 typedef uint8_t CharId;
 typedef uint64_t SuffixArrayIdx;
 //C array of fm index. Each index is CharId 
-typedef vector<uint64_t> CArray;
 typedef vector<uint64_t> RankArray;
 
 class AbstractString{
@@ -36,17 +35,33 @@ public:
 	 */
 	FmIndex(AbstractString &string, char TERM='#'){
 		this->STRING = &string;
-		this->characters = STRING->get_characters();
-		this->characters_cnt = this->characters.size();
-        this->C = get_c_array(string);
+		// this->characters = STRING->get_characters();
+		this->characters_cnt = STRING->get_characters().size();
 		this->TERM = TERM;
+
+        this->C = get_c_array(string);
+		this->char_abundances = get_abundences(this->C);
+		this->char_id_rank = get_char_ids_by_abundence_desc(this->char_abundances);
+		cout << "total length: " << this->STRING->size() << endl;
+		cout << "abundences:";
+		for(int c=0; c<characters_cnt; c++){
+			cout << " " << STRING->get_characters()[c]<< ":" << this->char_abundances[c];
+		}
+		cout << endl;
+		cout << "character rank by abundence:";
+		for(auto c: this->char_id_rank){
+			cout << " " << STRING->get_characters()[c];
+		}
+		cout << endl;
     }
 	char TERM='#'; //Lexicographically first
 	CharId term_id=0;
-    CArray C;
+    vector<uint64_t> C;
 	AbstractString* STRING;
-	vector<char> characters;
+	// vector<char> characters;
 	int characters_cnt;
+	vector<uint64_t> char_abundances;
+	vector<CharId> char_id_rank; // rank by abundances
 
     uint64_t LF(uint64_t r){
         // cout << STRING[r] << endl;
@@ -59,13 +74,13 @@ public:
         return (*STRING)[pos];
     }
 
-	char convert_char(uint8_t id){
-        return characters[id];
-    }
+	// char convert_char(uint8_t id){
+    //     return characters[id];
+    // }
 
-	uint8_t convert_char(char c){
-        return std::find(characters.begin(), characters.end(), c) - characters.begin();
-    }
+	// uint8_t convert_char(char c){
+    //     return std::find(characters.begin(), characters.end(), c) - characters.begin();
+    // }
 
     uint64_t size(){
         return STRING->size();
@@ -76,15 +91,37 @@ public:
     }
 
 private:
-	CArray get_c_array(AbstractString &string){
+	vector<uint64_t> get_c_array(AbstractString &string){
 		RankArray r = string.ranks(string.size());
-		CArray c_array(r.size());
+		vector<uint64_t> c_array(r.size());
 		for(int i=0; i<c_array.size(); i++){
 			for(int j=0; j<i; j++){
 				c_array[i] += r[j];
 			}
+			cout << "C: " <<  c_array[i] << endl;
 		}
 		return c_array;
+	}
+
+	vector<uint64_t> get_abundences(vector<uint64_t> C){
+		vector<uint64_t> abundances;
+		for(int c=0; c<this->characters_cnt-1; c++){
+			abundances.push_back(C[c+1]-C[c]);
+		}
+		abundances.push_back(this->STRING->size()-C[this->characters_cnt-1]);
+		return abundances;
+	}
+
+	vector<CharId> get_char_ids_by_abundence_desc(vector<uint64_t> abundances){
+		vector<CharId> char_id_by_abundance;
+		for(int c=0; c<this->characters_cnt; c++){
+			char_id_by_abundance.push_back(c);
+		}
+		// Sort the indices vector based on the values in vector C
+		std::sort(char_id_by_abundance.begin(), char_id_by_abundance.end(), [&abundances](CharId a, CharId b) {
+			return abundances[a] > abundances[b];
+		});
+		return char_id_by_abundance;
 	}
 };
 
