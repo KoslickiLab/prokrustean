@@ -41,6 +41,8 @@ struct ReprSuffixArrayIndexWorkspace {
     vector<bool> left_repr;
     // For each a, if representative.
     vector<bool> right_repr;
+
+    vector<SuffixArrayIdx> uniq_repr_sa;
 };
 
 struct SuffixArrayNodeExtension_NEW {
@@ -54,12 +56,12 @@ struct SuffixArrayNodeExtension_NEW {
             c_nodes[i].firsts=vector<SuffixArrayIdx>(characters_cnt+1);
         }
         this->characters_cnt=characters_cnt;
-        this->repr_sa_workspace.left_cnts=vector<int>(characters_cnt);
-        this->repr_sa_workspace.left_paired_first=vector<CharId>(characters_cnt);
-        this->repr_sa_workspace.right_cnts=vector<int>(characters_cnt);
-        this->repr_sa_workspace.right_paired_first=vector<CharId>(characters_cnt);
-        this->repr_sa_workspace.left_repr=vector<bool>(characters_cnt);
-        this->repr_sa_workspace.right_repr=vector<bool>(characters_cnt);
+        this->repr_space.left_cnts=vector<int>(characters_cnt);
+        this->repr_space.left_paired_first=vector<CharId>(characters_cnt);
+        this->repr_space.right_cnts=vector<int>(characters_cnt);
+        this->repr_space.right_paired_first=vector<CharId>(characters_cnt);
+        this->repr_space.left_repr=vector<bool>(characters_cnt);
+        this->repr_space.right_repr=vector<bool>(characters_cnt);
     }
 
     // The node in interest
@@ -69,7 +71,7 @@ struct SuffixArrayNodeExtension_NEW {
     // whether the corresponding c_node is open (the branch exists)
     vector<bool> c_nodes_open;
     
-    ReprSuffixArrayIndexWorkspace repr_sa_workspace;
+    ReprSuffixArrayIndexWorkspace repr_space;
 
     // alphabet size
     int characters_cnt;
@@ -80,7 +82,7 @@ struct SuffixArrayNodeExtension_NEW {
     // vector<optional<SuffixArrayIdx>> prev_c_firsts;
     // suffixes such that both left and right extensions are terminations
     vector<SuffixArrayIdx> both_ext_terms;
-    
+
     // for profiling purposes
     vector<uint64_t> any_measure;
 

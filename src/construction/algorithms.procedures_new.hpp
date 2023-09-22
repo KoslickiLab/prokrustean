@@ -11,10 +11,12 @@ using namespace std;
 void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
     // initialize cnts
     for(int i=0; i<ext.characters_cnt; i++){
-        ext.repr_sa_workspace.left_cnts[i]=0;
-        ext.repr_sa_workspace.right_cnts[i]=0;
-        ext.repr_sa_workspace.left_paired_first[i]=ext.characters_cnt;//max
-        ext.repr_sa_workspace.right_paired_first[i]=ext.characters_cnt;//max
+        ext.repr_space.left_cnts[i]=0;
+        ext.repr_space.right_cnts[i]=0;
+        ext.repr_space.left_paired_first[i]=ext.characters_cnt;//max
+        ext.repr_space.right_paired_first[i]=ext.characters_cnt;//max
+        ext.repr_space.left_repr[i]=false;
+        ext.repr_space.right_repr[i]=false;
     }
     // for each letter
     for(int c=0; c < ext.characters_cnt; c++){
@@ -24,67 +26,78 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
         //for each right a
         for(int a=0; a<ext.characters_cnt; a++){
             if(ext.c_nodes[c].firsts[a]<ext.c_nodes[c].firsts[a+1]){
-                ext.repr_sa_workspace.left_cnts[c]++;
-                ext.repr_sa_workspace.left_paired_first[c]=a<ext.repr_sa_workspace.left_paired_first[c]?a:ext.repr_sa_workspace.left_paired_first[c];
-                ext.repr_sa_workspace.right_cnts[a]++;
-                ext.repr_sa_workspace.right_paired_first[a]=c<ext.repr_sa_workspace.right_paired_first[a]?c:ext.repr_sa_workspace.right_paired_first[a];
+                ext.repr_space.left_cnts[c]++;
+                ext.repr_space.left_paired_first[c]=a<ext.repr_space.left_paired_first[c]?a:ext.repr_space.left_paired_first[c];
+                ext.repr_space.right_cnts[a]++;
+                ext.repr_space.right_paired_first[a]=c<ext.repr_space.right_paired_first[a]?c:ext.repr_space.right_paired_first[a];
             }
         }
     }
     /* find repr characters */
     for(int i=1/*not termination*/; i<ext.characters_cnt; i++){ 
         // cout << "left: " << i << ", left cnt" << left_cnt << ", right info: " << (int)r << endl;
-        if(ext.repr_sa_workspace.left_cnts[i]==0){
-            ext.repr_sa_workspace.left_repr[i]=false;
+        if(ext.repr_space.left_cnts[i]==0){
+            ext.repr_space.left_repr[i]=false;
         } //left exclusive but not bi-exclusive
-        else if(ext.repr_sa_workspace.left_cnts[i]==1 
-        && ext.repr_sa_workspace.left_paired_first[i]!=0 
-        && ext.repr_sa_workspace.right_cnts[ext.repr_sa_workspace.left_paired_first[i]]>1){
-            ext.repr_sa_workspace.left_repr[i]=false;
+        else if(ext.repr_space.left_cnts[i]==1 
+        && ext.repr_space.left_paired_first[i]!=0 
+        && ext.repr_space.right_cnts[ext.repr_space.left_paired_first[i]]>1){
+            ext.repr_space.left_repr[i]=false;
         } else {
-            ext.repr_sa_workspace.left_repr[i]=true;
+            ext.repr_space.left_repr[i]=true;
         }
     }
     for(int i=1/*not termination*/; i<ext.characters_cnt; i++){ 
-        if(ext.repr_sa_workspace.right_cnts[i]==0)
+        if(ext.repr_space.right_cnts[i]==0)
         {
-            ext.repr_sa_workspace.right_repr[i]=false;
+            ext.repr_space.right_repr[i]=false;
         } //right exclusive but not bi-exclusive
-        else if(ext.repr_sa_workspace.right_cnts[i]==1 
-        && ext.repr_sa_workspace.right_paired_first[i]!=0 
-        && ext.repr_sa_workspace.left_cnts[ext.repr_sa_workspace.right_paired_first[i]]>1) {
-            ext.repr_sa_workspace.right_repr[i]=false;
+        else if(ext.repr_space.right_cnts[i]==1 
+        && ext.repr_space.right_paired_first[i]!=0 
+        && ext.repr_space.left_cnts[ext.repr_space.right_paired_first[i]]>1) {
+            ext.repr_space.right_repr[i]=false;
         } else {
-            ext.repr_sa_workspace.right_repr[i]=true;
+            ext.repr_space.right_repr[i]=true;
         }
     }
 }
+
 
 void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<MaximalRepeatAnnotation> &outs){
     // auto start = std::chrono::steady_clock::now();
     decide_repr_sa_new(ext);
     // ext.any_measure[6]+=(std::chrono::steady_clock::now()-start).count();
 
-    // start = std::chrono::steady_clock::now();
-    set<SuffixArrayIdx> uniq_repr_sa;
+    ext.repr_space.uniq_repr_sa.clear();
     for(int c=0; c<ext.characters_cnt; c++){
-        if(ext.repr_sa_workspace.left_repr[c]){
+        // the first suffix index of Wa form is explored by default.
+        if(ext.repr_space.right_repr[c]){
+            ext.repr_space.uniq_repr_sa.push_back(ext.first_r(c));
+        }
+        // the first suffix index of cW should be found and checked for duplication
+        if(ext.repr_space.left_repr[c]){
             //revert the rank process
             SuffixArrayIdx sa_idx=0;
+            CharId a;
             for(int i=0; i<ext.characters_cnt; i++){
                 if(ext.c_nodes[c].firsts[i]<ext.c_nodes[c].firsts[i+1]) {
+                    // first suffix array index of cW 
                     sa_idx=ext.c_nodes[c].firsts[i];
+                    a=i;
                     break;
                 }
             }
             assert(sa_idx!=0);
             uint64_t rank = sa_idx - index.C[c] + 1;
+            // auto start2 = std::chrono::steady_clock::now();
             SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
-            uniq_repr_sa.insert(prev_sa_idx);
-            // uniq_repr_sa.insert(ext.first_l(c));
-        }
-        if(ext.repr_sa_workspace.right_repr[c]){
-            uniq_repr_sa.insert(ext.first_r(c));
+            
+            // here, check if the suffix array picked by the right letter a of cWa is duplicated.
+            // this cannot be checked in advance..
+            if(ext.repr_space.right_repr[a] && prev_sa_idx==ext.first_r(a)){
+            } else {
+                ext.repr_space.uniq_repr_sa.push_back(prev_sa_idx);
+            }
         }
     }
     
@@ -93,42 +106,18 @@ void report_repr_sa(FmIndex &index, SuffixArrayNodeExtension_NEW &ext, vector<Ma
     Then in here we should collect all suffixes where the form is #W#.
     */
     for(auto sa_idx: ext.both_ext_terms){
-        uniq_repr_sa.insert(sa_idx);
+        ext.repr_space.uniq_repr_sa.push_back(sa_idx);
     }
 
-    vector<SuffixArrayIdx> repr_sa(uniq_repr_sa.begin(), uniq_repr_sa.end()); 
-
-    // ext.any_measure[7]+=(std::chrono::steady_clock::now()-start).count();
-    // if(repr_sa.size()==0){
-    //     cout << "repr_sa 0 case" << endl;
-    //     for(auto pair: ext.distinct_extensions()){
-    //         cout << (int)get<0>(pair) << ", " << (int)get<1>(pair) << endl;
-    //     }
-    //     cout << "repr ex left" << endl; 
-    //     for(auto left: get<0>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-    //         cout << (int)left << endl;
-    //     }
-    //     cout << "repr ex right" << endl; 
-    //     for(auto left: get<1>(decide_repr_sa_extensions(ext.c_nodes.size(), ext.distinct_extensions()))){
-    //         cout << (int)left << endl;
-    //     }
-    //     assert(false);
-    // };
-    // start = std::chrono::steady_clock::now();
-    assert(repr_sa.size()>0);
-    SuffixArrayIdx min_idx = repr_sa[0];
-    for(auto i: repr_sa){
-        min_idx = i < min_idx? i: min_idx;
+    assert(ext.repr_space.uniq_repr_sa.size()>0);
+    // SuffixArrayIdx min_idx2 = ext.repr_sa_workspace.uniq_repr_sa[0];
+    SuffixArrayIdx min_idx = ext.repr_space.uniq_repr_sa[0];
+    for(auto idx: ext.repr_space.uniq_repr_sa){
+        // min_idx2 = ext.repr_sa_workspace.uniq_repr_sa[i] < min_idx2? ext.repr_sa_workspace.uniq_repr_sa[i]: min_idx2;
+        min_idx = idx < min_idx? idx: min_idx;
     }
-    
-    // cout << "rep size: " <<ext.node.depth << " sa: "; 
-    // for(auto i: repr_sa){
-    //     cout << i << ", ";
-    // }
-    // cout << endl;
 
-    outs.push_back({ext.node.depth, repr_sa, min_idx});
-    // ext.any_measure[8]+=(std::chrono::steady_clock::now()-start).count();
+    outs.push_back({ext.node.depth, ext.repr_space.uniq_repr_sa, min_idx});
 }
 
 
