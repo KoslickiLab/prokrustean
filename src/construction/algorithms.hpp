@@ -34,12 +34,12 @@ Prokrustean build_prokrustean(FmIndex &fm_idx, uint64_t Lmin=1, bool recover_seq
     for(uint64_t i=0; i < fm_idx.seq_cnt(); i++){
         SequenceAnnotation annot = get_sequence_annotations(i, fm_idx, repr_annotation, repeats, recover_sequences);
         // print_positions(annot.positions);
-        vector<MinCover> mcs = get_min_covers(annot);
+        vector<Stratification> mcs = get_min_covers(annot);
         for(auto mc: mcs){
-            if(mc.is_rep){
-                pk.rep_mcs[mc.id] = mc;
+            if(mc.is_stratum){
+                pk.stratums[mc.id] = mc;
             } else {
-                pk.seq_mcs[mc.id] = mc;
+                pk.seqs[mc.id] = mc;
             }
         }
         if(recover_sequences)
@@ -111,11 +111,11 @@ Prokrustean build_prokrustean_parallel(FmIndex &fm_idx, unsigned int num_threads
                 /* parallelized body */
                 SequenceAnnotation annot = get_sequence_annotations(i, fm_idx, repr_sa, rep_annots, recover_sequences);
                 // print_positions(annot.positions);
-                vector<MinCover> mcs = get_min_covers(annot);
+                vector<Stratification> mcs = get_min_covers(annot);
                 for(auto mc: mcs){
                     /* this part cannot have any collision due to primary repr sa structure*/
-                    if(mc.is_rep) pk.rep_mcs[mc.id] = mc;
-                    else pk.seq_mcs[mc.id] = mc;
+                    if(mc.is_stratum) pk.stratums[mc.id] = mc;
+                    else pk.seqs[mc.id] = mc;
                 }
                 if(recover_sequences)
                 pk.sequences.value()[i] = annot.sequence.value();

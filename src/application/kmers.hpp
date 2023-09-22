@@ -12,7 +12,7 @@ vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
     vector<Occurrence> rep_occs = collect_rep_example_occurrences(pk);
     vector<string> kmers;
     // from seq min covers
-    for(int i=0;i<pk.seq_mcs.size();i++){
+    for(int i=0;i<pk.seqs.size();i++){
         auto string = pk.sequences.value()[i];
         auto gaps = get_gaps_seq(pk, i, k);
         for(auto gap: gaps){
@@ -27,8 +27,8 @@ vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
         }
     }
     // from rep min covers
-    for(int i=0;i<pk.rep_mcs.size();i++){
-        if(pk.rep_mcs[i].size<k){
+    for(int i=0;i<pk.stratums.size();i++){
+        if(pk.stratums[i].size<k){
             continue;
         }
         Occurrence rep_occ = rep_occs[i];

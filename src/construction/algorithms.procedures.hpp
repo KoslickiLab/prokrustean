@@ -355,7 +355,7 @@ void _print__mc_rep_addition(SequenceAnnotation &seq_annot,
     }
                                 
 }
-vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
+vector<Stratification> get_min_covers(SequenceAnnotation &seq_annot){
 /* Summary
     set pos=first pos
 
@@ -408,11 +408,11 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
     9. NOT ∃possible-parent, NOT ∃upper, NOT ∃right?
     finish.
 */
-    vector<MinCover> mcs;
-    MinCover seq_mc;
+    vector<Stratification> mcs;
+    Stratification seq_mc;
     seq_mc.id = seq_annot.id;
     seq_mc.size = seq_annot.size;
-    seq_mc.is_rep = false;
+    seq_mc.is_stratum = false;
 
     if(seq_annot.positions.size()==0){
         mcs.push_back(seq_mc);
@@ -464,7 +464,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         }
         bool possible_parent_exists = parent.has_value();
         optional<Pos> curr_relative_pos_to_parent_opt;
-        // optional<MinCover> parent_mc_opt;
+        // optional<Stratification> parent_mc_opt;
         optional<uint64_t> parent_pos_idx_opt;
         optional<uint64_t> parent_mc_idx_opt;
         bool is_right_completed=false;
@@ -533,14 +533,14 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         optional<uint64_t> new_mc_idx_opt;
         if(is_curr_first_visit && is_curr_primary){
             //if the suffix array index is the same as the first repr suffix array index of the repeat.
-            MinCover rep_mc;
+            Stratification rep_mc;
             rep_mc.id = curr_pos.rep_ids[curr_rep_idx];
             rep_mc.size = curr_rep.size;
-            rep_mc.is_rep = true;
+            rep_mc.is_stratum = true;
             if(lower_exists){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;
-                rep_mc.mc_reps.push_back(make_tuple(relative_pos, prev_rep_id));
+                rep_mc.regions.push_back(make_tuple(relative_pos, prev_rep_id));
                 // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(curr_pos_idx, curr_pos.reps[curr_rep_idx-1].size), "upper");
             }
             mcs.push_back(rep_mc);
@@ -554,7 +554,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             assert(new_mc_idx_opt.has_value());
             ancestors.push(make_tuple(curr_pos_idx, new_mc_idx_opt.value()));
             curr_pos_idx++;
-            // cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 1" << ": parent now has" << mcs[new_mc_idx_opt.value()].regions.size() << endl;
             continue;
         }
 
@@ -567,7 +567,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
         
         /* 3. possible-parent NOT ⊃ upper? (∃possible-parent) */
         if(possible_parent_exists && !possible_parent_include_upper_opt){
-            mcs[parent_mc_idx_opt.value()].mc_reps.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
+            mcs[parent_mc_idx_opt.value()].regions.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
             // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(get<0>(parent.value()), mcs[get<1>(parent.value())].size), "right");
             
             rep_layers_completed[curr_pos_idx]=curr_rep_idx;
@@ -575,7 +575,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
             if(rep_layers[curr_pos_idx]+1<curr_pos.reps.size()){
                 rep_layers[curr_pos_idx]++;
             }
-            // cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].mc_reps.size() << endl;
+            // cout << "condition 3" << ": parent now has" << mcs[parent_mc_idx_opt.value()].regions.size() << endl;
         }
 
         /* 4. possible-parent ⊃ right? (∃possible-parent, ∃right, **!is_right_not_completed) */
@@ -604,7 +604,7 @@ vector<MinCover> get_min_covers(SequenceAnnotation &seq_annot){
 
         if(!is_curr_completed && !upper_exists && !possible_parent_exists){
             // cout << "condition seq Add to seq" << endl;
-            seq_mc.mc_reps.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
+            seq_mc.regions.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
             // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(0, 0), "seq");
         }
 

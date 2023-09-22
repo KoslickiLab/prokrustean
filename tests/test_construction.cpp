@@ -30,13 +30,13 @@ void test_basic_construction(){
     auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     Prokrustean pk = build_prokrustean(fm_idx, Lmin, true);
-    assert(pk.rep_mcs.size()>0);
-    assert(pk.seq_mcs.size()>0);
-    for(int i=0; i< pk.rep_mcs.size(); i++){
-        assert(pk.rep_mcs[i].id == i);
+    assert(pk.stratums.size()>0);
+    assert(pk.seqs.size()>0);
+    for(int i=0; i< pk.stratums.size(); i++){
+        assert(pk.stratums[i].id == i);
     }
-    for(int i=0; i< pk.seq_mcs.size(); i++){
-        assert(pk.seq_mcs[i].id == i);
+    for(int i=0; i< pk.seqs.size(); i++){
+        assert(pk.seqs[i].id == i);
     }
 }
 
