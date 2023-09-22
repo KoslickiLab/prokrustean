@@ -9,8 +9,8 @@ int main(void){
     // main_performance_bitvector();
     // cout << "--- construction ---" << endl;
     // main_performance_construction();
-    // cout << "--- tree(step1) ---" << endl;
+    cout << "--- tree(step1) ---" << endl;
     main_performance_new_tree();
-    cout << "--- block(step2) ---" << endl;
-    main_performance_new_repr_block();
+    // cout << "--- block(step2) ---" << endl;
+    // main_performance_new_repr_block();
 }

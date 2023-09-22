@@ -81,16 +81,19 @@ public:
         return wt.rank(i, characters[c]);
     }
 
-	//the order follows the character sequence
-    void ranks_new(SuffixArrayIdx i, RankArray& ranks){
-        for(int cid=0; cid < characters_cnt; cid++){
-            ranks[cid]=wt.rank(i, characters[cid]);
-        }
-    }
-
     void ranks(CharId c, vector<SuffixArrayIdx> &firsts, vector<uint64_t> &ext_ranks){
-        for(int i=0; i< characters_cnt+1; i++){
-            if(i==0||firsts[i-1]!=firsts[i]){
+        /* check interval first, so that if empty, just skip it*/
+        ext_ranks[0]=wt.rank(firsts[0], characters[c]);
+        ext_ranks[characters_cnt]=wt.rank(firsts[characters_cnt], characters[c]);
+        if(ext_ranks[0] == ext_ranks[characters_cnt]){
+            for(int i=1; i< characters_cnt; i++){
+                ext_ranks[i]=ext_ranks[0];
+            }
+            return;
+        }
+        // do the rest
+        for(int i=1; i< characters_cnt; i++){
+            if(firsts[i-1]!=firsts[i]){
                 ext_ranks[i]=wt.rank(firsts[i], characters[c]);
             } else {
                 ext_ranks[i]=ext_ranks[i-1];

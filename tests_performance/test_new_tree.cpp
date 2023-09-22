@@ -16,11 +16,11 @@ using namespace std;
 using namespace sdsl;
 
 void test_comparison(){
-    int Lmin = 1;
+    int Lmin = 20;
     // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
 
-    // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
-    auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
+    auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
+    // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     auto start = std::chrono::steady_clock::now();
     auto fm_idx = FmIndex(str);
     cout << "bwt $ cout: " << fm_idx.seq_cnt() << " wv tree took " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

@@ -165,10 +165,11 @@ struct StratifiedBlock{
 // }
 
 
-// seq_length/numeric_limits<uint16_t>::max()
 struct StratifiedSA_ParallelModel {
     // each thread has own blocks of raw data that will be converted to real block
     vector<StratifiedRawWorkspace> parallel_workspaces;
+    // parallel converged - boolean but to make it threadsafe, use 1 byte symbol
+    vector<uint8_t> block_already_converged;
     // blocks that are each merged from correspondings in parallel workspaces
     vector<StratifiedBlock> blocks;
     // block size is 65535
@@ -179,6 +180,7 @@ struct StratifiedSA_ParallelModel {
         parallel_scale=thread_cnt;
         parallel_workspaces=vector<StratifiedRawWorkspace>(parallel_scale, StratifiedRawWorkspace(seq_length, block_unit));
         blocks=vector<StratifiedBlock>(seq_length/block_unit+1, StratifiedBlock(block_unit));
+        block_already_converged=vector<uint8_t>(seq_length/block_unit+1, 0);
     }
 
     optional<StratifiedReprBased*> query(uint64_t repr_sa){
@@ -186,6 +188,9 @@ struct StratifiedSA_ParallelModel {
     }
 
     void converge_block(uint64_t block_no){
+        assert(block_already_converged[block_no]==0);
+        block_already_converged[block_no]=1;
+
         StratifiedBlock* output_block=&blocks[block_no];
         vector<vector<StratifiedRaw>*> raws_from_each_workspace(parallel_scale);
         // assuming each thread is assigned blocks exclusively
@@ -256,6 +261,45 @@ void test_stratified_block_operation(){
     assert(result.value()->rep_id_is_primary_array[1]==false);
 }
 
+void test_stratified_parallel_model_operation(){
+    int thread = 3;
+    uint64_t seq_length=1000001; 
+    auto model = StratifiedSA_ParallelModel(thread, seq_length);
+    auto workspace1=&model.parallel_workspaces[0];
+    (*workspace1).add_repr_raw(1234, 9999, true);
+    (*workspace1).add_repr_raw(65534, 3333, false);
+    (*workspace1).add_repr_raw(8322, 4444, true);
+    (*workspace1).add_repr_raw(8322, 5555, false);
+    model.converge_block(1234/model.block_unit);
+    auto result = model.query(1234);
+    assert(result.has_value());
+    assert(result.value()->count==1);
+    assert(result.value()->rep_id_array[0]==9999);
+    assert(result.value()->rep_id_is_primary_array[0]);
+    result = model.query(8322);
+    assert(result.has_value());
+    assert(result.value()->count==2);
+    assert(result.value()->rep_id_array[0]==4444);
+    assert(result.value()->rep_id_is_primary_array[1]==false);
+    // block.index_reprs(raws_from_each_workspace);
+    // auto result = block.check_and_get_repr(1234);
+    // assert(result.has_value());
+    // assert(result.value()->count==1);
+    // assert(result.value()->rep_id_array[0]==9999);
+    // assert(result.value()->rep_id_is_primary_array[0]);
+
+    // result = block.check_and_get_repr(65534);
+    // assert(result.value()->rep_id_array[0]==3333);
+    // assert(result.value()->rep_id_is_primary_array[0]==false);
+
+    // result = block.check_and_get_repr(8322);
+    // assert(result.value()->rep_id_array[0]==4444);
+    // assert(result.value()->rep_id_is_primary_array[0]==true);
+    // result = block.check_and_get_repr(8322);
+    // assert(result.value()->rep_id_array[1]==5555);
+    // assert(result.value()->rep_id_is_primary_array[1]==false);
+}
+
 void test_block_operation_with_tree(){
     int Lmin = 30;
     // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
@@ -308,6 +352,7 @@ void test_block_operation_with_tree(){
 void main_performance_new_repr_block() {
     test_stratified_raw_block_operation();
     test_stratified_block_operation();
+    test_stratified_parallel_model_operation();
     // test_memory_reserved_stack();
     // test_variable_length_array();
 }

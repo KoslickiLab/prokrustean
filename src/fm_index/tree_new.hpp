@@ -32,11 +32,11 @@ struct ReprSuffixArrayIndexWorkspace {
     // For each character c, how many distinct cW form exists. e.g. AWT, AWG -> left cnt is 2
     vector<int> left_cnts;
     // For each character c, example of a of cWa form - only meaningful when exclusive
-    vector<CharId> left_paired_example;
+    vector<CharId> left_paired_first;
     // For each character a, how many distinct Wa form exists.
     vector<int> right_cnts;
     // For each character a, example of c of cWa form.
-    vector<CharId> right_paired_example;
+    vector<CharId> right_paired_first;
     // For each c, if representative.
     vector<bool> left_repr;
     // For each a, if representative.
@@ -55,9 +55,9 @@ struct SuffixArrayNodeExtension_NEW {
         }
         this->characters_cnt=characters_cnt;
         this->repr_sa_workspace.left_cnts=vector<int>(characters_cnt);
-        this->repr_sa_workspace.left_paired_example=vector<CharId>(characters_cnt);
+        this->repr_sa_workspace.left_paired_first=vector<CharId>(characters_cnt);
         this->repr_sa_workspace.right_cnts=vector<int>(characters_cnt);
-        this->repr_sa_workspace.right_paired_example=vector<CharId>(characters_cnt);
+        this->repr_sa_workspace.right_paired_first=vector<CharId>(characters_cnt);
         this->repr_sa_workspace.left_repr=vector<bool>(characters_cnt);
         this->repr_sa_workspace.right_repr=vector<bool>(characters_cnt);
     }
@@ -82,13 +82,7 @@ struct SuffixArrayNodeExtension_NEW {
     vector<SuffixArrayIdx> both_ext_terms;
     
     // for profiling purposes
-    vector<int> any_measure;
-
-    // SuffixArrayIdx first_l(CharId c){
-    //     assert(prev_c_firsts[c].has_value());
-    //     // cout << "first l: " << prev_c_firsts[c].value() << endl;
-    //     return prev_c_firsts[c].value();
-    // }
+    vector<uint64_t> any_measure;
 
     SuffixArrayIdx first_r(CharId c){
         return node.firsts[c];
@@ -106,19 +100,23 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
     bool left_maximal=false;
     bool left_maximal_checked=false;
     bool same_interval_size_with_the_child=false;
+    bool interval_exhausted=false;
     int right_distinct=0;
     while(!left_maximal){
         left_maximal=true;
         left_maximal_checked=false;
+        interval_exhausted=false;
         for(int c=0; c<index.characters_cnt; c++){
-            // this function updates c_first_ranks that is, for a target left c, the list of ranks of firsts for each right character.
+            // auto start2 = std::chrono::steady_clock::now();
             index.STRING->ranks(c, ext.node.firsts, ext.c_first_ranks);
+            // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start2).count();
+            
             // interval is empty -> left node for c is empty
             if(ext.c_first_ranks[0]==ext.c_first_ranks[index.characters_cnt]){
                 ext.c_nodes_open[c]=false;
                 continue;
             }
-            // check if left non-maximal
+            // check if left non-maximal. if yes, then casually move to the only branch.
             if(c!=0 && !left_maximal_checked){
                 bool same_interval_size_with_the_child = ext.node.firsts[ext.characters_cnt]-ext.node.firsts[0] == ext.c_first_ranks[ext.characters_cnt]-ext.c_first_ranks[0];
                 if(same_interval_size_with_the_child){
@@ -128,8 +126,6 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
                         ext.node.firsts[i]=index.C[c]+ext.c_first_ranks[i];
                     }
                     left_maximal=false;
-                    // ext.any_measure[0]++;
-                    // jump to next phase
                     break;
                 } else {
                     left_maximal_checked=true;
@@ -157,20 +153,6 @@ void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
     }
 
     // ext.any_measure[5]+=(std::chrono::steady_clock::now()-start).count();
-
-    // for(int c=0; c < index.characters_cnt; c++){
-    //     if(!ext.c_nodes_open[c]){
-    //         ext.prev_c_firsts[c]=nullopt;
-    //         continue;
-    //     } 
-
-    //     //revert the rank process
-    //     SuffixArrayIdx sa_idx = ext.c_nodes[c].get_valid_first();
-    //     uint64_t rank = sa_idx - index.C[c] + 1;
-    //     SuffixArrayIdx prev_sa_idx = index.STRING->select(rank, c);
-    //     // cout << "obtained " << prev_sa_idx << " for " << sa_idx << endl;
-    //     ext.prev_c_firsts[c]=prev_sa_idx;
-    // }
     
     ext.both_ext_terms.clear();
     if(ext.c_nodes_open[0] && ext.c_nodes[0].firsts[0]!=ext.c_nodes[0].firsts[1]){
@@ -205,8 +187,8 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
     stack<SuffixArrayNode_NEW> stack;
     
     SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
-    ext.any_measure=vector<int>(10,0);
-    // auto start = std::chrono::steady_clock::now();
+    ext.any_measure=vector<uint64_t>(10,0);
+    auto start = std::chrono::steady_clock::now();
 
     stack.push(root);
     while(!stack.empty()){
@@ -216,13 +198,13 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
         // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
         
         
-        // start = std::chrono::steady_clock::now();
+        start = std::chrono::steady_clock::now();
         extend_node_new(fm_idx, ext);
-        // ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
+        ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
         if(ext.node.depth>=Lmin){
-            // start = std::chrono::steady_clock::now();
+            start = std::chrono::steady_clock::now();
             process_node(fm_idx, ext, Ts);
-            // ext.any_measure[3]+=(std::chrono::steady_clock::now()-start).count();
+            ext.any_measure[3]+=(std::chrono::steady_clock::now()-start).count();
             
         }
         
@@ -239,7 +221,6 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
         }
         // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
     }
-    cout << "left pushed " << ext.any_measure[0] << endl;
     for(int i=0; i<ext.any_measure.size(); i++){
         cout << "measure " << i << ": " << ext.any_measure[i]/1000000 << "ms" << endl;
     }

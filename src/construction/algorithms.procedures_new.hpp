@@ -13,6 +13,8 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
     for(int i=0; i<ext.characters_cnt; i++){
         ext.repr_sa_workspace.left_cnts[i]=0;
         ext.repr_sa_workspace.right_cnts[i]=0;
+        ext.repr_sa_workspace.left_paired_first[i]=ext.characters_cnt;//max
+        ext.repr_sa_workspace.right_paired_first[i]=ext.characters_cnt;//max
     }
     // for each letter
     for(int c=0; c < ext.characters_cnt; c++){
@@ -23,9 +25,9 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
         for(int a=0; a<ext.characters_cnt; a++){
             if(ext.c_nodes[c].firsts[a]<ext.c_nodes[c].firsts[a+1]){
                 ext.repr_sa_workspace.left_cnts[c]++;
-                ext.repr_sa_workspace.left_paired_example[c]=a;
+                ext.repr_sa_workspace.left_paired_first[c]=a<ext.repr_sa_workspace.left_paired_first[c]?a:ext.repr_sa_workspace.left_paired_first[c];
                 ext.repr_sa_workspace.right_cnts[a]++;
-                ext.repr_sa_workspace.right_paired_example[a]=c;
+                ext.repr_sa_workspace.right_paired_first[a]=c<ext.repr_sa_workspace.right_paired_first[a]?c:ext.repr_sa_workspace.right_paired_first[a];
             }
         }
     }
@@ -36,8 +38,8 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
             ext.repr_sa_workspace.left_repr[i]=false;
         } //left exclusive but not bi-exclusive
         else if(ext.repr_sa_workspace.left_cnts[i]==1 
-        && ext.repr_sa_workspace.left_paired_example[i]!=0 
-        && ext.repr_sa_workspace.right_cnts[ext.repr_sa_workspace.left_paired_example[i]]>1){
+        && ext.repr_sa_workspace.left_paired_first[i]!=0 
+        && ext.repr_sa_workspace.right_cnts[ext.repr_sa_workspace.left_paired_first[i]]>1){
             ext.repr_sa_workspace.left_repr[i]=false;
         } else {
             ext.repr_sa_workspace.left_repr[i]=true;
@@ -49,8 +51,8 @@ void decide_repr_sa_new(SuffixArrayNodeExtension_NEW &ext){
             ext.repr_sa_workspace.right_repr[i]=false;
         } //right exclusive but not bi-exclusive
         else if(ext.repr_sa_workspace.right_cnts[i]==1 
-        && ext.repr_sa_workspace.right_paired_example[i]!=0 
-        && ext.repr_sa_workspace.left_cnts[ext.repr_sa_workspace.right_paired_example[i]]>1) {
+        && ext.repr_sa_workspace.right_paired_first[i]!=0 
+        && ext.repr_sa_workspace.left_cnts[ext.repr_sa_workspace.right_paired_first[i]]>1) {
             ext.repr_sa_workspace.right_repr[i]=false;
         } else {
             ext.repr_sa_workspace.right_repr[i]=true;
