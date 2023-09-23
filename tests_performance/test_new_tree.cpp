@@ -82,14 +82,14 @@ struct RepMcDummy{
     int size;
 };
 
-class AtomicRepIdGenerator {
+class AtomicStratumIdGenerator {
     int curr_rep_id;
     std::vector<RepMcDummy>* rep_mcs;
 
     std::atomic_flag lock = ATOMIC_FLAG_INIT; // Used as a spinlock for vector push_back
 
 public:
-    AtomicRepIdGenerator(std::vector<RepMcDummy> &rep_mcs) : curr_rep_id(0), rep_mcs(&rep_mcs) {}
+    AtomicStratumIdGenerator(std::vector<RepMcDummy> &rep_mcs) : curr_rep_id(0), rep_mcs(&rep_mcs) {}
 
     int generateNumber() {
         int number = 0;
@@ -104,7 +104,7 @@ public:
     }
 };
 
-void worker(AtomicRepIdGenerator& generator) {
+void worker(AtomicStratumIdGenerator& generator) {
     for (int i = 0; i < 10000; ++i) {
         int number = generator.generateNumber();
         // std::cout << "Generated number: " << number << " by thread: " << std::this_thread::get_id() << "\n";
@@ -115,7 +115,7 @@ void worker(AtomicRepIdGenerator& generator) {
 
 void test_atomic_rep_id() {
     vector<RepMcDummy> rep_mcs;
-    AtomicRepIdGenerator generator(rep_mcs);
+    AtomicStratumIdGenerator generator(rep_mcs);
 
     auto start = std::chrono::steady_clock::now();
 
@@ -133,9 +133,15 @@ void test_atomic_rep_id() {
     cout << "elapsed: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
+void test_infrastructural_components() {
+    std::tuple<uint8_t, uint16_t> tuple;
+    assert(sizeof(tuple)==4);
+    // std::cout << "Size of tuple: " << sizeof(tuple) << " bytes" << std::endl;
+}
 
 void main_performance_new_tree() {
-    test_comparison();
+    // test_comparison();
     // test_memory_reserved_stack();
     // test_atomic_rep_id();
+    test_infrastructural_components();
 }

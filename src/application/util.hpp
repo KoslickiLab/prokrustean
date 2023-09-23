@@ -81,7 +81,7 @@ vector<Interval> get_gaps_seq(Prokrustean pk, SeqId id, int degree){
     vector<Interval> rIntervals;
     for(auto r: pk.seqs[id].regions){
         Pos rpos = get<0>(r);
-        RepId rid = get<1>(r);
+        StratumId rid = get<1>(r);
         uint64_t size = pk.stratums[rid].size;
         if(size>=degree){
             rIntervals.push_back({rpos, rpos + pk.stratums[rid].size});
@@ -90,11 +90,11 @@ vector<Interval> get_gaps_seq(Prokrustean pk, SeqId id, int degree){
     return get_gaps(pk.seqs[id].size, degree, rIntervals);
 }
 
-vector<Interval> get_gaps_rep(Prokrustean pk, RepId id, int degree){
+vector<Interval> get_gaps_rep(Prokrustean pk, StratumId id, int degree){
     vector<Interval> rIntervals;
     for(auto r: pk.stratums[id].regions){
         Pos rpos = get<0>(r);
-        RepId rid = get<1>(r);
+        StratumId rid = get<1>(r);
         uint64_t size = pk.stratums[rid].size;
         if(size>=degree){
             rIntervals.push_back({rpos, rpos + pk.stratums[rid].size});
@@ -105,18 +105,18 @@ vector<Interval> get_gaps_rep(Prokrustean pk, RepId id, int degree){
 
 vector<Occurrence> collect_rep_example_occurrences(Prokrustean pk){
     vector<optional<Occurrence>> occs(pk.stratums.size());
-    stack<tuple<Stratification, Occurrence>> mcs_w_occ;
+    stack<tuple<Stratum, Occurrence>> mcs_w_occ;
     for(auto mc: pk.seqs){
         mcs_w_occ.push(make_tuple(mc, Occurrence(mc.id, 0, mc.size)));
     }
     while(!mcs_w_occ.empty()){
         auto pair = mcs_w_occ.top();
         mcs_w_occ.pop();
-        Stratification mc = get<0>(pair);
+        Stratum mc = get<0>(pair);
         Occurrence occ = get<1>(pair);
         for(auto r: mc.regions){
             Pos rpos = get<0>(r);
-            RepId rid = get<1>(r);
+            StratumId rid = get<1>(r);
             if(occs[rid].has_value()){
                 continue;
             }

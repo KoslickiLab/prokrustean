@@ -35,8 +35,8 @@ void test_repr_annotation(){
     uint64_t idx2 = 10;
     uint64_t idx3 = 50;
     uint64_t idx_empty = 66;
-    RepId rep1 = 2;
-    RepId rep2 = 4;
+    StratumId rep1 = 2;
+    StratumId rep2 = 4;
     
     vector<MaximalRepeatAnnotation> repeats;
     repeats.push_back({rep1, {idx2}});

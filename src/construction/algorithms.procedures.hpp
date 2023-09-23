@@ -202,7 +202,7 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
     while(F >= fm_idx.seq_cnt()){
         auto v = repr_sa.get_repeats(F);
         if (v.has_value()){
-            vector<RepId> rep_ids = v.value();
+            vector<StratumId> rep_ids = v.value();
             vector<MaximalRepeatAnnotation> reps;
             for(auto id: rep_ids){
                 reps.push_back(rep_annots[id]);
@@ -355,7 +355,7 @@ void _print__mc_rep_addition(SequenceAnnotation &seq_annot,
     }
                                 
 }
-vector<Stratification> get_min_covers(SequenceAnnotation &seq_annot){
+vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
 /* Summary
     set pos=first pos
 
@@ -408,11 +408,10 @@ vector<Stratification> get_min_covers(SequenceAnnotation &seq_annot){
     9. NOT ∃possible-parent, NOT ∃upper, NOT ∃right?
     finish.
 */
-    vector<Stratification> mcs;
-    Stratification seq_mc;
+    vector<Stratum> mcs;
+    Stratum seq_mc;
     seq_mc.id = seq_annot.id;
     seq_mc.size = seq_annot.size;
-    seq_mc.is_stratum = false;
 
     if(seq_annot.positions.size()==0){
         mcs.push_back(seq_mc);
@@ -533,10 +532,9 @@ vector<Stratification> get_min_covers(SequenceAnnotation &seq_annot){
         optional<uint64_t> new_mc_idx_opt;
         if(is_curr_first_visit && is_curr_primary){
             //if the suffix array index is the same as the first repr suffix array index of the repeat.
-            Stratification rep_mc;
+            Stratum rep_mc;
             rep_mc.id = curr_pos.rep_ids[curr_rep_idx];
             rep_mc.size = curr_rep.size;
-            rep_mc.is_stratum = true;
             if(lower_exists){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;

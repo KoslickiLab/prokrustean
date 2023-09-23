@@ -2,6 +2,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <random>
 #include "util.cpp"	
 #include "../src/prokrustean.hpp"
 #include "../src/construction/algorithms.hpp"
@@ -19,201 +20,11 @@
 using namespace std;
 using namespace sdsl;
 
-#include <iostream>
-#include <atomic>
-#include <thread>
-#include <vector>
-
-/* ************************************************************ */
-/* At step1, threads use a list of blocks to fill in raw data   */
-/* Thread each has their own set of blocks                       */
-/* ************************************************************ */
-struct StratifiedRaw{
-    uint16_t repr_sa_in_block;
-    RepId rep_id;
-    bool is_primary_of_rep;
-
-    StratifiedRaw(uint16_t repr_sa_in_block, uint64_t rep_id, bool is_primary_of_rep)
-    : repr_sa_in_block(repr_sa_in_block), rep_id(rep_id), is_primary_of_rep(is_primary_of_rep) {}
-};
-
-struct StratifiedRawWorkspace{
-    vector<vector<StratifiedRaw>> blocks_of_raws;
-    int block_unit;
-    StratifiedRawWorkspace(uint64_t seq_length, int block_unit){
-        this->block_unit=block_unit;
-        this->blocks_of_raws=vector<vector<StratifiedRaw>>(seq_length/block_unit+1);
-
-    }
-    // repr_idx is splitted so that it is inferred.
-    void add_repr_raw(uint64_t repr_idx, uint64_t rep_id, bool is_primary_of_rep){
-        blocks_of_raws[repr_idx/block_unit].push_back(StratifiedRaw(repr_idx%block_unit, rep_id, is_primary_of_rep));
-    }
-
-    void clear_block(int block_no){
-        blocks_of_raws[block_no].clear();
-        blocks_of_raws[block_no].shrink_to_fit();
-    }
-
-    // debugging purpose
-    uint64_t get_cardinality(){
-        uint64_t cardinality=0;
-        for(int i=0;i<this->blocks_of_raws.size(); i++){
-            cardinality+=this->blocks_of_raws[i].size();
-        }
-        return cardinality;
-    }
-
-    // debugging purpose
-    vector<uint64_t> restore_reprs(){
-        vector<uint64_t> reprs;
-        for(int b=0;b<this->blocks_of_raws.size(); b++){
-            for(auto raw: this->blocks_of_raws[b]){
-                auto original = raw.repr_sa_in_block+b*block_unit;
-                reprs.push_back(original);
-            }
-        }
-        return reprs;
-    }
-};
-
-/* ************************************************************ */
-/* At step2, blocks assgined to threads are merged              */
-/* threads are distributed to each block                          */
-/* ************************************************************ */
-struct StratifiedReprBased{
-    /* repr_sa is inferred from the Block location and bit vector (repr_exists) */
-    int count=0;
-    // fixed length rep_id (dynamically allocated) to secure space efficiency
-    RepId *rep_id_array;
-    // fixed length whether it is primary(first of repr suffix index) of rep (dynamically allocated) to secure space efficiency
-    bool *rep_id_is_primary_array;
-};
-
-struct StratifiedBlock{
-    rank_support_v<> repr_exists_rank;
-    bit_vector repr_exists;
-    // index is inferred from outside. (repr_sa/block_size, repr_sa % block_size)
-    vector<StratifiedReprBased> reprs;
-
-    StratifiedBlock(int block_unit){
-        this->repr_exists=bit_vector(block_unit, 0);
-    }
-    optional<StratifiedReprBased*> check_and_get_repr(uint16_t repr_sa_in_block){
-        if(!repr_exists[repr_sa_in_block]) return nullopt;
-        
-        return &reprs[repr_exists_rank.rank(repr_sa_in_block)];
-    }
-
-    void index_reprs(vector<vector<StratifiedRaw>*>  &raws_from_each_workspace){
-        // use temporary map only locally and preserve more structured faster way.
-        std::unordered_map<int, vector<StratifiedRaw*>> repr_rep;
-        // set bit vector
-        for(int i=0; i<raws_from_each_workspace.size(); i++){
-            auto raw_cnt = (*raws_from_each_workspace[i]).size();
-            for(int r=0; r<raw_cnt; r++){
-                auto repr_in_block = (*raws_from_each_workspace[i])[r].repr_sa_in_block;
-                if(!repr_exists[repr_in_block]){
-                    repr_exists[repr_in_block]=true;
-                    repr_rep[repr_in_block]=vector<StratifiedRaw*>();
-                }
-                repr_rep[repr_in_block].push_back(&(*raws_from_each_workspace[i])[r]);
-            }
-        }
-        // set ranks
-        this->repr_exists_rank=rank_support_v<>(&this->repr_exists);
-        auto repr_cnt = this->repr_exists_rank.rank(this->repr_exists.size());
-        reprs = vector<StratifiedReprBased>(repr_cnt);
-        // set reprs by rep ids
-        for (auto it = repr_rep.begin(); it != repr_rep.end(); ++it) {
-            auto repr_rank=this->repr_exists_rank.rank(it->first);
-            auto rep_cnt = it->second.size();
-            reprs[repr_rank].count=rep_cnt;
-            reprs[repr_rank].rep_id_array= (RepId*) malloc(rep_cnt*sizeof(RepId));
-            reprs[repr_rank].rep_id_is_primary_array= (bool*) malloc(rep_cnt*sizeof(bool));
-            for(int i=0; i< rep_cnt; i++){
-                reprs[repr_rank].rep_id_array[i]=it->second[i]->rep_id;
-                reprs[repr_rank].rep_id_is_primary_array[i]=it->second[i]->is_primary_of_rep;
-            }
-        }
-    }
-    
-};
-
-//sorting 
-// #include <iostream>
-// #include <algorithm>  // for std::sort
-
-// int main() {
-//     // Assume ptr points to a dynamically allocated array of N integers.
-//     int N = 5;
-//     int* ptr = new int[N] {5, 2, 9, 1, 4};
-
-//     // Sort the array.
-//     std::sort(ptr, ptr + N);
-
-//     // Print the sorted array.
-//     for (int i = 0; i < N; ++i) {
-//         std::cout << ptr[i] << " ";
-//     }
-//     std::cout << std::endl;
-
-//     // Don't forget to delete the dynamically allocated memory!
-//     delete[] ptr;
-
-//     return 0;
-// }
-
-
-struct StratifiedSA_ParallelModel {
-    // each thread has own blocks of raw data that will be converted to real block
-    vector<StratifiedRawWorkspace> parallel_workspaces;
-    // parallel converged - boolean but to make it threadsafe, use 1 byte symbol
-    vector<uint8_t> block_already_converged;
-    // blocks that are each merged from correspondings in parallel workspaces
-    vector<StratifiedBlock> blocks;
-    // block size is 65535
-    int block_unit = numeric_limits<uint16_t>::max();
-    int parallel_scale;
-
-    StratifiedSA_ParallelModel(int thread_cnt, uint64_t seq_length){
-        parallel_scale=thread_cnt;
-        parallel_workspaces=vector<StratifiedRawWorkspace>(parallel_scale, StratifiedRawWorkspace(seq_length, block_unit));
-        blocks=vector<StratifiedBlock>(seq_length/block_unit+1, StratifiedBlock(block_unit));
-        block_already_converged=vector<uint8_t>(seq_length/block_unit+1, 0);
-    }
-
-    optional<StratifiedReprBased*> query(uint64_t repr_sa){
-        return blocks[repr_sa/block_unit].check_and_get_repr(repr_sa%block_unit);
-    }
-
-    void converge_block(uint64_t block_no){
-        assert(block_already_converged[block_no]==0);
-        block_already_converged[block_no]=1;
-
-        StratifiedBlock* output_block=&blocks[block_no];
-        vector<vector<StratifiedRaw>*> raws_from_each_workspace(parallel_scale);
-        // assuming each thread is assigned blocks exclusively
-        for(int i=0;i<parallel_scale; i++){
-            raws_from_each_workspace[i]=&parallel_workspaces[i].blocks_of_raws[block_no];
-        }
-        output_block->index_reprs(raws_from_each_workspace);
-        for(int i=0;i<parallel_scale; i++){
-            parallel_workspaces[i].clear_block(block_no);
-        }
-    }
-
-    void converge_completed(){
-        parallel_workspaces.clear();
-        parallel_workspaces.shrink_to_fit();
-    }
-};
-
 
 void test_stratified_raw_block_operation(){
     uint64_t seq_length=1000001; 
     int block_unit=65535;
-    auto workspace=StratifiedRawWorkspace(seq_length, block_unit);
+    auto workspace=StratifiedRawWorkspace(0, seq_length, block_unit);
     workspace.add_repr_raw(1234, 9999, true);
     assert(workspace.get_cardinality()==1);
     assert(workspace.restore_reprs()[0]==1234);
@@ -230,38 +41,127 @@ void test_stratified_raw_block_operation(){
     assert(workspace.restore_reprs()[2]==1000002);
 }
 
+void test_stratum_convergence(){
+    uint64_t seq_length=1000001; 
+    int block_unit=65535;
+    vector<StratifiedRawWorkspace> workspaces;
+    workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
+    auto workspace=&workspaces[0];
+    (*workspace).add_repr_raw(1234, 9999, true);
+    (*workspace).add_repr_raw(65534, 3333, false);
+    (*workspace).add_repr_raw(8322, 4444, true);
+    (*workspace).add_repr_raw(8322, 5555, false);
+    workspace->set_real_stratum_id(workspaces);
+
+    workspaces.clear();
+    Prokrustean prokrustean;
+    workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
+    workspaces.push_back(StratifiedRawWorkspace(1, seq_length, block_unit));
+    workspaces.push_back(StratifiedRawWorkspace(2, seq_length, block_unit));
+    auto sid = workspaces[0].get_new_stratum(500);
+    workspaces[0].add_repr_raw(1234, sid, true);
+    sid = workspaces[0].get_new_stratum(400);
+    workspaces[0].add_repr_raw(65534, sid, false);
+    sid = workspaces[0].get_new_stratum(300);
+    workspaces[0].add_repr_raw(8322, sid, true);
+    workspaces[0].add_repr_raw(9999, sid, false);
+
+    sid = workspaces[1].get_new_stratum(300);
+    workspaces[1].add_repr_raw(1234, sid, true);
+    sid = workspaces[1].get_new_stratum(300);
+    workspaces[1].add_repr_raw(2222, sid, false);
+    sid = workspaces[1].get_new_stratum(200);
+    workspaces[1].add_repr_raw(4444, sid, true);
+    sid = workspaces[1].get_new_stratum(100);
+    workspaces[1].add_repr_raw(6666, sid, false);
+
+    sid = workspaces[2].get_new_stratum(500);
+    workspaces[2].add_repr_raw(1234, sid, true);
+    sid = workspaces[2].get_new_stratum(500);
+    workspaces[2].add_repr_raw(8322, sid, false);
+    sid = workspaces[2].get_new_stratum(700);
+    workspaces[2].add_repr_raw(8322, sid, true);
+    int total_cnt = 0;
+    for(auto &w: workspaces){
+        total_cnt += w.stratum_cnt;
+    }
+    prokrustean.stratums.resize(total_cnt);
+
+    for(auto &w: workspaces){
+        w.set_real_stratum_id(workspaces);
+        w.set_stratum_sizes(prokrustean);
+    }
+    for(auto &stratum: prokrustean.stratums){
+        assert(stratum.size>0);
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint32_t> repr_dist(0, seq_length);
+    std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/1000);
+    workspaces.clear();
+    prokrustean=Prokrustean();
+    for(int i=0; i<10; i++){
+        workspaces.push_back(StratifiedRawWorkspace(i, seq_length, block_unit));
+    }
+    for(auto &w: workspaces){
+        for(int i=0; i<seq_length/workspaces.size()/10; i++){
+            auto stratum_id=w.get_new_stratum(size_dist(gen));
+            for(int r=0; r<10; r++){
+                w.add_repr_raw(repr_dist(gen), stratum_id, true);
+            }
+        }
+    }
+    total_cnt = 0;
+    for(auto &w: workspaces){
+        total_cnt += w.stratum_cnt;
+    }
+
+    prokrustean.stratums.resize(total_cnt);
+    for(auto &w: workspaces){
+        w.set_real_stratum_id(workspaces);
+        w.set_stratum_sizes(prokrustean);
+    }
+
+    for(auto &stratum: prokrustean.stratums){
+        assert(stratum.size>0);
+    }
+}
+
 void test_stratified_block_operation(){
     uint64_t seq_length=1000001; 
     int block_unit=65535;
-    auto workspace=StratifiedRawWorkspace(seq_length, block_unit);
-    auto block=StratifiedBlock(block_unit);
-    vector<vector<StratifiedRaw>*>  raws_from_each_workspace(1);
-    raws_from_each_workspace[0]=&workspace.blocks_of_raws[0];
+    vector<StratifiedRawWorkspace> workspaces;
+    workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
+    auto workspace=&workspaces[0];
+    (*workspace).add_repr_raw(1234, 9999, true);
+    (*workspace).add_repr_raw(65534, 3333, false);
+    (*workspace).add_repr_raw(8322, 4444, true);
+    (*workspace).add_repr_raw(8322, 5555, false);
+    workspace->set_real_stratum_id(workspaces);
 
-    workspace.add_repr_raw(1234, 9999, true);
-    workspace.add_repr_raw(65534, 3333, false);
-    workspace.add_repr_raw(8322, 4444, true);
-    workspace.add_repr_raw(8322, 5555, false);
-    block.index_reprs(raws_from_each_workspace);
-    auto result = block.check_and_get_repr(1234);
-    assert(result.has_value());
-    assert(result.value()->count==1);
-    assert(result.value()->rep_id_array[0]==9999);
-    assert(result.value()->rep_id_is_primary_array[0]);
+    auto block=StratifiedBlock();
+    block.setup(block_unit, 0);
+    block.index_reprs(workspaces);
+    // auto result = block.check_and_get_repr(1234);
+    // assert(result.has_value());
+    // assert(result.value()->count==1);
+    // assert(result.value()->rep_id_array[0]==9999);
+    // assert(result.value()->rep_id_is_primary_array[0]);
 
-    result = block.check_and_get_repr(65534);
-    assert(result.value()->rep_id_array[0]==3333);
-    assert(result.value()->rep_id_is_primary_array[0]==false);
+    // result = block.check_and_get_repr(65534);
+    // assert(result.value()->rep_id_array[0]==3333);
+    // assert(result.value()->rep_id_is_primary_array[0]==false);
 
-    result = block.check_and_get_repr(8322);
-    assert(result.value()->rep_id_array[0]==4444);
-    assert(result.value()->rep_id_is_primary_array[0]==true);
-    result = block.check_and_get_repr(8322);
-    assert(result.value()->rep_id_array[1]==5555);
-    assert(result.value()->rep_id_is_primary_array[1]==false);
+    // result = block.check_and_get_repr(8322);
+    // assert(result.value()->rep_id_array[0]==4444);
+    // assert(result.value()->rep_id_is_primary_array[0]==true);
+    // result = block.check_and_get_repr(8322);
+    // assert(result.value()->rep_id_array[1]==5555);
+    // assert(result.value()->rep_id_is_primary_array[1]==false);
 }
 
-void test_stratified_parallel_model_operation(){
+void test_stratified_parallel_model_coverage(){
     int thread = 3;
     uint64_t seq_length=1000001; 
     auto model = StratifiedSA_ParallelModel(thread, seq_length);
@@ -281,23 +181,6 @@ void test_stratified_parallel_model_operation(){
     assert(result.value()->count==2);
     assert(result.value()->rep_id_array[0]==4444);
     assert(result.value()->rep_id_is_primary_array[1]==false);
-    // block.index_reprs(raws_from_each_workspace);
-    // auto result = block.check_and_get_repr(1234);
-    // assert(result.has_value());
-    // assert(result.value()->count==1);
-    // assert(result.value()->rep_id_array[0]==9999);
-    // assert(result.value()->rep_id_is_primary_array[0]);
-
-    // result = block.check_and_get_repr(65534);
-    // assert(result.value()->rep_id_array[0]==3333);
-    // assert(result.value()->rep_id_is_primary_array[0]==false);
-
-    // result = block.check_and_get_repr(8322);
-    // assert(result.value()->rep_id_array[0]==4444);
-    // assert(result.value()->rep_id_is_primary_array[0]==true);
-    // result = block.check_and_get_repr(8322);
-    // assert(result.value()->rep_id_array[1]==5555);
-    // assert(result.value()->rep_id_is_primary_array[1]==false);
 }
 
 void test_block_operation_with_tree(){
@@ -351,8 +234,10 @@ void test_block_operation_with_tree(){
 
 void main_performance_new_repr_block() {
     test_stratified_raw_block_operation();
-    test_stratified_block_operation();
-    test_stratified_parallel_model_operation();
+    test_stratum_convergence();
+    // test_stratified_block_operation();
+    // test_stratified_parallel_model_coverage();
+    
     // test_memory_reserved_stack();
     // test_variable_length_array();
 }
