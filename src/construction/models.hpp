@@ -14,7 +14,7 @@
 using namespace std;
 using namespace sdsl;
 
-typedef uint16_t StratumId_ThreadSpecific;
+typedef uint32_t StratumId_ThreadSpecific;
 typedef uint16_t ReprIdx_BlockSpecific;
 
 struct MaximalRepeatAnnotation {
@@ -171,16 +171,20 @@ void print_positions(vector<PositionAnnotation> positions){
 /* ************************************************************ */
 struct StratifiedRaw{
     ReprIdx_BlockSpecific repr_sa_in_block;
-    StratumId_ThreadSpecific stratum_id_in_thread;
     bool is_primary_of_rep;
+    // starting from thread specific -> later assigned global
+    uint32_t stratum_id;
 
     StratifiedRaw(ReprIdx_BlockSpecific repr_id, StratumId_ThreadSpecific stratum_id, bool is_primary_of_rep)
-    : repr_sa_in_block(repr_id), stratum_id_in_thread(stratum_id), is_primary_of_rep(is_primary_of_rep) {}
+    : repr_sa_in_block(repr_id), stratum_id(stratum_id), is_primary_of_rep(is_primary_of_rep) {}
 };
 
 struct StratifiedRawWorkspace{
+    //
     uint8_t workspace_id;
+    //
     int block_unit;
+    //
     vector<vector<StratifiedRaw>> blocks_of_raws;
     // stratum id -> index, only store size 
     vector<StratumSize> stratum_sizes;
@@ -189,15 +193,13 @@ struct StratifiedRawWorkspace{
     // 
     uint32_t stratum_cnt=0;
 
-    vector<StratumId> real_stratum_ids;
-
     StratifiedRawWorkspace(uint8_t workspace_id, uint64_t seq_length, int block_unit){
         this->workspace_id=workspace_id;
         this->block_unit=block_unit;
         this->blocks_of_raws=vector<vector<StratifiedRaw>>(seq_length/block_unit+1);
 
     }
-
+    //at step1
     StratumId_ThreadSpecific get_new_stratum(uint32_t size){
         if(size>=stratum_size_stats.size()){
             stratum_size_stats.resize(size+1, 0);
@@ -213,53 +215,61 @@ struct StratifiedRawWorkspace{
         blocks_of_raws[repr_idx/block_unit].push_back(StratifiedRaw(repr_idx%block_unit, stratum_id, is_primary_of_rep));
     }
 
-    void set_real_stratum_id(vector<StratifiedRawWorkspace> &whole_workspaces){
+    //at the middle of step1&2 - distribute stratum ids between workspaces
+    void set_real_stratum_id(vector<StratifiedRawWorkspace> &whole_workspaces, Prokrustean &prokrustean){
         /* */
-        this->real_stratum_ids=vector<StratumId>(stratum_cnt);
+        vector<StratumId> real_stratum_ids_per_local(stratum_cnt);
         uint32_t stratum_id=0;
         uint32_t idx=0;
         uint32_t max_stratum_size = stratum_size_stats.size();
         uint8_t workspace_cnt = whole_workspaces.size();
         vector<uint32_t> max_stratum_sizes_of_workspaces;
-        vector<uint32_t> this_workspace__curr_stratum_ids_per_size(max_stratum_size);
+        vector<uint32_t> current_stratum_ids_per_size(max_stratum_size);
         for(auto &w: whole_workspaces){
             max_stratum_sizes_of_workspaces.push_back(w.stratum_size_stats.size());
         }
-        
+        // first, setup starting indices of stratums per size of this workspace.
+        // Stratum indices are disjoint among workspaces by stat calculation
         for(uint32_t size=0; size<max_stratum_size; size++){
             for(int i=0; i<workspace_cnt; i++){
                 if(size>=max_stratum_sizes_of_workspaces[i]){
                     continue;
                 }
                 if(i==this->workspace_id){
-                    this_workspace__curr_stratum_ids_per_size[size]=stratum_id;
+                    current_stratum_ids_per_size[size]=stratum_id;
                 }
                 stratum_id+=whole_workspaces[i].stratum_size_stats[size];
             }
         }
+
+        // second, setup local__to__global stratum id map
         for(uint32_t i=0; i<stratum_cnt; i++){
             auto size_of_the_stratum = stratum_sizes[i];
             //for each stratum of size -> map the corresponding real stratum id
-            real_stratum_ids[i]=this_workspace__curr_stratum_ids_per_size[size_of_the_stratum];
-            this_workspace__curr_stratum_ids_per_size[size_of_the_stratum]++;
+            real_stratum_ids_per_local[i]=current_stratum_ids_per_size[size_of_the_stratum];
+            current_stratum_ids_per_size[size_of_the_stratum]++;
+        }
+
+        //third, set stratum sizes to prokrustean structure
+        assert(stratum_cnt <= prokrustean.stratums.size());
+        for(uint64_t i=0; i<stratum_cnt; i++){
+            prokrustean.stratums.at(real_stratum_ids_per_local[i]).size=stratum_sizes[i];
+        }
+
+        //lastly, switch the stratum ids in the raw data
+        for(auto &raws: blocks_of_raws){
+            for(auto &raw: raws){
+                raw.stratum_id=real_stratum_ids_per_local[raw.stratum_id];
+            }
         }
     }
 
-    void set_stratum_sizes(Prokrustean &prokrustean){
-        uint64_t max_stratum_size = stratum_sizes.size();
-        assert(max_stratum_size <= prokrustean.stratums.size());
-        for(uint64_t i=0; i<max_stratum_size; i++){
-            prokrustean.stratums.at(real_stratum_ids[i]).size=stratum_sizes[i];
-        }
+    void clear_local_stratum(){
+        stratum_sizes.clear();
+        stratum_sizes.shrink_to_fit();
+        stratum_size_stats.clear();
+        stratum_size_stats.shrink_to_fit();
     }
-    // void set_real_stratum_id(vector<uint32_t> &stratum_starting_id_by_size){
-    //     real_stratum_ids=vector<StratumId>(temporary_stratum_sizes.size());
-    //     for(int size=0; size< temporary_stratum_sizes.size()){
-    //         for(int i=0; i<size; i++){
-    //             stratum_starting_id_by_size[size]
-    //         }
-    //     }
-    // }
 
     void clear_block(int block_no){
         blocks_of_raws[block_no].clear();
@@ -296,9 +306,9 @@ struct StratifiedReprBased{
     /* repr_sa is inferred from the Block location and bit vector (repr_exists) */
     int count=0;
     // fixed length rep_id (dynamically allocated) to secure space efficiency
-    StratumId *rep_id_array;
+    StratumId *stratum_id_array;
     // fixed length whether it is primary(first of repr suffix index) of rep (dynamically allocated) to secure space efficiency
-    bool *rep_id_is_primary_array;
+    bool *stratum_region_is_primary_array;
 };
 
 struct StratifiedBlock{
@@ -319,7 +329,7 @@ struct StratifiedBlock{
 
     void index_reprs(vector<StratifiedRawWorkspace> &workspaces){
         // temporary map to prepare for more structured storage.
-        std::unordered_map<int, vector<tuple<StratumId, bool>>> repr_to__stratum_is_primary_pair;
+        std::unordered_map<uint64_t, vector<StratifiedRaw*>> repr_to__stratum_raw;
         // set bit vector
         for(int i=0; i<workspaces.size(); i++){
             auto raw_cnt = workspaces[i].blocks_of_raws[block_no].size();
@@ -327,30 +337,26 @@ struct StratifiedBlock{
                 StratifiedRaw* raw = &workspaces[i].blocks_of_raws[block_no][r];
                 if(!repr_exists[raw->repr_sa_in_block]){
                     repr_exists[raw->repr_sa_in_block]=true;
-                    repr_to__stratum_is_primary_pair[raw->repr_sa_in_block]=vector<tuple<StratumId, bool>>();
+                    repr_to__stratum_raw[raw->repr_sa_in_block]=vector<StratifiedRaw*>();
                 }
-                StratumId real_id = workspaces[i].real_stratum_ids.at(raw->stratum_id_in_thread);
-                repr_to__stratum_is_primary_pair[raw->repr_sa_in_block].push_back(make_tuple(real_id, raw->is_primary_of_rep));
+                repr_to__stratum_raw[raw->repr_sa_in_block].push_back(raw);
             }
         }
-        assert(false);
         // set ranks
         this->repr_exists_rank=rank_support_v<>(&this->repr_exists);
         auto repr_cnt = this->repr_exists_rank.rank(this->repr_exists.size());
         this->reprs = vector<StratifiedReprBased>(repr_cnt);
         // set reprs by rep ids
-        for (auto it = repr_to__stratum_is_primary_pair.begin(); it != repr_to__stratum_is_primary_pair.end(); ++it) {
+        for (auto it = repr_to__stratum_raw.begin(); it != repr_to__stratum_raw.end(); ++it) {
             auto repr_rank=this->repr_exists_rank.rank(it->first);
             auto rep_cnt = it->second.size();
             // to optimize space, manually assign memory
             this->reprs[repr_rank].count=rep_cnt;
-            this->reprs[repr_rank].rep_id_array= (StratumId*) malloc(rep_cnt*sizeof(StratumId));
-            this->reprs[repr_rank].rep_id_is_primary_array= (bool*) malloc(rep_cnt*sizeof(bool));
+            this->reprs[repr_rank].stratum_id_array= (StratumId*) malloc(rep_cnt*sizeof(StratumId));
+            this->reprs[repr_rank].stratum_region_is_primary_array= (bool*) malloc(rep_cnt*sizeof(bool));
             for(int i=0; i< rep_cnt; i++){
-                // StratumId real_id = get<0>(it->second[i]); 
-                // bool is_primary = get<1>(it->second[i]);
-                // this->reprs[repr_rank].rep_id_array[i]=real_id;
-                // this->reprs[repr_rank].rep_id_is_primary_array[i]=is_primary;
+                this->reprs[repr_rank].stratum_id_array[i]=it->second[i]->stratum_id;
+                this->reprs[repr_rank].stratum_region_is_primary_array[i]=it->second[i]->is_primary_of_rep;
             }
         }
     }  
@@ -358,7 +364,6 @@ struct StratifiedBlock{
 
 
 struct StratifiedSA_ParallelModel {
-    Prokrustean* prokrustean;
     // each thread has own blocks of raw data that will be converted to real block
     vector<StratifiedRawWorkspace> parallel_workspaces;
     // parallel converged - boolean but to make it threadsafe, use 1 byte symbol
@@ -385,7 +390,6 @@ struct StratifiedSA_ParallelModel {
         return blocks[repr_sa/block_unit].check_and_get_repr(repr_sa%block_unit);
     }
 
-
     void converge_stratums(Prokrustean &prokrustean){
         uint64_t total_stratums=0;
         uint32_t stratum_max_size;
@@ -394,10 +398,10 @@ struct StratifiedSA_ParallelModel {
         }
         prokrustean.stratums = vector<Stratum>(total_stratums);
 
-        for(int i=0; i< parallel_workspaces.size(); i++){
+        for(int i=0; i< parallel_scale; i++){
             // will parallelize if too slow.
-            parallel_workspaces[i].set_real_stratum_id(parallel_workspaces);
-            parallel_workspaces[i].set_stratum_sizes(prokrustean);
+            parallel_workspaces[i].set_real_stratum_id(parallel_workspaces, prokrustean);
+            parallel_workspaces[i].clear_local_stratum();
         }
     }
 
@@ -406,20 +410,11 @@ struct StratifiedSA_ParallelModel {
         block_already_converged[block_no]=1;
 
         StratifiedBlock* output_block=&blocks[block_no];
-        vector<vector<StratifiedRaw>*> raws_from_each_workspace(parallel_scale);
-        // assuming each thread is assigned blocks exclusively
-        for(int i=0;i<parallel_scale; i++){
-            raws_from_each_workspace[i]=&parallel_workspaces[i].blocks_of_raws[block_no];
-        }
         output_block->index_reprs(parallel_workspaces);
+
         for(int i=0;i<parallel_scale; i++){
             parallel_workspaces[i].clear_block(block_no);
         }
-    }
-
-    void converge_completed(){
-        parallel_workspaces.clear();
-        parallel_workspaces.shrink_to_fit();
     }
 };
 

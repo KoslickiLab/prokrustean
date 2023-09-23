@@ -45,15 +45,6 @@ void test_stratum_convergence(){
     uint64_t seq_length=1000001; 
     int block_unit=65535;
     vector<StratifiedRawWorkspace> workspaces;
-    workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
-    auto workspace=&workspaces[0];
-    (*workspace).add_repr_raw(1234, 9999, true);
-    (*workspace).add_repr_raw(65534, 3333, false);
-    (*workspace).add_repr_raw(8322, 4444, true);
-    (*workspace).add_repr_raw(8322, 5555, false);
-    workspace->set_real_stratum_id(workspaces);
-
-    workspaces.clear();
     Prokrustean prokrustean;
     workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
     workspaces.push_back(StratifiedRawWorkspace(1, seq_length, block_unit));
@@ -88,8 +79,7 @@ void test_stratum_convergence(){
     prokrustean.stratums.resize(total_cnt);
 
     for(auto &w: workspaces){
-        w.set_real_stratum_id(workspaces);
-        w.set_stratum_sizes(prokrustean);
+        w.set_real_stratum_id(workspaces, prokrustean);
     }
     for(auto &stratum: prokrustean.stratums){
         assert(stratum.size>0);
@@ -119,8 +109,7 @@ void test_stratum_convergence(){
 
     prokrustean.stratums.resize(total_cnt);
     for(auto &w: workspaces){
-        w.set_real_stratum_id(workspaces);
-        w.set_stratum_sizes(prokrustean);
+        w.set_real_stratum_id(workspaces, prokrustean);
     }
 
     for(auto &stratum: prokrustean.stratums){
@@ -128,116 +117,144 @@ void test_stratum_convergence(){
     }
 }
 
-void test_stratified_block_operation(){
-    uint64_t seq_length=1000001; 
-    int block_unit=65535;
-    vector<StratifiedRawWorkspace> workspaces;
-    workspaces.push_back(StratifiedRawWorkspace(0, seq_length, block_unit));
-    auto workspace=&workspaces[0];
-    (*workspace).add_repr_raw(1234, 9999, true);
-    (*workspace).add_repr_raw(65534, 3333, false);
-    (*workspace).add_repr_raw(8322, 4444, true);
-    (*workspace).add_repr_raw(8322, 5555, false);
-    workspace->set_real_stratum_id(workspaces);
-
-    auto block=StratifiedBlock();
-    block.setup(block_unit, 0);
-    block.index_reprs(workspaces);
-    // auto result = block.check_and_get_repr(1234);
-    // assert(result.has_value());
-    // assert(result.value()->count==1);
-    // assert(result.value()->rep_id_array[0]==9999);
-    // assert(result.value()->rep_id_is_primary_array[0]);
-
-    // result = block.check_and_get_repr(65534);
-    // assert(result.value()->rep_id_array[0]==3333);
-    // assert(result.value()->rep_id_is_primary_array[0]==false);
-
-    // result = block.check_and_get_repr(8322);
-    // assert(result.value()->rep_id_array[0]==4444);
-    // assert(result.value()->rep_id_is_primary_array[0]==true);
-    // result = block.check_and_get_repr(8322);
-    // assert(result.value()->rep_id_array[1]==5555);
-    // assert(result.value()->rep_id_is_primary_array[1]==false);
-}
-
-void test_stratified_parallel_model_coverage(){
-    int thread = 3;
-    uint64_t seq_length=1000001; 
-    auto model = StratifiedSA_ParallelModel(thread, seq_length);
-    auto workspace1=&model.parallel_workspaces[0];
-    (*workspace1).add_repr_raw(1234, 9999, true);
-    (*workspace1).add_repr_raw(65534, 3333, false);
-    (*workspace1).add_repr_raw(8322, 4444, true);
-    (*workspace1).add_repr_raw(8322, 5555, false);
-    model.converge_block(1234/model.block_unit);
-    auto result = model.query(1234);
-    assert(result.has_value());
-    assert(result.value()->count==1);
-    assert(result.value()->rep_id_array[0]==9999);
-    assert(result.value()->rep_id_is_primary_array[0]);
-    result = model.query(8322);
-    assert(result.has_value());
-    assert(result.value()->count==2);
-    assert(result.value()->rep_id_array[0]==4444);
-    assert(result.value()->rep_id_is_primary_array[1]==false);
-}
-
-void test_block_operation_with_tree(){
-    int Lmin = 30;
-    // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
-
-    auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
-    // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-    auto start = std::chrono::steady_clock::now();
-    auto fm_idx = FmIndex(str);
-    cout << "bwt $ cout: " << fm_idx.seq_cnt() << " wv tree took " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
+void test_stratified_block_convergence(){
+    uint64_t seq_length=324152; 
+    uint64_t total_cnt=0;
+    std::unordered_map<SuffixArrayIdx, vector<StratumId>> data;
+    auto model=StratifiedSA_ParallelModel(10, seq_length);
     
-    SuffixArrayNode root = get_root(fm_idx);
-    vector<MaximalRepeatAnnotation> repeats;
-    SuffixArrayNode_NEW root_new = get_root_new(fm_idx);
-    vector<MaximalRepeatAnnotation> repeats_new;
-    
-    start = std::chrono::steady_clock::now();
-    // navigate_tree_new<MaximalRepeatAnnotation, get_repeat_annotations_new>(root_new, Lmin, fm_idx, repeats_new);
-    navigate_tree_new<MaximalRepeatAnnotation, report_repr_sa>(root_new, Lmin, fm_idx, repeats_new);
-    cout << "new algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
-    int repr_cnt=0;
-    int repr_distinct_cnt=0;
-    auto repr_distinct = vector<bool>(str.size());
-    for(int i=0; i<repeats_new.size(); i++){
-        for(auto idx: repeats_new[i].repr_indexes){
-            repr_cnt++;
-            if(!repr_distinct[idx]){
-                repr_distinct_cnt++;
-                repr_distinct[idx]=true;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint32_t> repr_dist(0, seq_length-1);
+    std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/1000);
+    for(auto &w: model.parallel_workspaces){
+        for(int i=0; i<seq_length/model.parallel_workspaces.size()/10; i++){
+            auto stratum_id=w.get_new_stratum(size_dist(gen));
+            for(int r=0; r<10; r++){
+                auto repr = repr_dist(gen);
+                w.add_repr_raw(repr, stratum_id, true);
+                if(data.find(repr) == data.end()){
+                    data[repr]=vector<StratumId>();
+                }
+                data[repr].push_back(stratum_id);
+                total_cnt++;
             }
         }
     }
-    cout << "repeats reprs cnt: "<< repr_cnt <<", distinct count: " << repr_distinct_cnt  << endl;
 
-    start = std::chrono::steady_clock::now();
-    navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx, repeats);
-    cout << "original algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
-    assert(repeats.size()==repeats_new.size());
-    cout << "repeats are same: " << repeats.size() << endl;
-    
-    for(int i=0; i<repeats.size(); i++){
-        assert(repeats[i].repr_indexes.size()==repeats_new[i].repr_indexes.size());
+    Prokrustean prokrustean;
+    model.converge_stratums(prokrustean);
+    for(int i=0; i<model.blocks.size(); i++){
+        model.converge_block(i);
     }
-    cout << "repeats reprs are same" << endl;
+
+    cout << "total:" << total_cnt << endl;
+
+    uint64_t total_cnt2=0;
+    for(uint64_t i=0; i<seq_length; i++){
+        auto ret=model.query(i);
+        if(ret.has_value()){
+            total_cnt2+=ret.value()->count;
+            assert(data[i].size()==ret.value()->count);
+        }
+    }
+    cout << "total2:" << total_cnt2 << endl;
+}
+
+void test_parallelized_push(){
+    uint64_t seq_length=32415200; 
+    uint64_t total_cnt=0;
+    auto num_threads = 10;
+    vector<future<void>> futures;
+    auto model=StratifiedSA_ParallelModel(num_threads, seq_length);
+    
+    // push dummy stratifieds
+    auto func__ = [](StratifiedSA_ParallelModel &model, int workspace_id, uint64_t seq_length) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<uint32_t> repr_dist(0, seq_length-1);
+            std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/1000);
+            auto w = &model.parallel_workspaces[workspace_id];
+            for(int i=0; i<seq_length/model.parallel_workspaces.size()/10; i++){
+                auto stratum_id=w->get_new_stratum(size_dist(gen));
+                for(int r=0; r<10; r++){
+                    auto repr = repr_dist(gen);
+                    w->add_repr_raw(repr, stratum_id, true);
+                }
+            }
+        };
+    for(int i=0; i<num_threads; i++){
+        // auto f = std::async(std::launch::async, collect_repeat_thread, ref(subtree_roots), Lmin, ref(fm_idx), ref(m));
+        futures.push_back(std::async(std::launch::async, func__, ref(model), i, seq_length));
+    }
+    for (auto& future : futures) {
+        future.wait();
+    }
+    futures.clear();
+
+    auto start = std::chrono::steady_clock::now();
+    Prokrustean prokrustean;
+    uint32_t stratum_max_size;
+    for(int i=0; i< model.parallel_workspaces.size(); i++){
+        for(auto &raws: model.parallel_workspaces[i].blocks_of_raws){
+            total_cnt+=raws.size();
+        }
+    }
+    prokrustean.stratums = vector<Stratum>(total_cnt);
+
+    auto func__converge_stra = [](StratifiedSA_ParallelModel &model, Prokrustean &prokrustean, int workspace_id) {
+        model.parallel_workspaces[workspace_id].set_real_stratum_id(model.parallel_workspaces, prokrustean);
+    };
+    for(int i=0; i<num_threads; i++){
+        // auto f = std::async(std::launch::async, collect_repeat_thread, ref(subtree_roots), Lmin, ref(fm_idx), ref(m));
+        futures.push_back(std::async(std::launch::async, func__converge_stra, ref(model), ref(prokrustean), i));
+    }
+    for (auto& future : futures) {
+        future.wait();
+    }
+    futures.clear();
+    for(int i=0; i<num_threads; i++){
+        model.parallel_workspaces[i].clear_local_stratum();
+    }
+    cout << "step2 stratum convergence: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    start = std::chrono::steady_clock::now();
+
+
+
+    auto func__converge_block = [](StratifiedSA_ParallelModel &model, std::atomic<int> &block_idx_counter) {
+        while(true){
+            auto idx = block_idx_counter.fetch_add(1);
+            if(idx >= model.blocks.size()){
+                break;
+            }
+            model.converge_block(idx);
+        }
+    };
+    std::atomic<int> block_idx_counter;
+    for(int i=0; i<num_threads; i++){
+        // auto f = std::async(std::launch::async, collect_repeat_thread, ref(subtree_roots), Lmin, ref(fm_idx), ref(m));
+        futures.push_back(std::async(std::launch::async, func__converge_block, ref(model), ref(block_idx_counter)));
+    }
+    for (auto& future : futures) {
+        future.wait();
+    }
+
+    uint64_t total_cnt2=0;
+    for(uint64_t i=0; i<seq_length; i++){
+        auto ret=model.query(i);
+        if(ret.has_value()){
+            total_cnt2+=ret.value()->count;
+        }
+    }
+    assert(total_cnt==total_cnt2);
+    cout << "total:" << total_cnt2 << endl;
+    cout << "step2 block convergence: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
 
 void main_performance_new_repr_block() {
-    test_stratified_raw_block_operation();
-    test_stratum_convergence();
-    // test_stratified_block_operation();
-    // test_stratified_parallel_model_coverage();
-    
-    // test_memory_reserved_stack();
-    // test_variable_length_array();
+    // test_stratified_raw_block_operation();
+    // test_stratum_convergence();
+    // test_stratified_block_convergence();
+    test_parallelized_push();
 }
