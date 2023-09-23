@@ -328,38 +328,47 @@ struct StratifiedBlock{
     }
 
     void index_reprs(vector<StratifiedRawWorkspace> &workspaces){
-        // temporary map to prepare for more structured storage.
-        std::unordered_map<uint64_t, vector<StratifiedRaw*>> repr_to__stratum_raw;
         // set bit vector
         for(int i=0; i<workspaces.size(); i++){
             auto raw_cnt = workspaces[i].blocks_of_raws[block_no].size();
-            for(int r=0; r<raw_cnt; r++){
-                StratifiedRaw* raw = &workspaces[i].blocks_of_raws[block_no][r];
-                if(!repr_exists[raw->repr_sa_in_block]){
-                    repr_exists[raw->repr_sa_in_block]=true;
-                    repr_to__stratum_raw[raw->repr_sa_in_block]=vector<StratifiedRaw*>();
+            for(auto &raw :workspaces[i].blocks_of_raws[block_no]){
+                if(!repr_exists[raw.repr_sa_in_block]){
+                    repr_exists[raw.repr_sa_in_block]=true;
                 }
-                repr_to__stratum_raw[raw->repr_sa_in_block].push_back(raw);
             }
         }
-        // set ranks
+        // // set ranks
         this->repr_exists_rank=rank_support_v<>(&this->repr_exists);
         auto repr_cnt = this->repr_exists_rank.rank(this->repr_exists.size());
         this->reprs = vector<StratifiedReprBased>(repr_cnt);
-        // set reprs by rep ids
-        for (auto it = repr_to__stratum_raw.begin(); it != repr_to__stratum_raw.end(); ++it) {
-            auto repr_rank=this->repr_exists_rank.rank(it->first);
-            auto rep_cnt = it->second.size();
-            // to optimize space, manually assign memory
-            this->reprs[repr_rank].count=rep_cnt;
-            this->reprs[repr_rank].stratum_id_array= (StratumId*) malloc(rep_cnt*sizeof(StratumId));
-            this->reprs[repr_rank].stratum_region_is_primary_array= (bool*) malloc(rep_cnt*sizeof(bool));
-            for(int i=0; i< rep_cnt; i++){
-                this->reprs[repr_rank].stratum_id_array[i]=it->second[i]->stratum_id;
-                this->reprs[repr_rank].stratum_region_is_primary_array[i]=it->second[i]->is_primary_of_rep;
+        // 
+        vector<int> stra_cnt_per_repr(repr_cnt, 0);
+        for(int i=0; i<workspaces.size(); i++){
+            for(auto &raw :workspaces[i].blocks_of_raws[block_no]){
+                stra_cnt_per_repr[this->repr_exists_rank.rank(raw.repr_sa_in_block)]++;
             }
         }
-    }  
+
+        for(int i=0; i<repr_cnt; i++){
+            auto stra_cnt=stra_cnt_per_repr[i];
+            // auto repr_rank = this->repr_exists_rank.rank(i);
+            this->reprs[i].count=stra_cnt;
+            this->reprs[i].stratum_id_array= (StratumId*) malloc(stra_cnt*sizeof(StratumId));
+            this->reprs[i].stratum_region_is_primary_array= (bool*) malloc(stra_cnt*sizeof(bool));
+        }
+
+        vector<int> repr_stat(repr_cnt, 0);
+        for(int i=0; i<workspaces.size(); i++){
+            for(auto &raw :workspaces[i].blocks_of_raws[block_no]){
+                auto repr_rank = this->repr_exists_rank.rank(raw.repr_sa_in_block);
+                auto stra_idx = this->reprs[repr_rank].count-stra_cnt_per_repr[repr_rank];
+                this->reprs[repr_rank].stratum_id_array[stra_idx]=raw.stratum_id;
+                this->reprs[repr_rank].stratum_region_is_primary_array[stra_idx]=raw.is_primary_of_rep;
+
+                stra_cnt_per_repr[repr_rank]--;
+            }
+        }
+    }
 };
 
 
@@ -409,8 +418,7 @@ struct StratifiedSA_ParallelModel {
         assert(block_already_converged[block_no]==0);
         block_already_converged[block_no]=1;
 
-        StratifiedBlock* output_block=&blocks[block_no];
-        output_block->index_reprs(parallel_workspaces);
+        blocks[block_no].index_reprs(parallel_workspaces);
 
         for(int i=0;i<parallel_scale; i++){
             parallel_workspaces[i].clear_block(block_no);

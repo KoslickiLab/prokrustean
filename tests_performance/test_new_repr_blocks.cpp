@@ -162,20 +162,24 @@ void test_stratified_block_convergence(){
 }
 
 void test_parallelized_push(){
-    uint64_t seq_length=32415200; 
+    uint64_t seq_length=3241520000; 
+    uint64_t max_rep_length=5000; 
     uint64_t total_cnt=0;
-    auto num_threads = 10;
+    auto num_threads = 36;
     vector<future<void>> futures;
     auto model=StratifiedSA_ParallelModel(num_threads, seq_length);
-    
+    auto start = std::chrono::steady_clock::now();
+    cout << "repr raw: " << sizeof(StratifiedRaw) << endl;
     // push dummy stratifieds
-    auto func__ = [](StratifiedSA_ParallelModel &model, int workspace_id, uint64_t seq_length) {
+    auto func__ = [](StratifiedSA_ParallelModel &model, int workspace_id, uint64_t seq_length, uint64_t max_rep_length) {
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_int_distribution<uint32_t> repr_dist(0, seq_length-1);
-            std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/1000);
+            std::uniform_int_distribution<uint32_t> size_dist(1, max_rep_length);
             auto w = &model.parallel_workspaces[workspace_id];
-            for(int i=0; i<seq_length/model.parallel_workspaces.size()/10; i++){
+            auto no = seq_length/model.parallel_workspaces.size()/10;
+            cout << "create: " << no << endl;
+            for(int i=0; i<no; i++){
                 auto stratum_id=w->get_new_stratum(size_dist(gen));
                 for(int r=0; r<10; r++){
                     auto repr = repr_dist(gen);
@@ -185,14 +189,15 @@ void test_parallelized_push(){
         };
     for(int i=0; i<num_threads; i++){
         // auto f = std::async(std::launch::async, collect_repeat_thread, ref(subtree_roots), Lmin, ref(fm_idx), ref(m));
-        futures.push_back(std::async(std::launch::async, func__, ref(model), i, seq_length));
+        futures.push_back(std::async(std::launch::async, func__, ref(model), i, seq_length, max_rep_length));
     }
     for (auto& future : futures) {
         future.wait();
     }
     futures.clear();
-
-    auto start = std::chrono::steady_clock::now();
+    cout << "step2 sample created: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    
+    start = std::chrono::steady_clock::now();
     Prokrustean prokrustean;
     uint32_t stratum_max_size;
     for(int i=0; i< model.parallel_workspaces.size(); i++){
@@ -246,8 +251,9 @@ void test_parallelized_push(){
             total_cnt2+=ret.value()->count;
         }
     }
+    cout << "total:" << total_cnt<< "total2:" << total_cnt2 << endl;
     assert(total_cnt==total_cnt2);
-    cout << "total:" << total_cnt2 << endl;
+    
     cout << "step2 block convergence: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
