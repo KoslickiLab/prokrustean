@@ -106,8 +106,8 @@ vector<Interval> get_gaps_rep(Prokrustean pk, StratumId id, int degree){
 vector<Occurrence> collect_rep_example_occurrences(Prokrustean pk){
     vector<optional<Occurrence>> occs(pk.stratums.size());
     stack<tuple<Stratum, Occurrence>> mcs_w_occ;
-    for(auto mc: pk.seqs){
-        mcs_w_occ.push(make_tuple(mc, Occurrence(mc.id, 0, mc.size)));
+    for(int id=0; id<pk.seqs.size(); id++){
+        mcs_w_occ.push(make_tuple(pk.seqs[id], Occurrence(id, 0, pk.seqs[id].size)));
     }
     while(!mcs_w_occ.empty()){
         auto pair = mcs_w_occ.top();

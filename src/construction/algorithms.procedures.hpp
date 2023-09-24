@@ -410,7 +410,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
 */
     vector<Stratum> mcs;
     Stratum seq_mc;
-    seq_mc.id = seq_annot.id;
+    // seq_mc.id = seq_annot.id;
     seq_mc.size = seq_annot.size;
 
     if(seq_annot.positions.size()==0){
@@ -533,7 +533,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
         if(is_curr_first_visit && is_curr_primary){
             //if the suffix array index is the same as the first repr suffix array index of the repeat.
             Stratum rep_mc;
-            rep_mc.id = curr_pos.rep_ids[curr_rep_idx];
+            // rep_mc.id = curr_pos.rep_ids[curr_rep_idx];
             rep_mc.size = curr_rep.size;
             if(lower_exists){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
