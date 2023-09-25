@@ -31,10 +31,8 @@ struct Step3RegionIdx{
 
 struct Step3PositionAnnot{
     Pos pos;
-
-    uint32_t stratum_cnt;
     
-    StratifiedReprBased* repr_stratification_ref;
+    StratifiedReprBased* stratum_ref;
 };
 
 // struct RegionAnnot{
@@ -88,7 +86,7 @@ struct Step3WorkSpace {
 
     void reset_by_annot(){
         consume_refs.clear();
-        consume_refs=vector<Step3ConsumingRef>(seq_annot.position_annots.size());
+        consume_refs.resize(seq_annot.position_annots.size());
         int pidx=0;
         for(auto &ref: consume_refs){
             if(pidx+1<seq_annot.position_annots.size()){
@@ -110,11 +108,11 @@ struct Step3WorkSpace {
     }
 
     StratifiedRegionAnnot get_region_annot(uint32_t pidx, uint16_t sidx){
-        return seq_annot.position_annots[pidx].repr_stratification_ref->stratum_id_array[sidx];
+        return seq_annot.position_annots[pidx].stratum_ref->arr[sidx];
     }
 
     uint16_t get_stratum_cnt(uint32_t pidx){
-        return seq_annot.position_annots[pidx].stratum_cnt;
+        return seq_annot.position_annots[pidx].stratum_ref->size;
     }
 
     optional<Step3RegionIdx> child(Step3RegionIdx &rgn){
@@ -146,7 +144,7 @@ struct Step3WorkSpace {
         uint32_t pidx = rgn.pidx;
         uint16_t sidx = rgn.sidx;
         while(true){
-            if(sidx+1<seq_annot.position_annots[pidx].stratum_cnt){
+            if(sidx+1<seq_annot.position_annots[pidx].stratum_ref->size){
                 sidx++;
             } else if(pidx>0){
                 pidx--;
@@ -164,8 +162,8 @@ struct Step3WorkSpace {
 
     bool check_inclusion(Step3RegionIdx &a, Step3RegionIdx &b,  Prokrustean &prokrustean){
         /* a includes b? */
-        auto a_right=position(a.pidx)+prokrustean.stratums[get_region_annot(a.pidx, a.sidx).stratum_id].size; 
-        auto b_right=position(b.pidx)+prokrustean.stratums[get_region_annot(b.pidx, b.sidx).stratum_id].size;
+        auto a_right=position(a.pidx)+prokrustean.stratums[get_region_annot(a.pidx, a.sidx).stratum_id].size-1; 
+        auto b_right=position(b.pidx)+prokrustean.stratums[get_region_annot(b.pidx, b.sidx).stratum_id].size-1;
         return a_right>=b_right;
     }
 
@@ -177,6 +175,7 @@ struct Step3WorkSpace {
         }
         prokrustean.seqs[seq_annot.id].size=seq_annot.size;
         prokrustean.seqs[seq_annot.id].regions2=arr;
+        prokrustean.seqs[seq_annot.id].region_cnt=regions.size();
     }
 
     void set_stratum_output(Step3RegionIdx &primary, vector<Step3RegionIdx> &regions, Prokrustean &prokrustean){
@@ -189,10 +188,11 @@ struct Step3WorkSpace {
             assert(arr[i].pos>=0);
         }
         prokrustean.stratums[stratum_id].regions2=arr;
+        prokrustean.stratums[stratum_id].region_cnt=regions.size();
     }
 };
 
-void build_prokrustean(Step3SequenceAnnot &seq_anot, Step3WorkSpace &work, Prokrustean &prokrustean){
+void build_prokrustean(Step3WorkSpace &work, Prokrustean &prokrustean){
     /*
     * - Input: Projected regions on a sequence, ordered and grouped by starting position, and ordered by its length,
     *         i.e. a list of position:(stratumId, isPrimary). With stratumId the size is accessed in constant time.
@@ -209,13 +209,13 @@ void build_prokrustean(Step3SequenceAnnot &seq_anot, Step3WorkSpace &work, Prokr
     optional<Step3RegionIdx> parent_rgn;
     while(primary_rgn.has_value()){
         regions.clear();
-        primary_post_pidx=work.consume_refs[primary_rgn.value().pidx].post_pidx;
         //leftmost case
         auto child = work.child(primary_rgn.value());
         if(child.has_value()){
             regions.push_back(child.value());
         }
         //non-leftmost cases
+        primary_post_pidx=work.consume_refs[primary_rgn.value().pidx].post_pidx;
         while(primary_post_pidx.has_value()){
             post_rgn.pidx=work.consume_refs[primary_post_pidx.value()].pidx;
             post_rgn.sidx=work.consume_refs[primary_post_pidx.value()].sidx;
@@ -269,8 +269,8 @@ StratifiedReprBased* get_random_repr_stratification(int stra_cnt){
     std::mt19937 gen(rd());
     std::uniform_int_distribution<uint32_t> id_dist(0, seq_length);
     for(int i=0; i<stra_cnt; i++){
-        repr_stra->stratum_id_array[i].stratum_id=id_dist(gen);
-        repr_stra->stratum_id_array[i].stratum_id=id_dist(gen)%2;
+        repr_stra->arr[i].stratum_id=id_dist(gen);
+        repr_stra->arr[i].stratum_id=id_dist(gen)%2;
     }
     return repr_stra;
 }
@@ -284,8 +284,8 @@ void test_basic_step3_operation(){
     work.seq_annot=seq_annot;
     work.seq_annot.position_annots=vector<Step3PositionAnnot>(pos_cnt);
     for(auto &pos_annot: work.seq_annot.position_annots){
-        pos_annot.repr_stratification_ref=get_random_repr_stratification(stra_cnt);
-        pos_annot.stratum_cnt=stra_cnt;
+        pos_annot.stratum_ref=get_random_repr_stratification(stra_cnt);
+        pos_annot.stratum_ref->size=stra_cnt;
     }
     //reset function
     work.reset_by_annot();
@@ -310,22 +310,22 @@ void test_basic_step3_operation(){
     //first primary function
     //set all primary false
     for(auto &pos: work.seq_annot.position_annots){
-        for(int i=0;i<pos.stratum_cnt; i++){
-            pos.repr_stratification_ref->stratum_id_array[i].is_primary=false;
+        for(int i=0;i<pos.stratum_ref->size; i++){
+            pos.stratum_ref->arr[i].is_primary=false;
         }
     }
 
-    work.seq_annot.position_annots[5].repr_stratification_ref->stratum_id_array[2].is_primary=true;
+    work.seq_annot.position_annots[5].stratum_ref->arr[2].is_primary=true;
     auto primary=work.first_primary();
     assert(primary.has_value());
     assert(primary.value().pidx==5 && primary.value().sidx==2);
     // earlier 
-    work.seq_annot.position_annots[6].repr_stratification_ref->stratum_id_array[2].is_primary=true;
+    work.seq_annot.position_annots[6].stratum_ref->arr[2].is_primary=true;
     primary=work.first_primary();
     assert(primary.has_value());
     assert(primary.value().pidx==6 && primary.value().sidx==2);
     // earlier 
-    work.seq_annot.position_annots[6].repr_stratification_ref->stratum_id_array[1].is_primary=true;
+    work.seq_annot.position_annots[6].stratum_ref->arr[1].is_primary=true;
     primary=work.first_primary();
     assert(primary.has_value());
     assert(primary.value().pidx==6 && primary.value().sidx==1);
@@ -352,9 +352,9 @@ void test_basic_step3_operation(){
     work.seq_annot.position_annots[rgn1.pidx].pos=3;
     work.seq_annot.position_annots[rgn2.pidx].pos=4;
     work.seq_annot.position_annots[rgn3.pidx].pos=5;
-    work.seq_annot.position_annots[rgn1.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=1;
-    work.seq_annot.position_annots[rgn2.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=1;
-    work.seq_annot.position_annots[rgn3.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=0;
+    work.seq_annot.position_annots[rgn1.pidx].stratum_ref->arr[1].stratum_id=1;
+    work.seq_annot.position_annots[rgn2.pidx].stratum_ref->arr[1].stratum_id=1;
+    work.seq_annot.position_annots[rgn3.pidx].stratum_ref->arr[1].stratum_id=0;
     assert(!work.check_inclusion(rgn1, rgn2, prokrustean));
     assert(work.check_inclusion(rgn1, rgn3, prokrustean));
     assert(work.check_inclusion(rgn2, rgn3, prokrustean));
@@ -371,6 +371,155 @@ void test_basic_step3_operation(){
     assert(prokrustean.stratums[work.get_stratum_id(rgn1)].regions2[0].stratum_id==work.get_stratum_id(rgn3));
 }
 
+struct region {
+    int pos;
+    int stratum_id;
+    int size;   
+    bool is_primary;   
+    region(int pos, int stratum_id, int size, bool is_primary):
+    pos(pos), stratum_id(stratum_id), size(size), is_primary(is_primary)
+    {}
+};
+
+Step3SequenceAnnot _generate_step3_scenario(vector<region> &regions, Prokrustean &prokrustean){
+    unordered_map<int,int> stratum_id_size;
+    int max=0;
+    for(auto &r: regions){
+        if(stratum_id_size.find(r.stratum_id) == stratum_id_size.end()) {
+            stratum_id_size[r.stratum_id]=r.size;
+        } else {
+            // id size not matched
+            assert(stratum_id_size[r.stratum_id]==r.size);
+        }
+        max=max<r.stratum_id? r.stratum_id: max; 
+    }
+    
+    prokrustean.seqs.push_back(Sequence());
+    prokrustean.stratums=vector<Stratum>(max+1);
+    for(auto &kv: stratum_id_size){
+        prokrustean.stratums[kv.first]=Stratum();
+        prokrustean.stratums[kv.first].size=kv.second;
+    }
+    
+    unordered_map<int,vector<region>> data_by_pos;
+    set<int> positions;
+    for(auto &r: regions){
+        if(data_by_pos.find(r.pos) == data_by_pos.end()) {
+            data_by_pos[r.pos]=vector<region>();
+        }
+        data_by_pos[r.pos].push_back(r);
+        positions.insert(r.pos);
+    }
+    // sort(positions.begin(),  positions.end());
+
+    vector<Step3PositionAnnot> pos_annots;
+    for (auto& kv : data_by_pos) {
+        std::sort(kv.second.begin(), kv.second.end(), [](const region &a, const region &b) { return a.size < b.size;});
+    }
+    
+    for(auto pos: positions){
+        Step3PositionAnnot annot;
+        annot.pos=pos;
+        annot.stratum_ref=static_cast<StratifiedReprBased*>(std::malloc(sizeof(StratifiedReprBased)+data_by_pos[pos].size()*sizeof(tuple<StratumId, bool>)));
+        int idx=0;
+        for(auto &el: data_by_pos[pos]){
+            annot.stratum_ref->arr[idx]=StratifiedRegionAnnot(el.stratum_id, el.is_primary);
+            idx++;
+        }
+        annot.stratum_ref->size=idx;
+        pos_annots.push_back(annot);
+    }
+    // for(auto &pannot: pos_annots){
+    //     cout << "pos: " <<  pannot.pos << ", cnt: " << pannot.stratum_ref->size << " first: " << pannot.stratum_ref[0].size << endl;
+    // }
+    
+    
+    Step3SequenceAnnot seq_annot;
+    seq_annot.id=0;
+    seq_annot.position_annots=pos_annots;
+    return seq_annot;
+}
+
+void test_step3_scenarios(){
+    Step3WorkSpace work;
+    Prokrustean prokrustean;
+
+    // scenario: empty. one region
+    auto regions= vector<region>({
+        region(1, 1, 3, true) // int pos, int stratum_id, int size, bool is_primary
+    });
+    Step3SequenceAnnot seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.seqs[0].region_cnt==1);
+
+    // leftmost relationship
+    prokrustean=Prokrustean();
+    
+    regions= vector<region>({
+        region(1, 1, 3, false), // int pos, int stratum_id, int size, bool is_primary
+        region(1, 2, 5, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==0);
+    assert(prokrustean.stratums[2].region_cnt==1);
+    assert(prokrustean.stratums[2].size==5);
+
+
+    // rightmost relationship
+    regions= vector<region>({
+        region(3, 1, 3, true), // int pos, int stratum_id, int size, bool is_primary
+        region(1, 2, 5, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==0);
+    assert(prokrustean.stratums[2].region_cnt==1);
+    assert(prokrustean.stratums[2].size==5);
+
+
+    // middle relationship
+    regions= vector<region>({
+        region(3, 1, 3, true), // int pos, int stratum_id, int size, bool is_primary
+        region(1, 2, 7, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[2].region_cnt==1);
+
+
+    // middle relationship
+    regions= vector<region>({
+        region(3, 1, 3, false), // int pos, int stratum_id, int size, bool is_primary
+        region(3, 2, 4, false),
+        region(1, 3, 7, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==0);
+    assert(prokrustean.stratums[2].region_cnt==0);
+    assert(prokrustean.stratums[3].region_cnt==1);
+
+
+    // double inclusion relationship
+
+
+
+
+    // one includes two
+
+
+
+
+    // one includes one which includes one
+}
+
 void main_performance_build_prokrustean() {
-    test_basic_step3_operation();
+    // test_basic_step3_operation();
+    test_step3_scenarios();
 }

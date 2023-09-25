@@ -31,6 +31,7 @@ struct Stratum {
     vector<Region> regions;
 
     Region* regions2;
+    uint8_t region_cnt;
 };
 
 struct Sequence {
@@ -39,6 +40,7 @@ struct Sequence {
     vector<Region> regions;
 
     Region* regions2;
+    uint8_t region_cnt;
 };
 
 struct Prokrustean {

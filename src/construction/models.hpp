@@ -294,7 +294,7 @@ struct StratifiedReprBased{
     /* repr_sa is inferred from the Block location and bit vector (repr_exists) */
     uint32_t size; 
     // fixed length whether it is primary(first of repr suffix index) of rep (dynamically allocated) to secure space efficiency
-    StratifiedRegionAnnot stratum_id_array[];
+    StratifiedRegionAnnot arr[];
 };
 
 struct StratifiedBlock{
@@ -365,7 +365,7 @@ struct StratifiedBlock{
             for(auto raw: work.raw_blocks[block_no].raw_regions){
                 auto i = this->repr_exists_rank.rank(raw.repr_sa_in_block);
                 auto stratum_idx_in_repr = this->reprs[i]->size - stat__stra_cnt_per_repr[i];
-                this->reprs[i]->stratum_id_array[stratum_idx_in_repr]=StratifiedRegionAnnot(raw.stratum_id, raw.is_primary_of_stratum);
+                this->reprs[i]->arr[stratum_idx_in_repr]=StratifiedRegionAnnot(raw.stratum_id, raw.is_primary_of_stratum);
 
                 stat__stra_cnt_per_repr[i]--;
             }
