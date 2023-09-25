@@ -281,11 +281,20 @@ struct StratifiedRawWorkspace{
 /* At step2, blocks assgined to threads are merged              */
 /* threads are distributed to each block                          */
 /* ************************************************************ */
-struct Stratified_OfReprPos{
+struct StratifiedRegionAnnot{
+    StratumId stratum_id;
+    // can I optimize here? T.T
+    bool is_primary; // adds 4 bytes in struct due to padding.
+
+    StratifiedRegionAnnot(StratumId stratum_id, bool is_primary):stratum_id(stratum_id), is_primary(is_primary)
+    {}
+};
+
+struct StratifiedReprBased{
     /* repr_sa is inferred from the Block location and bit vector (repr_exists) */
     uint32_t size; 
     // fixed length whether it is primary(first of repr suffix index) of rep (dynamically allocated) to secure space efficiency
-    tuple<StratumId, bool> stratum_id_array[];
+    StratifiedRegionAnnot stratum_id_array[];
 };
 
 struct StratifiedBlock{
@@ -296,7 +305,7 @@ struct StratifiedBlock{
     //
     rank_support_v<> repr_exists_rank;
     // index is inferred from outside. (repr_sa/block_size, repr_sa % block_size)
-    vector<Stratified_OfReprPos*> reprs;
+    vector<StratifiedReprBased*> reprs;
     //
     uint32_t stat__repr_cnt=0;
     //
@@ -309,7 +318,7 @@ struct StratifiedBlock{
         this->repr_exists=bit_vector(CONSTRUCTION_BLOCK_UNIT, 0);
     }
 
-    optional<Stratified_OfReprPos*> get_repr(uint16_t repr_sa_in_block){
+    optional<StratifiedReprBased*> get_repr(uint16_t repr_sa_in_block){
         if(!repr_exists[repr_sa_in_block]) return nullopt;
         
         return reprs[repr_exists_rank.rank(repr_sa_in_block)];
@@ -320,7 +329,7 @@ struct StratifiedBlock{
             delete this->reprs[i];
             this->reprs[i]=nullptr;
     }
-
+// void index_reprs(vector<StratifiedRawWorkspace> &workspaces, vector<Stratum> &stratums){
     void index_reprs(vector<StratifiedRawWorkspace> &workspaces){
         // set bit vector
         for(auto &work: workspaces){
@@ -343,10 +352,10 @@ struct StratifiedBlock{
             }
         }
         // prepare spaces
-        this->reprs=vector<Stratified_OfReprPos*>(this->stat__repr_cnt);
+        this->reprs=vector<StratifiedReprBased*>(this->stat__repr_cnt);
         for(int i=0; i<this->stat__repr_cnt; i++){
             auto stra_cnt=stat__stra_cnt_per_repr[i];
-            Stratified_OfReprPos* repr_stra = static_cast<Stratified_OfReprPos*>(std::malloc(sizeof(Stratified_OfReprPos)+stra_cnt*sizeof(tuple<StratumId, bool>)));
+            StratifiedReprBased* repr_stra = static_cast<StratifiedReprBased*>(std::malloc(sizeof(StratifiedReprBased)+stra_cnt*sizeof(tuple<StratumId, bool>)));
             repr_stra->size=stra_cnt;
             this->reprs[i]=repr_stra;
         }
@@ -356,7 +365,7 @@ struct StratifiedBlock{
             for(auto raw: work.raw_blocks[block_no].raw_regions){
                 auto i = this->repr_exists_rank.rank(raw.repr_sa_in_block);
                 auto stratum_idx_in_repr = this->reprs[i]->size - stat__stra_cnt_per_repr[i];
-                this->reprs[i]->stratum_id_array[stratum_idx_in_repr]=make_tuple(raw.stratum_id, raw.is_primary_of_stratum);
+                this->reprs[i]->stratum_id_array[stratum_idx_in_repr]=StratifiedRegionAnnot(raw.stratum_id, raw.is_primary_of_stratum);
 
                 stat__stra_cnt_per_repr[i]--;
             }
@@ -400,7 +409,7 @@ struct StratifiedSA_ParallelModel {
     }
 
     // uint64_t is too expensive. block-based id leads to uint16_t repr idx
-    optional<Stratified_OfReprPos*> query(uint64_t repr_sa){
+    optional<StratifiedReprBased*> query(uint64_t repr_sa){
         return blocks[repr_sa/CONSTRUCTION_BLOCK_UNIT].get_repr(repr_sa%CONSTRUCTION_BLOCK_UNIT);
     }
 

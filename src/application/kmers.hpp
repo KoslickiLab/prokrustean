@@ -9,7 +9,8 @@ using namespace std;
 vector<string> collect_distinct_kmers(Prokrustean pk, unsigned int k){
     /* don't need to use set to check uniqueness */
     assert(pk.sequences.has_value());
-    vector<Occurrence> rep_occs = collect_rep_example_occurrences(pk);
+    vector<Occurrence> rep_occs;
+    // vector<Occurrence> rep_occs = collect_rep_example_occurrences(pk);
     vector<string> kmers;
     // from seq min covers
     for(int i=0;i<pk.seqs.size();i++){

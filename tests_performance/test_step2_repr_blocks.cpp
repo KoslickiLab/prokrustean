@@ -171,7 +171,7 @@ void test_parallelized_push(){
     */
     auto num_threads = 12;
     // performance- influencing factors
-    uint64_t how_many_stratums_sampled_per_thread=pow(10, 8)/num_threads; //1 billion total
+    uint64_t how_many_stratums_sampled_per_thread=pow(10, 6)/num_threads; //1 billion total
     uint64_t how_many_reprs_sampled_per_stratum=3;
 
     uint64_t seq_length=how_many_stratums_sampled_per_thread*20;
@@ -235,8 +235,8 @@ void test_parallelized_push(){
     futures.clear();
     
     cout << "step2 stratum convergence: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    cout << "sleeping... " << endl;
-    std::this_thread::sleep_for(std::chrono::seconds(20));
+    // cout << "sleeping... " << endl;
+    // std::this_thread::sleep_for(std::chrono::seconds(20));
 
     cout << "step2 block convergence start " << endl;
     start = std::chrono::steady_clock::now();
@@ -274,90 +274,10 @@ void test_parallelized_push(){
     assert(total_cnt==total_cnt2);
 }
 
-
-void test_memory(){
-
-    const size_t num_blocks = 100000;
-    const size_t block_size = 1024 * 1024;  // 1 MiB
-
-    // Allocate memory
-    std::cout << "Allocating memory..." << std::endl;
-    char* blocks[num_blocks];
-    for (size_t i = 0; i < num_blocks; ++i) {
-        blocks[i] = (char*)malloc(block_size);
-        if (!blocks[i]) {
-            std::cerr << "Memory allocation failed." << std::endl;
-        }
-    }
-
-    // Sleep to allow for memory usage observation
-    std::cout << "Sleeping for 10 seconds..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-
-    // Deallocate memory
-    std::cout << "Deallocating memory..." << std::endl;
-    for (size_t i = 0; i < num_blocks; ++i) {
-        free(blocks[i]);
-    }
-
-    // Sleep again to allow for memory usage observation
-    std::cout << "Sleeping for 10 seconds..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-
-    std::cout << "Done." << std::endl;
-}
-struct Block{
-    uint32_t cnt=0;
-     // make private for better memory usage
-    vector<StratifiedRaw> raw_regions;
-};
-
-void test_memory2(){
-
-    const size_t num_blocks = 100000000;
-
-    // Allocate memory
-    std::cout << "Allocating memory..." << std::endl;
-    vector<Block> blocks(num_blocks);
-    for(auto &block: blocks){
-        block.raw_regions.push_back(StratifiedRaw(1, 1, true));
-    }
-    // Block* blocks[num_blocks];
-    // for (size_t i = 0; i < num_blocks; ++i) {
-    //     blocks[i] = (Block*)malloc(sizeof(Block));
-    //     if (!blocks[i]) {
-    //         std::cerr << "Memory allocation failed." << std::endl;
-    //     }
-    // }
-
-    // Sleep to allow for memory usage observation
-    std::cout << "Sleeping for 10 seconds..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-
-    // Deallocate memory
-    std::cout << "Deallocating memory..." << std::endl;
-    blocks.clear();
-    blocks.shrink_to_fit();
-    blocks=vector<Block>();
-    // for (size_t i = 0; i < num_blocks; ++i) {
-    //     free(blocks[i]);
-    // }
-
-    // Sleep again to allow for memory usage observation
-    std::cout << "Sleeping for 10 seconds..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(20));
-
-    std::cout << "Done." << std::endl;
-}
-
-void test_memory3(){
-    std::cout << sizeof(tuple<uint64_t, bool>) << std::endl;
-}
-
 void main_performance_new_repr_block() {
-    // test_stratified_raw_block_operation();
-    // test_stratum_convergence();
-    // test_stratified_block_convergence();
+    test_stratified_raw_block_operation();
+    test_stratum_convergence();
+    test_stratified_block_convergence();
     test_parallelized_push();
     // test_memory();
     // test_memory2();

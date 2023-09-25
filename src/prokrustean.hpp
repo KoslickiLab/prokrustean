@@ -13,25 +13,36 @@ using namespace std;
 typedef uint32_t StratumId; // 4,294,967,295
 typedef uint32_t SeqId; // 4,294,967,295
 typedef uint32_t Id; // 4,294,967,295 Both StratumId SeqId
-typedef uint64_t Pos; // 4,294,967,295 == Sequence max length
+typedef uint32_t Pos; // 4,294,967,295 == Sequence max length
 typedef uint16_t StratumSize; //65,535
 
-struct Sequence {
-    uint32_t size;
-    // TODO: variable length array. 
-    vector<tuple<Pos, StratumId>> regions;
+struct Region{
+    Pos pos;
+    StratumId stratum_id;
+    Region(){}
+    Region(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
+    {}
 };
-
 
 struct Stratum {
     // uint64_t id;
     StratumSize size=0;
     // TODO: variable length array. 
-    vector<tuple<Pos, StratumId>> regions;
+    vector<Region> regions;
+
+    Region* regions2;
+};
+
+struct Sequence {
+    uint32_t size;
+    // TODO: variable length array. 
+    vector<Region> regions;
+
+    Region* regions2;
 };
 
 struct Prokrustean {
-    vector<Stratum> seqs;
+    vector<Sequence> seqs;
     vector<Stratum> stratums;
     
     //optional
@@ -74,8 +85,8 @@ void _print_rep(StratumId rid, string str, int depth, Prokrustean &pk, vector<bo
     printed_rep[rid]=true;
     cout << string(2*depth, '-')<< str << " (" << "R" << rid << ")"<< endl;
     for(auto r: pk.stratums[rid].regions){
-        Pos _pos = get<0>(r);
-        StratumId _rid = get<1>(r);
+        Pos _pos = r.pos;
+        StratumId _rid = r.stratum_id;
         _print_rep(_rid, str.substr(_pos, pk.stratums[_rid].size), depth+1, pk, printed_rep);
     }
 }
@@ -90,8 +101,8 @@ void print_prokrustean(Prokrustean pk){
         cout << "seq" << i << ", size " << pk.seqs[i].size << ", reps " << mc_reps.size() << endl;
         cout << pk.sequences.value()[i] << endl;
         for(auto r: mc_reps){
-            Pos pos = get<0>(r);
-            StratumId rid = get<1>(r);
+            Pos pos = r.pos;
+            StratumId rid = r.stratum_id;
             auto str = pk.sequences.value()[i].substr(pos, pk.stratums[rid].size);
             _print_rep(rid, str, 1, pk, printed_rep);
         }
@@ -104,8 +115,8 @@ void print_bare_prokrustean(Prokrustean pk){
         auto mc_reps = pk.seqs[i].regions;
         cout << "seq" << i << ", size " << pk.seqs[i].size << ", reps " << mc_reps.size() << endl;
         for(auto r: mc_reps){
-            Pos pos = get<0>(r);
-            StratumId rid = get<1>(r);
+            Pos pos = r.pos;
+            StratumId rid = r.stratum_id;
             cout << "(" << "pos: " << pos << ", " << "size: " << pk.stratums[rid].size<< ", R" << rid << ")" << " ";
         }
         cout << endl;
@@ -114,8 +125,8 @@ void print_bare_prokrustean(Prokrustean pk){
         auto mc_reps = pk.stratums[i].regions;
         cout << "rep" << i << ", size " << pk.stratums[i].size << ", reps " << mc_reps.size() << endl;
         for(auto r: mc_reps){
-            Pos pos = get<0>(r);
-            StratumId rid = get<1>(r);
+            Pos pos = r.pos;
+            StratumId rid = r.stratum_id;
             cout << "(" << pos << ", " << pk.stratums[rid].size<< ", R" << rid << ")" << " ";
         }
         cout << endl;
@@ -126,7 +137,7 @@ void print_single_rep_to_single_rep_relationships(Prokrustean pk){
     int cnt = 0;
     for(auto mc: pk.stratums){
         if(mc.regions.size()==1){
-            auto unique_repid = get<1>(mc.regions[0]);
+            auto unique_repid = mc.regions[0].stratum_id;
             if(pk.stratums[unique_repid].regions.size()>0){
                 cnt++;
             }

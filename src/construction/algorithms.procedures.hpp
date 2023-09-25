@@ -193,7 +193,7 @@ SequenceAnnotation get_sequence_annotations(SeqId seq_id,
         seq_length++;
     }
 
-    uint64_t pos = seq_length-1;
+    Pos pos = seq_length-1;
     uint64_t loc_idx = repr_cnt-1;
     vector<PositionAnnotation> locs(repr_cnt);
     L = seq_id;
@@ -538,7 +538,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
             if(lower_exists){
                 auto prev_rep_id = curr_pos.rep_ids[curr_rep_idx-1];
                 Pos relative_pos = 0;
-                rep_mc.regions.push_back(make_tuple(relative_pos, prev_rep_id));
+                rep_mc.regions.push_back(Region(relative_pos, prev_rep_id));
                 // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(curr_pos_idx, curr_pos.reps[curr_rep_idx-1].size), "upper");
             }
             mcs.push_back(rep_mc);
@@ -565,7 +565,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
         
         /* 3. possible-parent NOT ⊃ upper? (∃possible-parent) */
         if(possible_parent_exists && !possible_parent_include_upper_opt){
-            mcs[parent_mc_idx_opt.value()].regions.push_back(make_tuple(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
+            mcs[parent_mc_idx_opt.value()].regions.push_back(Region(curr_relative_pos_to_parent_opt.value(), curr_pos.rep_ids[curr_rep_idx]));
             // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(get<0>(parent.value()), mcs[get<1>(parent.value())].size), "right");
             
             rep_layers_completed[curr_pos_idx]=curr_rep_idx;
@@ -602,7 +602,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
 
         if(!is_curr_completed && !upper_exists && !possible_parent_exists){
             // cout << "condition seq Add to seq" << endl;
-            seq_mc.regions.push_back(make_tuple(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
+            seq_mc.regions.push_back(Region(curr_pos.pos, curr_pos.rep_ids[curr_rep_idx]));
             // _print__mc_rep_addition(seq_annot, curr_pos, curr_rep, make_tuple(0, 0), "seq");
         }
 
