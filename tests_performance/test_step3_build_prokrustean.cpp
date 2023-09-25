@@ -33,8 +33,6 @@ struct Step3PositionAnnot{
     Pos pos;
 
     uint32_t stratum_cnt;
-    // manage simply
-    uint32_t region_annot_idx;
     
     StratifiedReprBased* repr_stratification_ref;
 };
@@ -147,12 +145,12 @@ struct Step3WorkSpace {
     optional<Step3RegionIdx> next_primary(Step3RegionIdx &rgn){
         uint32_t pidx = rgn.pidx;
         uint16_t sidx = rgn.sidx;
-        
         while(true){
             if(sidx+1<seq_annot.position_annots[pidx].stratum_cnt){
                 sidx++;
             } else if(pidx>0){
                 pidx--;
+                sidx=0;
             } else {
                 return nullopt;
             }
@@ -161,6 +159,7 @@ struct Step3WorkSpace {
                 return Step3RegionIdx(pidx, sidx);
             }
         }
+        return nullopt;
     }
 
     bool check_inclusion(Step3RegionIdx &a, Step3RegionIdx &b,  Prokrustean &prokrustean){
@@ -173,8 +172,7 @@ struct Step3WorkSpace {
     void set_sequence_output(vector<Step3RegionIdx> &regions, Prokrustean &prokrustean){
         Region arr[regions.size()];
         for(int i=0; i<regions.size(); i++){
-            auto pos=seq_annot.position_annots[regions[i].pidx].pos;
-            arr[i].pos=pos;
+            arr[i].pos=seq_annot.position_annots[regions[i].pidx].pos;
             arr[i].stratum_id=get_stratum_id(regions[i]);
         }
         prokrustean.seqs[seq_annot.id].size=seq_annot.size;
@@ -188,6 +186,7 @@ struct Step3WorkSpace {
         for(int i=0; i<regions.size(); i++){
             arr[i].pos=position(regions[i].pidx)-position(primary.pidx);
             arr[i].stratum_id=get_stratum_id(regions[i]);
+            assert(arr[i].pos>=0);
         }
         prokrustean.stratums[stratum_id].regions2=arr;
     }
@@ -263,11 +262,113 @@ void build_prokrustean(Step3SequenceAnnot &seq_anot, Step3WorkSpace &work, Prokr
     work.set_sequence_output(regions, prokrustean);
 }
 
+StratifiedReprBased* get_random_repr_stratification(int stra_cnt){
+    auto seq_length=1000000;
+    StratifiedReprBased* repr_stra = static_cast<StratifiedReprBased*>(std::malloc(sizeof(StratifiedReprBased)+stra_cnt*sizeof(tuple<StratumId, bool>)));
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<uint32_t> id_dist(0, seq_length);
+    for(int i=0; i<stra_cnt; i++){
+        repr_stra->stratum_id_array[i].stratum_id=id_dist(gen);
+        repr_stra->stratum_id_array[i].stratum_id=id_dist(gen)%2;
+    }
+    return repr_stra;
+}
 
 
 void test_basic_step3_operation(){
-
+    auto pos_cnt=10;
+    auto stra_cnt=3;
+    Step3SequenceAnnot seq_annot;
+    Step3WorkSpace work;
+    work.seq_annot=seq_annot;
+    work.seq_annot.position_annots=vector<Step3PositionAnnot>(pos_cnt);
+    for(auto &pos_annot: work.seq_annot.position_annots){
+        pos_annot.repr_stratification_ref=get_random_repr_stratification(stra_cnt);
+        pos_annot.stratum_cnt=stra_cnt;
+    }
+    //reset function
+    work.reset_by_annot();
+    assert(work.consume_refs.size()==work.seq_annot.position_annots.size());
     
+    //child function
+    auto rgn = Step3RegionIdx(5, 2);
+    auto child = work.child(rgn);
+    assert(child.has_value());
+    rgn = Step3RegionIdx(5, 0);
+    child = work.child(rgn);
+    assert(!child.has_value());
+
+    //parent function
+    rgn = Step3RegionIdx(5, stra_cnt-2);
+    auto parent = work.parent(rgn);
+    assert(parent.has_value());
+    rgn = Step3RegionIdx(5, stra_cnt-1);
+    parent = work.parent(rgn);
+    assert(!parent.has_value());
+
+    //first primary function
+    //set all primary false
+    for(auto &pos: work.seq_annot.position_annots){
+        for(int i=0;i<pos.stratum_cnt; i++){
+            pos.repr_stratification_ref->stratum_id_array[i].is_primary=false;
+        }
+    }
+
+    work.seq_annot.position_annots[5].repr_stratification_ref->stratum_id_array[2].is_primary=true;
+    auto primary=work.first_primary();
+    assert(primary.has_value());
+    assert(primary.value().pidx==5 && primary.value().sidx==2);
+    // earlier 
+    work.seq_annot.position_annots[6].repr_stratification_ref->stratum_id_array[2].is_primary=true;
+    primary=work.first_primary();
+    assert(primary.has_value());
+    assert(primary.value().pidx==6 && primary.value().sidx==2);
+    // earlier 
+    work.seq_annot.position_annots[6].repr_stratification_ref->stratum_id_array[1].is_primary=true;
+    primary=work.first_primary();
+    assert(primary.has_value());
+    assert(primary.value().pidx==6 && primary.value().sidx==1);
+    
+    // next 
+    primary=work.first_primary();
+    primary=work.next_primary(primary.value());
+    assert(primary.value().pidx==6 && primary.value().sidx==2);
+    primary=work.next_primary(primary.value());
+    assert(primary.value().pidx==5 && primary.value().sidx==2);
+    primary=work.next_primary(primary.value());
+    assert(!primary.has_value());
+    
+    //check_inclusion
+    Prokrustean prokrustean;
+    prokrustean.seqs=vector<Sequence>(3);
+    prokrustean.stratums=vector<Stratum>(3);
+    prokrustean.stratums[0].size=5;
+    prokrustean.stratums[1].size=7;
+    prokrustean.stratums[2].size=10;
+    auto rgn1=Step3RegionIdx(2, 1);
+    auto rgn2=Step3RegionIdx(3, 1);
+    auto rgn3=Step3RegionIdx(4, 1);
+    work.seq_annot.position_annots[rgn1.pidx].pos=3;
+    work.seq_annot.position_annots[rgn2.pidx].pos=4;
+    work.seq_annot.position_annots[rgn3.pidx].pos=5;
+    work.seq_annot.position_annots[rgn1.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=1;
+    work.seq_annot.position_annots[rgn2.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=1;
+    work.seq_annot.position_annots[rgn3.pidx].repr_stratification_ref->stratum_id_array[1].stratum_id=0;
+    assert(!work.check_inclusion(rgn1, rgn2, prokrustean));
+    assert(work.check_inclusion(rgn1, rgn3, prokrustean));
+    assert(work.check_inclusion(rgn2, rgn3, prokrustean));
+    // set output
+    work.seq_annot.id=1;
+    auto regions=vector<Step3RegionIdx>({rgn1, rgn2});
+    work.set_sequence_output(regions, prokrustean);
+    assert(prokrustean.seqs[1].regions2[0].stratum_id==work.get_stratum_id(rgn1));
+    assert(prokrustean.seqs[1].regions2[1].stratum_id==work.get_stratum_id(rgn2));
+
+    // set output stratum
+    regions=vector<Step3RegionIdx>({rgn3});
+    work.set_stratum_output(rgn1, regions, prokrustean);
+    assert(prokrustean.stratums[work.get_stratum_id(rgn1)].regions2[0].stratum_id==work.get_stratum_id(rgn3));
 }
 
 void main_performance_build_prokrustean() {
