@@ -3,16 +3,17 @@
 #include <cassert>
 #include <iostream>
 #include <random>
+#include <thread>
+#include <future>
 #include "util.cpp"	
 #include "../src/prokrustean.hpp"
-#include "../src/construction/algorithms.hpp"
+// #include "../src/construction/algorithms.hpp"
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/locate.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.procedures_new.hpp"
 #include "../src/fm_index/tree_new.hpp"
-#include "../src/application/kmers.hpp"
 #include "../src/sdsl/int_vector.hpp"
 #include "../src/sdsl/rank_support_v.hpp"
 #include "../src/sdsl/rrr_vector.hpp"
@@ -76,19 +77,25 @@ void test_stratum_convergence(){
     for(auto &w: workspaces){
         total_cnt += w.stratum_cnt;
     }
-    prokrustean.stratums.resize(total_cnt);
+    // prokrustean.stratums.resize(total_cnt);
+    prokrustean.stratums__size.resize(total_cnt);
+    prokrustean.stratums__region.resize(total_cnt);
+    prokrustean.stratums__region_cnt.resize(total_cnt);
 
     for(auto &w: workspaces){
         w.set_prokrutean_stratum(prokrustean);
     }
-    for(auto &stratum: prokrustean.stratums){
-        assert(stratum.size>0);
+    // for(auto &stratum: prokrustean.stratums){
+    //     assert(stratum.size>0);
+    // }
+    for(auto size: prokrustean.stratums__size){
+        assert(size>0);
     }
 
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<uint32_t> repr_dist(0, seq_length);
-    std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/1000);
+    std::uniform_int_distribution<uint32_t> size_dist(1, seq_length/10000);
     workspaces.clear();
     id_generator.exchange(0);
     prokrustean=Prokrustean();
@@ -97,7 +104,7 @@ void test_stratum_convergence(){
     }
     
     for(auto &w: workspaces){
-        for(int i=0; i<seq_length/workspaces.size()/10; i++){
+        for(int i=0; i<seq_length/workspaces.size()/1000; i++){
             auto stratum_id=w.get_new_stratum(size_dist(gen));
             for(int r=0; r<10; r++){
                 w.add_repr_raw(repr_dist(gen), stratum_id, true);
@@ -109,13 +116,16 @@ void test_stratum_convergence(){
         total_cnt += w.stratum_cnt;
     }
     
-    prokrustean.stratums.resize(total_cnt);
+    // prokrustean.stratums.resize(total_cnt);
+    prokrustean.stratums__size.resize(total_cnt);
+    prokrustean.stratums__region.resize(total_cnt);
+    prokrustean.stratums__region_cnt.resize(total_cnt);
     for(auto &w: workspaces){
         w.set_prokrutean_stratum(prokrustean);
     }
     
-    for(auto &stratum: prokrustean.stratums){
-        assert(stratum.size>0);
+    for(auto size: prokrustean.stratums__size){
+        assert(size>0);
     }
 }
 
@@ -171,7 +181,7 @@ void test_parallelized_push(){
     */
     auto num_threads = 12;
     // performance- influencing factors
-    uint64_t how_many_stratums_sampled_per_thread=pow(10, 6)/num_threads; //1 billion total
+    uint64_t how_many_stratums_sampled_per_thread=pow(10, 8)/num_threads; //1 billion total
     uint64_t how_many_reprs_sampled_per_stratum=3;
 
     uint64_t seq_length=how_many_stratums_sampled_per_thread*20;
@@ -211,7 +221,9 @@ void test_parallelized_push(){
     }
     futures.clear();
     cout << "step2 sample created: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    
+    cout << "sleeping... " << endl;
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
     start = std::chrono::steady_clock::now();
 
     /* parallel version! - space efficiency issue */
@@ -220,7 +232,10 @@ void test_parallelized_push(){
     for(auto &work: model.parallel_workspaces){
         stratum_cnt+=work.stratum_cnt;
     }
-    prokrustean.stratums = vector<Stratum>(stratum_cnt);
+    // prokrustean.stratums = vector<Stratum>(stratum_cnt);
+    prokrustean.stratums__size.resize(stratum_cnt);
+    prokrustean.stratums__region.resize(stratum_cnt);
+    prokrustean.stratums__region_cnt.resize(stratum_cnt);
 
     auto func__converge_stra = [](StratifiedRawWorkspace &workspace, Prokrustean &prokrustean) {
         workspace.set_prokrutean_stratum(prokrustean);
@@ -235,8 +250,8 @@ void test_parallelized_push(){
     futures.clear();
     
     cout << "step2 stratum convergence: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    // cout << "sleeping... " << endl;
-    // std::this_thread::sleep_for(std::chrono::seconds(20));
+    cout << "sleeping... " << endl;
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
     cout << "step2 block convergence start " << endl;
     start = std::chrono::steady_clock::now();
@@ -247,7 +262,7 @@ void test_parallelized_push(){
                 break;
             }
             model.converge_block(idx);
-            // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     };
     std::atomic<int> block_idx_counter;

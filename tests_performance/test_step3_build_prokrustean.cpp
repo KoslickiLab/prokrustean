@@ -5,7 +5,7 @@
 #include <random>
 #include "util.cpp"	
 #include "../src/prokrustean.hpp"
-#include "../src/construction/algorithms.hpp"
+// #include "../src/construction/algorithms.hpp"
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/locate.hpp"
@@ -492,7 +492,7 @@ void test_step3_scenarios(){
     assert(prokrustean.stratums[2].region_cnt==1);
 
 
-    // middle relationship
+    // middle relationship2 layered
     regions= vector<region>({
         region(3, 1, 3, false), // int pos, int stratum_id, int size, bool is_primary
         region(3, 2, 4, false),
@@ -507,16 +507,50 @@ void test_step3_scenarios(){
 
 
     // double inclusion relationship
+    regions= vector<region>({
+        region(3, 1, 3, true), // int pos, int stratum_id, int size, bool is_primary
+        region(1, 2, 5, true),
+        region(3, 3, 7, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==0);
+    assert(prokrustean.stratums[2].region_cnt==1);
+    assert(prokrustean.stratums[3].region_cnt==1);
+    assert(prokrustean.seqs[0].region_cnt==2);
 
+    // double inclusion relationship2 - largest one includes all
+    regions= vector<region>({
+        region(3, 1, 3, true), // int pos, int stratum_id, int size, bool is_primary
+        region(2, 2, 4, true),
+        region(3, 3, 7, true),
+        region(1, 4, 10, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==0);
+    assert(prokrustean.stratums[2].region_cnt==1);
+    assert(prokrustean.stratums[3].region_cnt==1);
+    assert(prokrustean.stratums[4].region_cnt==2);
+    assert(prokrustean.seqs[0].region_cnt==1);
 
-
-
-    // one includes two
-
-
-
-
-    // one includes one which includes one
+    // one includes over two
+    regions= vector<region>({
+        region(1, 1, 10, true), // int pos, int stratum_id, int size, bool is_primary
+        region(2, 2, 2, true),
+        region(2, 3, 4, true),
+        region(3, 4, 5, true)
+    });
+    seq_annot =_generate_step3_scenario(regions, prokrustean);
+    work.seq_annot=seq_annot;
+    build_prokrustean(work, prokrustean);
+    assert(prokrustean.stratums[1].region_cnt==2);
+    assert(prokrustean.stratums[2].region_cnt==0);
+    assert(prokrustean.stratums[3].region_cnt==1);
+    assert(prokrustean.stratums[4].region_cnt==0);
+    assert(prokrustean.seqs[0].region_cnt==1);
 }
 
 void main_performance_build_prokrustean() {

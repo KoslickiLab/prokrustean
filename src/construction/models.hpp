@@ -250,7 +250,8 @@ struct StratifiedRawWorkspace{
     //at the middle of step1&2 - distribute stratum ids between workspaces
     void set_prokrutean_stratum(Prokrustean &prokrustean){
         for(auto &pair: stratum_raws){
-            prokrustean.stratums[get<0>(pair)].size=get<1>(pair);
+            // prokrustean.stratums[get<0>(pair)].size=get<1>(pair);
+            prokrustean.stratums__size[get<0>(pair)]=get<1>(pair);
         }
         stratum_raws.clear();
         stratum_raws.shrink_to_fit();
@@ -393,7 +394,7 @@ struct StratifiedSA_ParallelModel {
     //
     int parallel_scale;
     // 
-    atomic<uint32_t> stratum_id_generator;
+    atomic<StratumId> stratum_id_generator;
 
     StratifiedSA_ParallelModel(int thread_cnt, uint64_t seq_length){
         parallel_scale=thread_cnt;
@@ -419,7 +420,10 @@ struct StratifiedSA_ParallelModel {
         for(int i=0; i< parallel_workspaces.size(); i++){
             total_stratums+=parallel_workspaces[i].stratum_cnt;
         }
-        prokrustean.stratums = vector<Stratum>(total_stratums);
+        // prokrustean.stratums = vector<Stratum>(total_stratums);
+        prokrustean.stratums__size.resize(total_stratums);
+        prokrustean.stratums__region.resize(total_stratums);
+        prokrustean.stratums__region_cnt.resize(total_stratums);
     }
 
     void converge_block(uint64_t block_no){

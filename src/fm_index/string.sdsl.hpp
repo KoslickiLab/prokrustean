@@ -111,6 +111,10 @@ public:
         return wt.select(i, characters[c]);
     }
 
+    uint64_t select_by_char(uint64_t i, char c){
+        return wt.select(i, c);
+    }
+
 	virtual uint64_t size(){
         return wt.size();
     }

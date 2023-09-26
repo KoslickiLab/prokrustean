@@ -3,14 +3,13 @@
 #include <cassert>
 #include <iostream>
 #include "util.cpp"	
-#include "../src/construction/algorithms.hpp"
+
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/locate.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.procedures_new.hpp"
 #include "../src/fm_index/tree_new.hpp"
-#include "../src/application/kmers.hpp"
 
 using namespace std;
 using namespace sdsl;

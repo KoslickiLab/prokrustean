@@ -3,7 +3,6 @@
 #include <cassert>
 #include <iostream>
 #include "util.cpp"	
-#include "../src/construction/algorithms.hpp"
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/locate.hpp"

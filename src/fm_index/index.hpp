@@ -24,6 +24,7 @@ public:
     virtual RankArray ranks(SuffixArrayIdx i) = 0;
 	virtual void ranks(CharId c, vector<SuffixArrayIdx> &firsts, vector<uint64_t> &ext_ranks)=0;
 	virtual uint64_t select(uint64_t i, CharId c) = 0;
+	virtual uint64_t select_by_char(uint64_t i, char c) = 0;
 	virtual uint64_t size() = 0;
 };
 
@@ -33,7 +34,7 @@ public:
 	/*
 	 * constructor path of a STRING file containing the STRING in ASCII format
 	 */
-	FmIndex(AbstractString &string, char TERM='#'){
+	FmIndex(AbstractString &string, char TERM='$'){
 		this->STRING = &string;
 		// this->characters = STRING->get_characters();
 		this->characters_cnt = STRING->get_characters().size();
@@ -49,7 +50,7 @@ public:
 		}
 		cout << endl;
     }
-	char TERM='#'; //Lexicographically first
+	char TERM='$'; //Lexicographically first
 	CharId term_id=0;
     vector<uint64_t> C;
 	AbstractString* STRING;
