@@ -436,4 +436,82 @@ struct StratifiedSA_ParallelModel {
     }
 };
 
+
+class SpinLock {
+    std::atomic_flag flag = ATOMIC_FLAG_INIT;
+
+public:
+    void lock() {
+        while (flag.test_and_set(std::memory_order_acquire)) {}
+    }
+
+    void unlock() {
+        flag.clear(std::memory_order_release);
+    }
+};
+
+
+struct StratifiedRegion{
+    StratumId stratum_id;
+    Pos pos;
+    bool is_primary;
+    StratifiedRegion(StratumId stratum_id, Pos pos, bool is_primary):
+    stratum_id(stratum_id), pos(pos), is_primary(is_primary)
+    {}
+};
+
+
+struct StratificationOutput{
+    //
+    uint8_t stratum_block_unit=numeric_limits<uint8_t>::max();
+    //
+    vector<vector<StratumId>> blocks_of_stratum_id;
+    //
+    vector<vector<uint8_t>> blocks_of_local_stratum_size;
+
+    //
+    atomic<StratumId>* stratum_id_generator;
+    //
+    vector<vector<StratifiedRegion>> regions_by_seq;
+    //
+    vector<SpinLock> lock_by_seq;
+
+    StratificationOutput(uint64_t seq_cnt){
+        this->regions_by_seq=vector<vector<StratifiedRegion>>(seq_cnt);
+        this->lock_by_seq=vector<SpinLock>(seq_cnt);
+    }
+
+    StratumId make_stratum(StratumSize size){
+        StratumId new_id = this->stratum_id_generator->fetch_add(1);
+        int block_address = size/stratum_block_unit;
+        if(block_address>=blocks_of_local_stratum_size.size()){
+            blocks_of_stratum_id.resize(block_address+1);
+            blocks_of_local_stratum_size.resize(block_address+1);
+        }
+        blocks_of_stratum_id[block_address].push_back(new_id);
+        blocks_of_local_stratum_size[block_address].push_back(size%stratum_block_unit);
+        return new_id;
+    }
+
+    void pop_stratums(Prokrustean &prokrustean){
+        for(int b=0; b<blocks_of_local_stratum_size.size(); b++){
+            for(int i=0; i< blocks_of_local_stratum_size[b].size(); i++){
+                StratumId id = blocks_of_stratum_id[b][i];
+                StratumSize size = (b*this->stratum_block_unit) + blocks_of_local_stratum_size[b][i];
+                prokrustean.stratums__size[id]=size;
+            }
+        }
+        blocks_of_stratum_id.clear();
+        blocks_of_local_stratum_size.clear();
+        blocks_of_stratum_id.shrink_to_fit();
+        blocks_of_local_stratum_size.shrink_to_fit();
+    }
+
+    void add_stratified_regions(tuple<SeqId, Pos> loc, StratumId stratum_id, bool is_primary){
+        this->lock_by_seq[get<0>(loc)].lock();
+        this->regions_by_seq[get<0>(loc)].push_back(StratifiedRegion(stratum_id, get<1>(loc), is_primary));
+        this->lock_by_seq[get<0>(loc)].unlock();
+    }
+};
+
 #endif

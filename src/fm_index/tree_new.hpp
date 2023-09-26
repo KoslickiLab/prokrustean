@@ -43,12 +43,12 @@ struct ReprSuffixArrayIndexWorkspace {
     // For each a, if representative.
     vector<bool> right_repr;
 
-    vector<SuffixArrayIdx> uniq_repr_sa;
+    vector<tuple<SeqId, Pos>> locations;
 };
 
-struct SuffixArrayNodeExtension_NEW {
+struct TreeWorkspace {
     /* Includes all information required to process, so that memory is reused.*/
-    SuffixArrayNodeExtension_NEW(int characters_cnt){
+    TreeWorkspace(int characters_cnt){
         c_nodes=vector<SuffixArrayNode_NEW>(characters_cnt);
         c_nodes_open=vector<bool>(characters_cnt);
         c_first_ranks= vector<uint64_t>(characters_cnt+1);
@@ -57,12 +57,12 @@ struct SuffixArrayNodeExtension_NEW {
             c_nodes[i].firsts=vector<SuffixArrayIdx>(characters_cnt+1);
         }
         this->characters_cnt=characters_cnt;
-        this->repr_space.left_cnts=vector<int>(characters_cnt);
-        this->repr_space.left_paired_a_char=vector<CharId>(characters_cnt);
-        this->repr_space.right_cnts=vector<int>(characters_cnt);
-        this->repr_space.right_paired_c_char=vector<CharId>(characters_cnt);
-        this->repr_space.left_repr=vector<bool>(characters_cnt);
-        this->repr_space.right_repr=vector<bool>(characters_cnt);
+        this->repr_work.left_cnts=vector<int>(characters_cnt);
+        this->repr_work.left_paired_a_char=vector<CharId>(characters_cnt);
+        this->repr_work.right_cnts=vector<int>(characters_cnt);
+        this->repr_work.right_paired_c_char=vector<CharId>(characters_cnt);
+        this->repr_work.left_repr=vector<bool>(characters_cnt);
+        this->repr_work.right_repr=vector<bool>(characters_cnt);
     }
 
     // The node in interest
@@ -72,7 +72,9 @@ struct SuffixArrayNodeExtension_NEW {
     // whether the corresponding c_node is open (the branch exists)
     vector<bool> c_nodes_open;
     
-    ReprSuffixArrayIndexWorkspace repr_space;
+    ReprSuffixArrayIndexWorkspace repr_work;
+
+    StratumId stratum_id;
 
     // alphabet size
     int characters_cnt;
@@ -96,7 +98,7 @@ struct SuffixArrayNodeExtension_NEW {
 * Input: suffix tree node N.
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
-void extend_node_new(FmIndex &index, SuffixArrayNodeExtension_NEW &ext){
+void extend_node_new(FmIndex &index, TreeWorkspace &ext){
     // auto start = std::chrono::steady_clock::now();
 
     // push node to left maximal. everytime only one left child found, update node.
@@ -190,37 +192,43 @@ SuffixArrayNode_NEW get_root_new(FmIndex &index){
     return {firsts, 0};
 };
 
-template<class T> using NodeFunc_NEW = void(*)(FmIndex&, SuffixArrayNodeExtension_NEW&, vector<T>&);
+template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 
 template<class T, NodeFunc_NEW<T> process_node>
-void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vector<T> &Ts){
+void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
     Lmin = Lmin >= 1? Lmin : 1;
+    assert(fm_idx.locator!=nullptr);
 
-    stack<SuffixArrayNode_NEW> stack;
-    
-    SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
+    TreeWorkspace ext(fm_idx.characters_cnt);
     ext.any_measure=vector<uint64_t>(10,0);
+
     auto start = std::chrono::steady_clock::now();
 
+    stack<SuffixArrayNode_NEW> stack;
     stack.push(root);
     while(!stack.empty()){
-        // start = std::chrono::steady_clock::now();
+        if(verbose) start = std::chrono::steady_clock::now();
+        
         ext.node = stack.top();
         stack.pop();
-        // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
+        
+        if(verbose) ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
         
         
-        start = std::chrono::steady_clock::now();
+        if(verbose) start = std::chrono::steady_clock::now();
+        
         extend_node_new(fm_idx, ext);
-        ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
-        if(ext.node.depth>=Lmin){
-            start = std::chrono::steady_clock::now();
-            process_node(fm_idx, ext, Ts);
-            ext.any_measure[3]+=(std::chrono::steady_clock::now()-start).count();
-            
+        
+        if(verbose) ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
+        if(verbose) start = std::chrono::steady_clock::now();
+
+        if(ext.node.depth>=Lmin){    
+            process_node(fm_idx, ext, t);
         }
         
-        // start = std::chrono::steady_clock::now();
+        if(verbose) ext.any_measure[3]+=(std::chrono::steady_clock::now()-start).count();
+        if(verbose) start = std::chrono::steady_clock::now();
+
         for(int i=0; i<fm_idx.characters_cnt; i++){
             // terminal
             if(i==0) continue;
@@ -231,38 +239,44 @@ void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, vec
                 stack.push(ext.c_nodes[i]);
             }
         }
-        // ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
+        
+        if(verbose) ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
     }
-    for(int i=0; i<ext.any_measure.size(); i++){
-        cout << "measure " << i << ": " << ext.any_measure[i]/1000000 << "ms" << endl;
+    if(verbose){
+        for(int i=0; i<ext.any_measure.size(); i++){
+            cout << "measure " << i << ": " << ext.any_measure[i]/1000000 << "ms" << endl;
+        }
     }
 }
 
-
 vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_idx, int depth_max){
+    assert(fm_idx.locator!=nullptr);
     std::stack<SuffixArrayNode_NEW> stack;
     vector<SuffixArrayNode_NEW> nodes;
-    int cnt=0;
 
-    SuffixArrayNodeExtension_NEW ext(fm_idx.characters_cnt);
+    TreeWorkspace ext(fm_idx.characters_cnt);
+    ext.any_measure=vector<uint64_t>(10,0);
+
+    auto start = std::chrono::steady_clock::now();
 
     stack.push(root);
     while(!stack.empty()){
-        auto node = stack.top();
+        ext.node = stack.top();
         stack.pop();
-        if(node.depth>=depth_max){
-            nodes.push_back(node);
+        
+        if(ext.node.depth>=depth_max){
+            nodes.push_back(ext.node);
         } else {
             extend_node_new(fm_idx, ext);
-            for(int i=0; i<ext.c_nodes.size(); i++){
+        
+            for(int i=0; i<fm_idx.characters_cnt; i++){
                 // terminal
                 if(i==0) continue;
 
                 if(!ext.c_nodes_open[i]) continue;
 
-                auto child = ext.c_nodes[i];
-                if(child.right_maximal){
-                    stack.push(child);
+                if(ext.c_nodes[i].right_maximal){
+                    stack.push(ext.c_nodes[i]);
                 }
             }
         }

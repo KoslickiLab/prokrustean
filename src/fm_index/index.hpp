@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include "../prokrustean.hpp"
 
 using namespace std;
 
@@ -28,6 +29,11 @@ public:
 	virtual uint64_t size() = 0;
 };
 
+class AbstractLocator{
+public:
+	virtual tuple<SeqId, Pos> get_location(SuffixArrayIdx suffix_idx)=0;
+};
+
 class FmIndex{
 
 public:
@@ -36,7 +42,6 @@ public:
 	 */
 	FmIndex(AbstractString &string, char TERM='$'){
 		this->STRING = &string;
-		// this->characters = STRING->get_characters();
 		this->characters_cnt = STRING->get_characters().size();
 		this->TERM = TERM;
 
@@ -54,6 +59,7 @@ public:
 	CharId term_id=0;
     vector<uint64_t> C;
 	AbstractString* STRING;
+	AbstractLocator* locator=nullptr;
 	// vector<char> characters;
 	int characters_cnt;
 	vector<uint64_t> char_abundances;
@@ -66,17 +72,9 @@ public:
         return f;
     }
     
-    char get_character(uint64_t pos){
-        return (*STRING)[pos];
-    }
-
-	// char convert_char(uint8_t id){
-    //     return characters[id];
-    // }
-
-	// uint8_t convert_char(char c){
-    //     return std::find(characters.begin(), characters.end(), c) - characters.begin();
-    // }
+	void set_sampled_suffix_array(AbstractLocator &locator){
+		this->locator=&locator;
+	}
 
     uint64_t size(){
         return STRING->size();

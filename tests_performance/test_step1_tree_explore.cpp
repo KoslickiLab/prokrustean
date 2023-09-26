@@ -6,7 +6,7 @@
 
 #include "../src/construction/models.hpp"
 #include "../src/fm_index/index.hpp"
-#include "../src/fm_index/locate.hpp"
+#include "../src/fm_index/ssa.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.procedures_new.hpp"
 #include "../src/fm_index/tree_new.hpp"
