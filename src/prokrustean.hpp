@@ -5,16 +5,9 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include "base.hpp"
 
 using namespace std;
-
-/* Important: the types were fixed due to the purpose of the work. Need to be adjusted based on needs */
-
-typedef uint32_t StratumId; // 4,294,967,295
-typedef uint32_t SeqId; // 4,294,967,295
-typedef uint32_t Id; // 4,294,967,295 Both StratumId SeqId
-typedef uint32_t Pos; // 4,294,967,295 == Sequence max length
-typedef uint16_t StratumSize; //65,535
 
 struct Region{
     Pos pos;
@@ -49,16 +42,6 @@ struct Prokrustean {
     
     //optional
     optional<vector<string>> sequences;
-
-    void set_sizes(uint64_t seq_no, uint64_t rep_no, bool recover_sequences = false){
-        seqs.resize(seq_no);
-        // stratums.resize(rep_no);
-        stratums__size.resize(rep_no);
-        stratums__region.resize(rep_no);
-        stratums__region_cnt.resize(rep_no);
-        if(recover_sequences)
-        sequences = vector<string>(seq_no);
-    }
 };
 
 // void print_prokrustean_statistics(Prokrustean pk){

@@ -147,6 +147,14 @@ public:
         return make_tuple(seq_id, sample_pos + miss);
     }
 
+    void set_sequences(Prokrustean &prokrustean){
+        auto seq_cnt= this->seq_lengths.size();
+        prokrustean.seqs.resize(seq_cnt);
+        for(uint64_t i=0; i<seq_cnt; i++){
+            prokrustean.seqs[i].size=this->seq_lengths[i];
+        }
+    }
+
     void validate(){
         int total_sequence_length_except_term=0;
         int id;

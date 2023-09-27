@@ -195,7 +195,7 @@ SuffixArrayNode_NEW get_root_new(FmIndex &index){
 template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 
 template<class T, NodeFunc_NEW<T> process_node>
-void navigate_tree_new(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
+void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
     Lmin = Lmin >= 1? Lmin : 1;
     assert(fm_idx.locator!=nullptr);
 

@@ -3,7 +3,7 @@
 // #include "test_tree.cpp"
 // #include "test_step1_tree_explore.cpp"
 // #include "test_step2_repr_blocks.cpp"
-// #include "test_step3_build_prokrustean.cpp"
+#include "test_step3_build_prokrustean.cpp"
 #include "test_full_process.cpp"
 #include "test_ssa.cpp"
 // #include "test_step1_repr.cpp"

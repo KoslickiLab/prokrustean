@@ -291,7 +291,7 @@ void _print__seq_annot(SequenceAnnotation &seq_annot){
     // vector<vector<uint64_t>> r = {{84}, {11}, {11, 123}};
     // vector<vector<uint64_t>> f = {{84}, {11}, {11, 123}};
     // vector<PositionAnnotation> a;
-    cout << "uint64_t s = " << seq_annot.size << ";" << endl;
+    cout << "uint64_t s = " << seq_annot.seq_size << ";" << endl;
     cout << "vector<uint64_t> p = {";
     for(int i=0; i<seq_annot.positions.size(); i++){
         cout << seq_annot.positions[i].pos;
@@ -411,7 +411,7 @@ vector<Stratum> get_min_covers(SequenceAnnotation &seq_annot){
     vector<Stratum> mcs;
     Stratum seq_mc;
     // seq_mc.id = seq_annot.id;
-    seq_mc.size = seq_annot.size;
+    seq_mc.size = seq_annot.seq_size;
 
     if(seq_annot.positions.size()==0){
         mcs.push_back(seq_mc);
