@@ -72,15 +72,19 @@ void test_step1_push(){
 }
 
 void test_full_process_push(){
-    int Lmin=4;
+    int Lmin=20;
     auto num_threads=12;
-    auto sampling_factor=20;
+    auto sampling_factor=16;
     int sleep1=0;
     int sleep2=0;
+    auto start = std::chrono::steady_clock::now();
 
     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
-    auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
+    // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
+    auto str=WaveletString(PATH3_PERFORMANCE_SREAD_GUT_GRLBWT_BWT, '$');
+    cout << "wavelet string: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+
     if(sleep1>0) std::cout << "1. Wavelete string. sleeping... " << sleep1 << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(sleep1));
     if(sleep1>0) std::cout << "2. start " << sleep1 << std::endl;
@@ -88,7 +92,7 @@ void test_full_process_push(){
     SampledSuffixArray ssa(fm_idx, sampling_factor);
     Prokrustean prokrustean;
     
-    auto start = std::chrono::steady_clock::now();
+    start = std::chrono::steady_clock::now();
     vector<future<void>> futures;
     // collect blocks
     auto func__sample_to_parallel = [](SampledSuffixArray &ssa) {while(ssa.sample_one_sequence_and_store()){}};
@@ -140,26 +144,36 @@ void test_full_process_push(){
     
     fm_idx.dispose();
     
-    if(sleep1>0) std::cout << "5. fm indx dropped sleeping... " << sleep2 << std::endl;
+    if(sleep2>0) std::cout << "5. fm indx dropped sleeping... " << sleep2 << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(sleep2));
     
     ssa.set_sequence_lengths(prokrustean);
     ssa.dispose();
     
-    if(sleep1>0) std::cout << "6. set_and_drop_sequences sleeping... " << sleep2 << std::endl;
+    if(sleep2>0) std::cout << "6. set_and_drop_sequences sleeping... " << sleep2 << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(sleep2));
     
     workspace.prokrustean->stratums__region.resize(workspace.prokrustean->stratums__size.size());
     workspace.prokrustean->stratums__region_cnt.resize(workspace.prokrustean->stratums__size.size(), 0);
     
 
-    StratificationWorkSpace step2_workspace;
-    for(int i=0;i<fm_idx.seq_cnt(); i++){
-        auto &regions = workspace.sequence_regions[i];
-        step2_workspace.update_contexts_by_seq(i, regions, prokrustean.stratums__size);
-        build_prokrustean(step2_workspace, prokrustean);
-    }
-    
+    auto func__build = [](Prokrustean &prokrustean, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+        StratificationWorkSpace workspace;
+        while(true){
+            auto idx = idx_gen.fetch_add(1);
+            if(idx>=prokrustean.seqs.size()){
+                break;
+            }
+            workspace.update_contexts_by_seq(idx, output.sequence_regions[idx], prokrustean.stratums__size);
+            build_prokrustean(workspace, prokrustean);
+        }
+    };
+
+    start = std::chrono::steady_clock::now();
+    atomic<int> seq_id_iter;
+    for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__build, ref(prokrustean), ref(workspace), ref(seq_id_iter)));}
+    for (auto &f : futures) {f.wait();}
+    cout << "step2 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
 void main_performance_full() {
