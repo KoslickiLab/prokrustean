@@ -27,6 +27,7 @@ public:
 	virtual uint64_t select(uint64_t i, CharId c) = 0;
 	virtual uint64_t select_by_char(uint64_t i, char c) = 0;
 	virtual uint64_t size() = 0;
+	virtual void dispose()=0;
 };
 
 class AbstractLocator{
@@ -83,6 +84,11 @@ public:
 	uint64_t seq_cnt(){
         return C[1];
     }
+
+	void dispose(){
+		this->STRING->dispose();
+		this->STRING=nullptr;
+	}
 
 private:
 	vector<uint64_t> get_c_array(AbstractString &string){

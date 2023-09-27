@@ -39,7 +39,7 @@ public:
 	 */
 	WaveletString(string path, char term='#'){
         construct(wt, path, std::is_rvalue_reference<string &&>::value);
-
+        
         for(uint8_t c=0; c < std::numeric_limits<uint8_t>::max(); c++){
             if(wt.rank(wt.size(),c)>0) characters.push_back(c);
         }
@@ -115,8 +115,12 @@ public:
         return wt.select(i, c);
     }
 
-	virtual uint64_t size(){
+	uint64_t size(){
         return wt.size();
+    }
+
+    void dispose(){
+        wt=wt_blcd<>();
     }
 };
 

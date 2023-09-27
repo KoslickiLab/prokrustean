@@ -18,7 +18,7 @@ using namespace sdsl;
 typedef uint16_t SuffixArrayIdx_InBlock;
 
 struct SampleBlock{
-    sdsl::bit_vector sampled_bv;
+    sdsl::bit_vector sampled_bv=sdsl::bit_vector(std::numeric_limits<SuffixArrayIdx_InBlock>::max());
     sdsl::rank_support_v<> sampled_rank;
     vector<SeqId> seq_id_samples;
     vector<Pos> reverse_position_samples;
@@ -91,6 +91,7 @@ public:
 	    SuffixArrayIdx F = this->fm_index->LF(L);
         uint64_t idx;
         Pos reverse_pos=0;
+        vector<Pos> reverse_positions;
         vector<char> string;
         auto characters = fm_index->STRING->get_characters();
         while(F >= seq_cnt){
@@ -147,12 +148,16 @@ public:
         return make_tuple(seq_id, sample_pos + miss);
     }
 
-    void set_sequences(Prokrustean &prokrustean){
+    void set_sequence_lengths(Prokrustean &prokrustean){
         auto seq_cnt= this->seq_lengths.size();
         prokrustean.seqs.resize(seq_cnt);
         for(uint64_t i=0; i<seq_cnt; i++){
             prokrustean.seqs[i].size=this->seq_lengths[i];
         }
+    }
+    void dispose(){
+        this->seq_lengths.clear();
+        this->seq_lengths.shrink_to_fit();
     }
 
     void validate(){

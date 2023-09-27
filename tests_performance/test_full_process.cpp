@@ -22,7 +22,7 @@ using namespace sdsl;
 void test_step1_push(){
     int Lmin=30;
     auto num_threads=12;
-    auto sampling_factor=4;
+    auto sampling_factor=8;
 
     // auto str=WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
     WaveletString str(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
@@ -72,13 +72,18 @@ void test_step1_push(){
 }
 
 void test_full_process_push(){
-    int Lmin=30;
+    int Lmin=4;
     auto num_threads=12;
-    auto sampling_factor=4;
+    auto sampling_factor=20;
+    int sleep1=0;
+    int sleep2=0;
 
-    WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT2_BWT, '$');
+    // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
-    // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
+    auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
+    if(sleep1>0) std::cout << "1. Wavelete string. sleeping... " << sleep1 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep1));
+    if(sleep1>0) std::cout << "2. start " << sleep1 << std::endl;
     FmIndex fm_idx(str);
     SampledSuffixArray ssa(fm_idx, sampling_factor);
     Prokrustean prokrustean;
@@ -90,18 +95,26 @@ void test_full_process_push(){
     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__sample_to_parallel, ref(ssa)));}
     for (auto &f : futures) {f.wait();}
     futures.clear();
+    
+    if(sleep1>0) std::cout << "2. sample raw. sleeping... " << sleep1 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep1));
+    if(sleep1>0) std::cout << "3. start " << sleep1 << std::endl;
+    
     // consume blocks
     auto func__consume_block = [](SampledSuffixArray &ssa) {while(ssa.consume_one_block_and_release()){}};
     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__consume_block, ref(ssa)));}
     for (auto &f : futures) {f.wait();}
     futures.clear();
+    fm_idx.set_sampled_suffix_array(ssa);
     cout << "finished sampling: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     
+    if(sleep1>0) std::cout << "3. sample consumed. sleeping... " << sleep1 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep1));
+    if(sleep1>0) std::cout << "4. start " << sleep1 << std::endl;
+
     SuffixArrayNode_NEW root = get_root_new(fm_idx);
     StratumProjectionOutput workspace(prokrustean, fm_idx.seq_cnt());
     
-    ssa.set_sequences(prokrustean);
-    fm_idx.set_sampled_suffix_array(ssa);
     atomic<int> idx_gen;
     start = std::chrono::steady_clock::now();
     vector<SuffixArrayNode_NEW> roots = collect_nodes(root, fm_idx, 3);
@@ -122,8 +135,23 @@ void test_full_process_push(){
     for (auto &f : futures) {f.wait();}
     
     cout << "step1 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    if(sleep1>0) std::cout << "4. navigated sleeping... " << sleep2 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep1));
+    
+    fm_idx.dispose();
+    
+    if(sleep1>0) std::cout << "5. fm indx dropped sleeping... " << sleep2 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep2));
+    
+    ssa.set_sequence_lengths(prokrustean);
+    ssa.dispose();
+    
+    if(sleep1>0) std::cout << "6. set_and_drop_sequences sleeping... " << sleep2 << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep2));
+    
     workspace.prokrustean->stratums__region.resize(workspace.prokrustean->stratums__size.size());
     workspace.prokrustean->stratums__region_cnt.resize(workspace.prokrustean->stratums__size.size(), 0);
+    
 
     StratificationWorkSpace step2_workspace;
     for(int i=0;i<fm_idx.seq_cnt(); i++){
