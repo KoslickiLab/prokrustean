@@ -42,6 +42,17 @@ struct Prokrustean {
     
     //optional
     optional<vector<string>> sequences;
+
+    uint64_t get_cardinality(){
+        uint64_t cnt = 0;
+        for(auto &seq: seqs){
+            cnt+=seq.region_cnt;
+        }
+        for(auto &rcnt: stratums__region_cnt){
+            cnt+=rcnt;
+        }
+        return cnt;
+    }
 };
 
 // void print_prokrustean_statistics(Prokrustean pk){

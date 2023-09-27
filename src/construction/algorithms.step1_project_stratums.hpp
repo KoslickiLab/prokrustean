@@ -33,21 +33,34 @@ struct StratumProjectionOutput{
     //
     Prokrustean* prokrustean;
     //
-    uint64_t stratum_reserved;
+    uint64_t stratum_reserved=0;
     //
     vector<vector<ProjectedStratifiedRegion>> sequence_regions;
+
+    int block_size;
+
+    vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>> raw_region_blocks;
+    //
+    vector<SpinLock> region_block_locks;
     //
     vector<SpinLock> sequence_locks;
 
     uint64_t seq_cnt;
 
-    StratumProjectionOutput(Prokrustean &prokrustean, uint64_t seq_cnt){
+    StratumProjectionOutput(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length){
         this->seq_cnt=seq_cnt;
-        this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
-        this->sequence_locks=vector<SpinLock>(seq_cnt);
+        
+        cout << "length: " << seq_total_length <<endl;
+        // this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
+        // this->sequence_locks=vector<SpinLock>(seq_cnt);
         this->prokrustean=&prokrustean;
+        
         this->update_reserve_amount();
         prokrustean.stratums__size.reserve(this->stratum_reserved);
+        this->block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
+       
+        this->raw_region_blocks=vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
+        this->region_block_locks=vector<SpinLock>(seq_total_length/this->block_size+1);
     }
 
     StratumId make_stratum(StratumSize size){
@@ -74,6 +87,46 @@ struct StratumProjectionOutput{
         this->sequence_locks[get<0>(loc)].lock();
         this->sequence_regions[get<0>(loc)].push_back(ProjectedStratifiedRegion(stratum_id, get<1>(loc), is_primary));
         this->sequence_locks[get<0>(loc)].unlock();
+    }
+
+    void add_projected_regions(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){
+        auto block_idx=sa_idx/block_size;
+        auto local_sa_idx=sa_idx%block_size;
+        // lock
+        this->region_block_locks[block_idx].lock();
+        // add 
+        if(this->raw_region_blocks[block_idx].count(local_sa_idx)==0){
+            this->raw_region_blocks[block_idx][local_sa_idx]=vector<ProjectedStratifiedRegion>();
+        }
+        this->raw_region_blocks[block_idx][local_sa_idx].push_back(ProjectedStratifiedRegion(stratum_id, sa_idx, is_primary));
+        // unlock
+        this->region_block_locks[block_idx].unlock();
+    }
+
+    optional<vector<ProjectedStratifiedRegion>*> fetch(SuffixArrayIdx sa_idx){
+        auto block_idx=sa_idx/block_size;
+        auto local_sa_idx=sa_idx%block_size;
+        if(this->raw_region_blocks[block_idx].count(local_sa_idx)>0){
+            return &this->raw_region_blocks[block_idx][local_sa_idx];
+        } else {
+            return std::nullopt;
+        }
+        
+    }
+
+    void dispose(SuffixArrayIdx sa_idx){
+        auto block_idx=sa_idx/block_size;
+        auto local_sa_idx=sa_idx%block_size;
+        this->raw_region_blocks[block_idx][local_sa_idx].clear();
+        this->raw_region_blocks[block_idx][local_sa_idx].shrink_to_fit();
+    }
+
+    uint64_t get_cardinality() {
+        uint64_t cnt=0;
+        for (auto& m: this->raw_region_blocks){
+            cnt+=m.size();
+        }
+        return cnt;
     }
 };
 
@@ -133,11 +186,13 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
     decide_representative(workspace);
     
     workspace.stratum_id=output.make_stratum(workspace.node.depth);
-    workspace.repr_work.locations.clear();
+    // workspace.repr_work.locations.clear();
+    workspace.repr_work.sa_indices.clear();
     for(int c=0; c<workspace.characters_cnt; c++){
         // the first suffix index of Wa form is explored by default.
         if(workspace.repr_work.right_repr[c]){
-            workspace.repr_work.locations.push_back(index.locator->get_location(workspace.first_r(c)));
+            // workspace.repr_work.locations.push_back(index.locator->get_location(workspace.first_r(c)));
+            workspace.repr_work.sa_indices.push_back(workspace.first_r(c));
         }
         // the first suffix index of cW should be found and checked for duplication
         if(workspace.repr_work.left_repr[c]){
@@ -161,7 +216,8 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
             // Check duplication, i.e. if the suffix array picked by the right letter a of cWa.
             if(workspace.repr_work.right_repr[a] && prev_sa_idx==workspace.first_r(a)){
             } else {
-                workspace.repr_work.locations.push_back(index.locator->get_location(prev_sa_idx));
+                // workspace.repr_work.locations.push_back(index.locator->get_location(prev_sa_idx));
+                workspace.repr_work.sa_indices.push_back(prev_sa_idx);
             }
         }
     }
@@ -171,19 +227,25 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
     Then in here we should collect all suffixes where the form is #W#.
     */
     for(auto sa_idx: workspace.both_ext_terms){
-        workspace.repr_work.locations.push_back(index.locator->get_location(sa_idx));
+        // workspace.repr_work.locations.push_back(index.locator->get_location(sa_idx));
+        workspace.repr_work.sa_indices.push_back(sa_idx);
     }
 
     // find primary
-    auto loc_cnt=workspace.repr_work.locations.size();
+    // auto loc_cnt=workspace.repr_work.locations.size();
+    auto idx_cnt=workspace.repr_work.sa_indices.size();
     auto primary_idx = 0;
-    for(int i=1; i<loc_cnt; i++){
-        if(workspace.repr_work.locations[primary_idx] < workspace.repr_work.locations[i]){
+    for(int i=1; i<idx_cnt; i++){
+        // if(workspace.repr_work.locations[primary_idx] < workspace.repr_work.locations[i]){
+        //     primary_idx=i;
+        // }
+        if(workspace.repr_work.sa_indices[primary_idx] < workspace.repr_work.sa_indices[i]){
             primary_idx=i;
         }
     }
-    for(int i=1; i<loc_cnt; i++){
-        output.add_stratified_regions(workspace.repr_work.locations[i], workspace.stratum_id, primary_idx==i);
+    for(int i=0; i<idx_cnt; i++){
+        // output.add_stratified_regions(workspace.repr_work.locations[i], workspace.stratum_id, primary_idx==i);
+        output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
     }
 }
 

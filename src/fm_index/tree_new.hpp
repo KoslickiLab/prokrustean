@@ -44,6 +44,8 @@ struct ReprSuffixArrayIndexWorkspace {
     vector<bool> right_repr;
 
     vector<tuple<SeqId, Pos>> locations;
+
+    vector<SuffixArrayIdx> sa_indices;
 };
 
 struct TreeWorkspace {
@@ -197,7 +199,8 @@ template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 template<class T, NodeFunc_NEW<T> process_node>
 void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
     Lmin = Lmin >= 1? Lmin : 1;
-    assert(fm_idx.locator!=nullptr);
+    // assert(fm_idx.locator!=nullptr);
+    // cout << "warning: sample x" << endl;
 
     TreeWorkspace ext(fm_idx.characters_cnt);
     ext.any_measure=vector<uint64_t>(10,0);
@@ -250,7 +253,9 @@ void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &
 }
 
 vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_idx, int depth_max){
-    assert(fm_idx.locator!=nullptr);
+    // assert(fm_idx.locator!=nullptr);
+    cout << "warning: sample x" << endl;
+
     std::stack<SuffixArrayNode_NEW> stack;
     vector<SuffixArrayNode_NEW> nodes;
 

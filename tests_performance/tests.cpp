@@ -3,10 +3,10 @@
 // #include "test_tree.cpp"
 // #include "test_step1_tree_explore.cpp"
 // #include "test_step2_repr_blocks.cpp"
-#include "test_step3_build_prokrustean.cpp"
-#include "test_full_process.cpp"
-#include "test_ssa.cpp"
-// #include "test_step1_repr.cpp"
+// #include "test_step3_build_prokrustean.cpp"
+// #include "test_full_process.cpp"
+// #include "test_ssa.cpp"
+#include "test_full_process2.cpp"
 
 int main(void){
     // cout << "--- bitvector ---" << endl;
@@ -23,9 +23,10 @@ int main(void){
     // cout << "--- step1 repr ---" << endl;
     // main_performance_step1_repr();
 
-    cout << "--- full process ---" << endl;
-    main_performance_full();
+    // cout << "--- full process ---" << endl;
+    // main_performance_full();
     // cout << "--- test ssa ---" << endl;
     // main_performance_ssa();
-    
+    cout << "--- full process2 ---" << endl;
+    main_performance_full2();
 }

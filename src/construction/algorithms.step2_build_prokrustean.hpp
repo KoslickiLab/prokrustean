@@ -37,6 +37,7 @@ struct SequenceAnnotation {
     //
     SeqId seq_id;
 
+    uint32_t seq_size;
     //
     vector<PositionAnnotation> position_annots;
 };
@@ -66,59 +67,117 @@ struct StratificationWorkSpace {
     ConsumingReference primary_ref;
     // (rgn, post-pid)
     vector<ConsumingReference> consume_refs;
-    //
-    std::unordered_map<Pos, int> pos_stats;
-    //
-    std::unordered_map<Pos, int> pos_inverse;
-    //
-    std::vector<Pos> pos_vector;
+    // //
+    // std::unordered_map<Pos, int> pos_stats;
+    // //
+    // std::unordered_map<Pos, int> pos_inverse;
+    // //
+    // std::vector<Pos> pos_vector;
 
-    void update_contexts_by_seq(SeqId seq_id, vector<ProjectedStratifiedRegion> &projected_regions, vector<StratumSize> &stratum_sizes){
+    // void update_contexts_by_seq(SeqId seq_id, vector<ProjectedStratifiedRegion> &projected_regions, vector<StratumSize> &stratum_sizes){
+    //     this->seq_annot.seq_id=seq_id;
+
+    //     this->pos_stats.clear();
+    //     this->pos_inverse.clear();
+    //     this->pos_vector.clear();
+    //     // collect positions
+    //     for(auto &region: projected_regions){
+    //         if(pos_stats.count(region.pos)==0){
+    //             this->pos_stats[region.pos]=1;
+    //             this->pos_vector.push_back(region.pos);
+    //         } else {
+    //             this->pos_stats[region.pos]++;
+    //         }
+    //     }
+    //     // reuse the space as efficient as possible
+    //     this->seq_annot.position_annots.resize(pos_stats.size());
+        
+    //     // set positions and sort
+    //     sort(this->pos_vector.begin(), this->pos_vector.end());
+    //     int i=0;
+    //     for(auto pos: pos_vector){
+    //         this->seq_annot.position_annots[i].pos=pos;
+    //         this->seq_annot.position_annots[i].regions.resize(this->pos_stats[pos]);
+    //         this->pos_inverse[pos]=i;
+    //         i++;
+    //     }
+    //     // set regions and sort
+    //     int region_i;
+    //     for(auto &region: projected_regions){
+    //         this->pos_stats[region.pos]--;
+    //         region_i=this->pos_stats[region.pos];
+    //         auto& region_annot=this->seq_annot.position_annots[this->pos_inverse[region.pos]].regions[region_i];
+    //         region_annot.stratum_id=region.stratum_id;
+    //         region_annot.stratum_size=stratum_sizes[region.stratum_id];
+    //         region_annot.is_primary=region.is_primary;
+    //     }
+    //     for(auto &annot: this->seq_annot.position_annots){
+    //         sort(annot.regions.begin(), annot.regions.end(), [](const RegionAnnotation& lhs, const RegionAnnotation& rhs) { 
+    //             return lhs.stratum_size < rhs.stratum_size;
+    //         });
+    //     }
+        
+    //     // clear raw data
+    //     projected_regions.clear();
+    //     projected_regions.shrink_to_fit();
+
+    //     // reset references
+    //     consume_refs.clear();
+    //     consume_refs.resize(seq_annot.position_annots.size());
+    //     int pidx=0;
+    //     for(auto &ref: consume_refs){
+    //         if(pidx+1<seq_annot.position_annots.size()){
+    //             ref.set_ref(pidx, 0, pidx+1);
+    //         } else {
+    //             ref.set_ref(pidx, 0);
+    //         }
+    //         pidx++;
+    //     }
+    // }
+    
+    void update_contexts_for_seq(SeqId seq_id, FmIndex &fm_index, StratumProjectionOutput &output, vector<StratumSize> &stratum_sizes){
         this->seq_annot.seq_id=seq_id;
 
-        this->pos_stats.clear();
-        this->pos_inverse.clear();
-        this->pos_vector.clear();
-        // collect positions
-        for(auto &region: projected_regions){
-            if(pos_stats.count(region.pos)==0){
-                this->pos_stats[region.pos]=1;
-                this->pos_vector.push_back(region.pos);
-            } else {
-                this->pos_stats[region.pos]++;
-            }
-        }
-        // reuse the space as efficient as possible
-        this->seq_annot.position_annots.resize(pos_stats.size());
+        // this->pos_stats.clear();
+        // this->pos_inverse.clear();
+        // this->pos_vector.clear();
+        this->seq_annot.position_annots.clear();
         
-        // set positions and sort
-        sort(this->pos_vector.begin(), this->pos_vector.end());
-        int i=0;
-        for(auto pos: pos_vector){
-            this->seq_annot.position_annots[i].pos=pos;
-            this->seq_annot.position_annots[i].regions.resize(this->pos_stats[pos]);
-            this->pos_inverse[pos]=i;
-            i++;
+        uint64_t seq_cnt=fm_index.seq_cnt();
+        SuffixArrayIdx L = seq_id;
+	    SuffixArrayIdx F = fm_index.LF(L);
+        uint64_t idx;
+        Pos reverse_pos=0;
+        vector<Pos> reverse_positions;
+        while(F >= seq_cnt){
+            optional<vector<ProjectedStratifiedRegion>*> regions=output.fetch(F);
+            if(regions.has_value()){
+                auto annot = PositionAnnotation();
+                annot.pos=reverse_pos;
+                // vector<ProjectedStratifiedRegion> aa =regions.value();
+                for(auto r: *(regions.value())){
+                    annot.regions.push_back(RegionAnnotation(r.stratum_id, stratum_sizes[r.stratum_id], r.is_primary));
+                }
+                output.dispose(F);
+                this->seq_annot.position_annots.push_back(annot);
+            }
+
+            L = F;
+            F = fm_index.LF(L);
+            reverse_pos++;
         }
-        // set regions and sort
-        int region_i;
-        for(auto &region: projected_regions){
-            this->pos_stats[region.pos]--;
-            region_i=this->pos_stats[region.pos];
-            auto& region_annot=this->seq_annot.position_annots[this->pos_inverse[region.pos]].regions[region_i];
-            region_annot.stratum_id=region.stratum_id;
-            region_annot.stratum_size=stratum_sizes[region.stratum_id];
-            region_annot.is_primary=region.is_primary;
-        }
+
+        // reuse the space as efficient as possible
+        this->seq_annot.seq_size=reverse_pos;
         for(auto &annot: this->seq_annot.position_annots){
+            annot.pos=this->seq_annot.seq_size-annot.pos-1;
             sort(annot.regions.begin(), annot.regions.end(), [](const RegionAnnotation& lhs, const RegionAnnotation& rhs) { 
                 return lhs.stratum_size < rhs.stratum_size;
             });
         }
-        
-        // clear raw data
-        projected_regions.clear();
-        projected_regions.shrink_to_fit();
+        sort(this->seq_annot.position_annots.begin(), this->seq_annot.position_annots.end(), [](const PositionAnnotation& lhs, const PositionAnnotation& rhs) { 
+            return lhs.pos < rhs.pos;
+        });
 
         // reset references
         consume_refs.clear();
@@ -234,6 +293,7 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
     *         having the stratum as prefix.
     * - Output: Stratified region sets, where one set is stratified regions of the sequence and others are that of stratums.
     */
+   
     if(workspace.seq_annot.position_annots.size()==0){
         return;
     }
@@ -294,6 +354,7 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
             regions.push_back(RegionIdx(ref.pidx, ref.sidx));
         }
     }
+
     workspace.set_sequence_output(regions, prokrustean);
 }
 
