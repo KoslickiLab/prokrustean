@@ -12,6 +12,7 @@ typedef uint32_t StratumId; // 4,294,967,295
 typedef uint32_t SeqId; // 4,294,967,295
 typedef uint16_t Pos; // 4,294,967,295 == Sequence max length
 typedef uint16_t StratumSize; //65,535
+typedef uint32_t SequenceSize; //65,535
 
 
 

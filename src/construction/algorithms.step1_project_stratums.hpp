@@ -31,7 +31,7 @@ struct StratumProjectionOutput{
     //
     SpinLock stratum_lock;
     //
-    Prokrustean* prokrustean;
+    Prokrustean& prokrustean;
     //
     uint64_t stratum_reserved=0;
     //
@@ -40,6 +40,10 @@ struct StratumProjectionOutput{
     int block_size;
 
     vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>> raw_region_blocks;
+    // vector<vector<tuple<uint16_t, ProjectedStratifiedRegion>>> raw_region_blocks;
+
+    // vector<unordered_map<uint16_t, bool>> raw_region_block_numbers;
+
     //
     vector<SpinLock> region_block_locks;
     //
@@ -47,20 +51,17 @@ struct StratumProjectionOutput{
 
     uint64_t seq_cnt;
 
-    StratumProjectionOutput(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length){
-        this->seq_cnt=seq_cnt;
-        
-        cout << "length: " << seq_total_length <<endl;
-        // this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
-        // this->sequence_locks=vector<SpinLock>(seq_cnt);
-        this->prokrustean=&prokrustean;
-        
-        this->update_reserve_amount();
-        prokrustean.stratums__size.reserve(this->stratum_reserved);
+    uint64_t seq_total_length;
+
+    StratumProjectionOutput(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length)
+    :prokrustean(prokrustean),seq_cnt(seq_cnt),seq_total_length(seq_total_length){
+        this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
+        this->sequence_locks=vector<SpinLock>(seq_cnt);
         this->block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
-       
         this->raw_region_blocks=vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
         this->region_block_locks=vector<SpinLock>(seq_total_length/this->block_size+1);
+        // this->raw_region_blocks=vector<vector<tuple<uint16_t, ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
+        // this->raw_region_block_numbers=vector<unordered_map<uint16_t,bool>>(seq_total_length/this->block_size+1);
     }
 
     StratumId make_stratum(StratumSize size){
@@ -68,10 +69,10 @@ struct StratumProjectionOutput{
         /* critical region */
         StratumId new_id=this->new_stratum_id;
         this->new_stratum_id++;
-        this->prokrustean->stratums__size.push_back(size);
+        this->prokrustean.stratums__size.push_back(size);
         if(this->new_stratum_id==this->stratum_reserved){
             this->update_reserve_amount();
-            this->prokrustean->stratums__size.reserve(this->stratum_reserved);
+            this->prokrustean.stratums__size.reserve(this->stratum_reserved);
         }
         /* critical region */
         stratum_lock.unlock();
@@ -83,15 +84,16 @@ struct StratumProjectionOutput{
         this->stratum_reserved+=pow(10, 7);
     }
 
-    void add_stratified_regions(tuple<SeqId, Pos> loc, StratumId stratum_id, bool is_primary){
-        this->sequence_locks[get<0>(loc)].lock();
-        this->sequence_regions[get<0>(loc)].push_back(ProjectedStratifiedRegion(stratum_id, get<1>(loc), is_primary));
-        this->sequence_locks[get<0>(loc)].unlock();
-    }
+    // void add_stratified_regions(tuple<SeqId, Pos> loc, StratumId stratum_id, bool is_primary){
+    //     this->sequence_locks[get<0>(loc)].lock();
+    //     this->sequence_regions[get<0>(loc)].push_back(ProjectedStratifiedRegion(stratum_id, get<1>(loc), is_primary));
+    //     this->sequence_locks[get<0>(loc)].unlock();
+    // }
 
-    void add_projected_regions(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){
+    void add_projected_regions(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){        
         auto block_idx=sa_idx/block_size;
         auto local_sa_idx=sa_idx%block_size;
+        
         // lock
         this->region_block_locks[block_idx].lock();
         // add 
@@ -99,6 +101,7 @@ struct StratumProjectionOutput{
             this->raw_region_blocks[block_idx][local_sa_idx]=vector<ProjectedStratifiedRegion>();
         }
         this->raw_region_blocks[block_idx][local_sa_idx].push_back(ProjectedStratifiedRegion(stratum_id, sa_idx, is_primary));
+        // this->raw_region_block_numbers[block_idx][local_sa_idx]=true;
         // unlock
         this->region_block_locks[block_idx].unlock();
     }
@@ -111,7 +114,28 @@ struct StratumProjectionOutput{
         } else {
             return std::nullopt;
         }
+        // if(this->raw_region_block_numbers[block_idx].count(local_sa_idx)>0){
+        //     vector<ProjectedStratifiedRegion*> regions;
+        //     for(auto &r: this->raw_region_blocks[block_idx]){
+        //         if(get<0>(r)==local_sa_idx){
+        //             regions.push_back(&get<1>(r));
+        //         }
+        //     }
+        //     return regions;
+        // } else {
+        //     return nullopt;
+        // }
+    }
+
+    void setup_prokrustean(){
+        // sequence size is inferred at step2
+        this->prokrustean.sequences__size.resize(this->seq_cnt);
+        this->prokrustean.sequences__region.resize(this->seq_cnt);
+        this->prokrustean.sequences__region_cnt.resize(this->seq_cnt);
         
+        // stratum size is already collected
+        this->prokrustean.stratums__region.resize(this->prokrustean.stratums__size.size());
+        this->prokrustean.stratums__region_cnt.resize(this->prokrustean.stratums__size.size(), 0);
     }
 
     void dispose(SuffixArrayIdx sa_idx){

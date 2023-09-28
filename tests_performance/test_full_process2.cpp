@@ -20,17 +20,20 @@ using namespace std;
 using namespace sdsl;
 
 void test_step1_push2(){
-    int Lmin=8;
+    int Lmin=20;
     auto num_threads=12;
+    int sleep = 10;
     // auto sampling_factor=8;
 
     // auto str=WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-    // WaveletString str(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    WaveletString str(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
-    WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
+    // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     FmIndex fm_idx(str);
     // SampledSuffixArray ssa(fm_idx, sampling_factor);
     Prokrustean prokrustean;
+    cout << "wavelte "  << endl;
+    std::this_thread::sleep_for(std::chrono::seconds(sleep));
     
     auto start = std::chrono::steady_clock::now();
     SuffixArrayNode_NEW root = get_root_new(fm_idx);
@@ -59,14 +62,14 @@ void test_step1_push2(){
     
     cout << "new algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     cout << "cardinality: " << output.get_cardinality() << endl;
-    
+    std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 
 void test_full_process_push(){
     int Lmin=20;
     auto num_threads=12;
     // auto sampling_factor=16;
-    int sleep=0;
+    int sleep=10;
     auto start = std::chrono::steady_clock::now();
 
     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
@@ -112,34 +115,22 @@ void test_full_process_push(){
     if(sleep>0) std::cout << "4. navigated sleeping... " << sleep << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(sleep));
     if(sleep>0) std::cout << "start " << std::endl;
-    // fm_idx.dispose();
     
-    // if(sleep2>0) std::cout << "5. fm indx dropped sleeping... " << sleep2 << std::endl;
-    // std::this_thread::sleep_for(std::chrono::seconds(sleep2));
+    start = std::chrono::steady_clock::now();
     
-    // ssa.set_sequence_lengths(prokrustean);
-    // ssa.dispose();
-    
-    // if(sleep2>0) std::cout << "6. set_and_drop_sequences sleeping... " << sleep2 << std::endl;
-    // std::this_thread::sleep_for(std::chrono::seconds(sleep2));
-    workspace.prokrustean->seqs.resize(fm_idx.seq_cnt());
-    workspace.prokrustean->stratums__region.resize(workspace.prokrustean->stratums__size.size());
-    workspace.prokrustean->stratums__region_cnt.resize(workspace.prokrustean->stratums__size.size(), 0);
-    
+    workspace.setup_prokrustean();
 
     auto func__build = [](FmIndex &fm_index, Prokrustean &prokrustean, StratumProjectionOutput &output, atomic<int> &idx_gen) {
         StratificationWorkSpace workspace;
         while(true){
             auto idx = idx_gen.fetch_add(1);
-            if(idx>=prokrustean.seqs.size()){
+            if(idx>=prokrustean.sequence_count()){
                 break;
             }
             workspace.update_contexts_for_seq(idx, fm_index, output, prokrustean.stratums__size);
             build_prokrustean(workspace, prokrustean);
         }
     };
-
-    start = std::chrono::steady_clock::now();
     atomic<int> seq_id_iter;
     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__build, ref(fm_idx), ref(prokrustean), ref(workspace), ref(seq_id_iter)));}
     for (auto &f : futures) {f.wait();}

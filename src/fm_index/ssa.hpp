@@ -150,9 +150,11 @@ public:
 
     void set_sequence_lengths(Prokrustean &prokrustean){
         auto seq_cnt= this->seq_lengths.size();
-        prokrustean.seqs.resize(seq_cnt);
+        prokrustean.sequences__size.resize(seq_cnt);
+        prokrustean.sequences__region.resize(seq_cnt);
+        prokrustean.sequences__region_cnt.resize(seq_cnt);
         for(uint64_t i=0; i<seq_cnt; i++){
-            prokrustean.seqs[i].size=this->seq_lengths[i];
+            prokrustean.sequences__size[i]=this->seq_lengths[i];
         }
     }
     void dispose(){

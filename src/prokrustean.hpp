@@ -10,32 +10,29 @@
 using namespace std;
 
 struct Region{
-    Pos pos;
     StratumId stratum_id;
+    Pos pos;
     Region(){}
     Region(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
     {}
 };
 
 struct Stratum {
-    // uint64_t id;
-    StratumSize size=0;
-    // TODO: variable length array. 
-    // vector<Region> regions;
-
-    Region* regions2;
-    uint8_t region_cnt;
+    StratumSize size;
+    vector<Region> regions;
 };
 
 struct Sequence {
-    uint32_t size;
-    Region* regions2;
-    uint8_t region_cnt;
+    SequenceSize size;
+    vector<Region> regions;
 };
 
 struct Prokrustean {
-    vector<Sequence> seqs;
-    // vector<Stratum> stratums;
+    /* data structure is succinct as possible*/
+    vector<SequenceSize> sequences__size;
+    vector<Region*> sequences__region;
+    vector<uint8_t> sequences__region_cnt;
+    
     vector<StratumSize> stratums__size;
     vector<Region*> stratums__region;
     vector<uint8_t> stratums__region_cnt;
@@ -43,12 +40,44 @@ struct Prokrustean {
     //optional
     optional<vector<string>> sequences;
 
+    uint64_t sequence_count(){
+        return this->sequences__size.size();
+    }
+
+    uint64_t stratum_count(){
+        return this->stratums__size.size();
+    }
+
+    Sequence get_sequence(SeqId id){
+        auto sequence=Sequence();
+        auto rgn_cnt=sequences__region_cnt[id];
+        sequence.size=sequences__size[id];
+        sequence.regions.resize(rgn_cnt);
+        while(rgn_cnt>0){
+            rgn_cnt--;
+            sequence.regions[rgn_cnt]=*sequences__region[rgn_cnt];
+        }
+        return sequence;
+    }
+
+    Stratum get_stratum(StratumId id){
+        auto stratum=Stratum();
+        auto rgn_cnt=stratums__region_cnt[id];
+        stratum.size=stratums__size[id];
+        stratum.regions.resize(rgn_cnt);
+        while(rgn_cnt>0){
+            rgn_cnt--;
+            stratum.regions[rgn_cnt]=*stratums__region[rgn_cnt];
+        }
+        return stratum;
+    }
+    
     uint64_t get_cardinality(){
         uint64_t cnt = 0;
-        for(auto &seq: seqs){
-            cnt+=seq.region_cnt;
+        for(auto rcnt: sequences__region_cnt){
+            cnt+=rcnt;
         }
-        for(auto &rcnt: stratums__region_cnt){
+        for(auto rcnt: stratums__region_cnt){
             cnt+=rcnt;
         }
         return cnt;

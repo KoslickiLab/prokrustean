@@ -155,7 +155,7 @@ struct StratificationWorkSpace {
                 auto annot = PositionAnnotation();
                 annot.pos=reverse_pos;
                 // vector<ProjectedStratifiedRegion> aa =regions.value();
-                for(auto r: *(regions.value())){
+                for(auto &r: *regions.value()){
                     annot.regions.push_back(RegionAnnotation(r.stratum_id, stratum_sizes[r.stratum_id], r.is_primary));
                 }
                 output.dispose(F);
@@ -261,14 +261,18 @@ struct StratificationWorkSpace {
         return a_right>=b_right;
     }
 
-    void set_sequence_output(vector<RegionIdx> &regions, Prokrustean &prokrustean){
-        Region arr[regions.size()];
-        for(int i=0; i<regions.size(); i++){
-            arr[i].pos=seq_annot.position_annots[regions[i].pidx].pos;
-            arr[i].stratum_id=get_stratum_id(regions[i]);
+    void set_sequence_output(Prokrustean &prokrustean, vector<RegionIdx>* regions=nullptr){
+        if(regions!=nullptr){
+            Region arr[(*regions).size()];
+            for(int i=0; i<(*regions).size(); i++){
+                arr[i].pos=seq_annot.position_annots[(*regions)[i].pidx].pos;
+                arr[i].stratum_id=get_stratum_id((*regions)[i]);
+            }
+            prokrustean.sequences__region[this->seq_annot.seq_id]=arr;
+            prokrustean.sequences__region_cnt[this->seq_annot.seq_id]=(*regions).size();
         }
-        prokrustean.seqs[seq_annot.seq_id].regions2=arr;
-        prokrustean.seqs[seq_annot.seq_id].region_cnt=regions.size();
+        
+        prokrustean.sequences__size[this->seq_annot.seq_id]=this->seq_annot.seq_size;
     }
 
     void set_stratum_output(RegionIdx &primary, vector<RegionIdx> &regions, Prokrustean &prokrustean){
@@ -278,7 +282,6 @@ struct StratificationWorkSpace {
         for(int i=0; i<regions.size(); i++){
             arr[i].pos=position(regions[i].pidx)-position(primary.pidx);
             arr[i].stratum_id=get_stratum_id(regions[i]);
-            assert(arr[i].pos>=0);
         }
         prokrustean.stratums__region[stratum_id]=arr;
         prokrustean.stratums__region_cnt[stratum_id]=regions.size();
@@ -295,6 +298,7 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
     */
    
     if(workspace.seq_annot.position_annots.size()==0){
+        workspace.set_sequence_output(prokrustean);
         return;
     }
     // 1. initialize primaries
@@ -354,8 +358,7 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
             regions.push_back(RegionIdx(ref.pidx, ref.sidx));
         }
     }
-
-    workspace.set_sequence_output(regions, prokrustean);
+    workspace.set_sequence_output(prokrustean, &regions);
 }
 
 
