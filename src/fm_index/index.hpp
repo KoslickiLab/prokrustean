@@ -90,6 +90,78 @@ public:
 		this->STRING=nullptr;
 	}
 
+	string recover_text(int seq_id){
+		uint64_t L = seq_id;
+		uint64_t F = this->LF(L);
+
+		string seq;
+		while(F >= this->seq_cnt()){
+			seq = (*this->STRING)[L] + seq;
+			L = F;
+			F = this->LF(L);
+		}
+		// must be terminator symbol
+		// seq += (*this->STRING)[L]; 
+		return seq;
+	}
+
+	void recover_all_texts(vector<string> &seqs){
+		for(int i=0; i<this->seq_cnt(); i++){
+			seqs.push_back(recover_text(i));
+		}
+	}
+
+	/*
+	debugging purpose
+	index is position in the sequence,
+	first: sa index
+	second: actual suffix
+	*/
+	vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no, bool with_term=true){
+		uint64_t L = seq_no;
+		uint64_t F = this->LF(L);
+
+		string seq(1, this->TERM);
+		vector<pair<uint64_t, string>> sa;
+		while(F >= this->seq_cnt()){
+			seq = (*this->STRING)[L] + seq;
+			sa.push_back(make_pair(F, seq));
+			L = F;
+			F = this->LF(L);
+		}
+		// important: this can be misleading because F is randomly (in lexicographical order) chosen
+		if(with_term){
+			string term(1, this->TERM);
+			sa.insert(sa.begin(), make_pair(F, term));
+		}
+		reverse(sa.begin(), sa.end());
+
+		return sa;
+	}
+
+	/*
+	debugging purpose
+	index is sa index
+	*/
+	vector<string> recover_suffix_array(FmIndex &fm_idx, bool with_term=true){
+		vector<pair<uint64_t, string>> sa;
+		for(int i=0; i<this->seq_cnt(); i++){
+			for(auto pair: recover_suffix_array(fm_idx, i, with_term)){
+				sa.push_back(pair);
+			}
+		}
+		std::sort(sa.begin(), sa.end(), 
+			[](tuple<int, string> const &t1, tuple<int, string> const &t2) {
+				return get<0>(t1) < get<0>(t2); 
+			});
+		
+		vector<string> suffixes;
+		for(auto pair: sa){
+			suffixes.push_back(pair.second);
+		}
+		return suffixes;
+	}
+
 private:
 	vector<uint64_t> get_c_array(AbstractString &string){
 		RankArray r = string.ranks(string.size());
@@ -122,6 +194,7 @@ private:
 		});
 		return char_id_by_abundance;
 	}
+
 };
 
 #endif /* FM_INDEX_INDEX_HPP_ */

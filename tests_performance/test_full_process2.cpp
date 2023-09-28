@@ -36,22 +36,22 @@ void test_step1_push2(){
     std::this_thread::sleep_for(std::chrono::seconds(sleep));
     
     auto start = std::chrono::steady_clock::now();
-    SuffixArrayNode_NEW root = get_root_new(fm_idx);
+    SuffixArrayNode root = get_root(fm_idx);
     
-    StratumProjectionOutput output(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
+    StratumProjectionWorkspace output(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     
     atomic<int> idx_gen;
     start = std::chrono::steady_clock::now();
-    vector<SuffixArrayNode_NEW> roots = collect_nodes(root, fm_idx, 3);
+    vector<SuffixArrayNode> roots = collect_nodes(root, fm_idx, 3);
     
     vector<future<void>> futures;
-    auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+    auto func__navigate = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &idx_gen) {
         while(true){
             auto idx = idx_gen.fetch_add(1);
             if(idx>=roots.size()){
                 break;
             } else {
-                navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+                navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
             }
         }
     };
@@ -88,20 +88,20 @@ void test_full_process_push(){
     start = std::chrono::steady_clock::now();
     vector<future<void>> futures;
 
-    SuffixArrayNode_NEW root = get_root_new(fm_idx);
-    StratumProjectionOutput workspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
+    SuffixArrayNode root = get_root(fm_idx);
+    StratumProjectionWorkspace workspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     
     atomic<int> idx_gen;
     start = std::chrono::steady_clock::now();
-    vector<SuffixArrayNode_NEW> roots = collect_nodes(root, fm_idx, 3);
+    vector<SuffixArrayNode> roots = collect_nodes(root, fm_idx, 3);
     
-    auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+    auto func__navigate = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &idx_gen) {
         while(true){
             auto idx = idx_gen.fetch_add(1);
             if(idx>=roots.size()){
                 break;
             } else {
-                navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+                navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
             }
         }
     };
@@ -120,7 +120,7 @@ void test_full_process_push(){
     
     workspace.setup_prokrustean();
 
-    auto func__build = [](FmIndex &fm_index, Prokrustean &prokrustean, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+    auto func__build = [](FmIndex &fm_index, Prokrustean &prokrustean, StratumProjectionWorkspace &output, atomic<int> &idx_gen) {
         StratificationWorkSpace workspace;
         while(true){
             auto idx = idx_gen.fetch_add(1);

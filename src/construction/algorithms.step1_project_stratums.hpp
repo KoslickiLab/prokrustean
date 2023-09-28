@@ -18,7 +18,7 @@ struct ProjectedStratifiedRegion{
 };
 
 
-struct StratumProjectionOutput{
+struct StratumProjectionWorkspace{
     /* 
     * 1. collect stratums by each thread
     * 2. collect projected stratified regions
@@ -53,8 +53,8 @@ struct StratumProjectionOutput{
 
     uint64_t seq_total_length;
 
-    StratumProjectionOutput(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length)
-    :prokrustean(prokrustean),seq_cnt(seq_cnt),seq_total_length(seq_total_length){
+    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index)
+    :prokrustean(prokrustean),seq_cnt(fm_index.seq_cnt()),seq_total_length(fm_index.size()){
         this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
         this->sequence_locks=vector<SpinLock>(seq_cnt);
         this->block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
@@ -131,7 +131,7 @@ struct StratumProjectionOutput{
         // sequence size is inferred at step2
         this->prokrustean.sequences__size.resize(this->seq_cnt);
         this->prokrustean.sequences__region.resize(this->seq_cnt);
-        this->prokrustean.sequences__region_cnt.resize(this->seq_cnt);
+        this->prokrustean.sequences__region_cnt.resize(this->seq_cnt, 0);
         
         // stratum size is already collected
         this->prokrustean.stratums__region.resize(this->prokrustean.stratums__size.size());
@@ -205,7 +205,7 @@ void decide_representative(TreeWorkspace &ext){
 }
 
 
-void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, StratumProjectionOutput &output){
+void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, StratumProjectionWorkspace &output){
 
     decide_representative(workspace);
     

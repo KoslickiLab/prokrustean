@@ -9,36 +9,65 @@
 
 using namespace std;
 
-struct Region{
+struct Region {
+    Pos from;
+    Pos to;
+    
+    Region(){}
+    Region(Pos from, Pos to): from(from), to(to){}
+
+    uint64_t size(){
+        assert(from<to);
+        return to-from;
+    }
+};
+
+struct StratifiedRegion: Region {
+    StratumId stratum_id;
+
+    StratifiedRegion(){}
+    StratifiedRegion(Pos from, Pos to, StratumId stratum_id): Region(from, to), stratum_id(stratum_id){}
+};
+
+struct ReflectedRegion: Region {
+
+    ReflectedRegion(){}
+    ReflectedRegion(Pos from, Pos to): Region(from, to){}
+};
+
+struct StratifiedData {
     StratumId stratum_id;
     Pos pos;
-    Region(){}
-    Region(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
+    
+    StratifiedData(){}
+    StratifiedData(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
     {}
 };
 
 struct Stratum {
     StratumSize size;
-    vector<Region> regions;
+    vector<StratifiedRegion> regions;
+    tuple<SeqId, Pos> example_occ;
+
+    void set_occ(SeqId seq_id, Pos pos){
+        example_occ=make_tuple(seq_id, pos);
+    }
 };
 
 struct Sequence {
     SequenceSize size;
-    vector<Region> regions;
+    vector<StratifiedRegion> regions;
 };
 
 struct Prokrustean {
     /* data structure is succinct as possible*/
     vector<SequenceSize> sequences__size;
-    vector<Region*> sequences__region;
+    vector<StratifiedData*> sequences__region;
     vector<uint8_t> sequences__region_cnt;
     
     vector<StratumSize> stratums__size;
-    vector<Region*> stratums__region;
+    vector<StratifiedData*> stratums__region;
     vector<uint8_t> stratums__region_cnt;
-    
-    //optional
-    optional<vector<string>> sequences;
 
     uint64_t sequence_count(){
         return this->sequences__size.size();
@@ -48,6 +77,80 @@ struct Prokrustean {
         return this->stratums__size.size();
     }
 
+    void get_stratum_example_occ(vector<tuple<SeqId, Pos>> &stratum_pos){
+        stratum_pos.resize(stratum_count());
+        vector<bool> visits(stratum_count());
+        stack<Stratum> stratum_stack;
+        for(int i=0; i<sequence_count(); i++){
+            for(auto &rgn: get_sequence(i).regions){
+                auto stratum = get_stratum(rgn.stratum_id);
+                stratum.set_occ(i, rgn.from);
+                stratum_pos[rgn.stratum_id]=stratum.example_occ;
+                visits[rgn.stratum_id]=true;
+
+                stratum_stack.push(stratum);
+                while(!stratum_stack.empty()){
+                    auto stratum=stratum_stack.top();
+                    stratum_stack.pop();
+                    for(auto &c_rgn: stratum.regions){
+                        if(visits[c_rgn.stratum_id]) continue;
+                        SeqId seq_id = get<0>(stratum.example_occ);
+                        Pos rel_pos = get<1>(stratum.example_occ)+c_rgn.from;
+                        auto c_stratum = get_stratum(c_rgn.stratum_id);
+                        c_stratum.set_occ(seq_id, rel_pos);
+                        stratum_pos[c_rgn.stratum_id]=c_stratum.example_occ;
+                        visits[c_rgn.stratum_id]=true;
+                        stratum_stack.push(c_stratum);
+                    }
+                }
+            }
+        }
+        for(auto &el: stratum_pos){
+            cout << get<0>(el) << ", " << get<1>(el) << endl;
+        }
+
+    }
+
+    void get_spectrum(std::variant<Sequence, Stratum> v, int k,vector<std::variant<StratifiedRegion, ReflectedRegion>> &output){
+        uint64_t size;
+        vector<StratifiedRegion> regions;
+        if (std::holds_alternative<Sequence>(v)) {
+            size=std::get<Sequence>(v).size;
+            regions=std::get<Sequence>(v).regions;
+        } else {
+            size=std::get<Stratum>(v).size;
+            regions=std::get<Stratum>(v).regions;
+        }
+        
+        int cnt=regions.size();
+        // single reflected 
+        if(cnt==0){
+            output.push_back(ReflectedRegion(0, size));
+            return;
+        }
+
+        // already sorted
+        for(int i=0; i<cnt; i++){
+            if(i==0 && regions[i].from>0){
+                output.push_back(ReflectedRegion(0, regions[i].from+(k-1)));  
+            }
+
+            output.push_back(regions[i]);
+
+            if(i<cnt-1){
+                if(regions[i].to - regions[i+1].from >= k-1){
+                    // stratified are overlapped too much that no reflected region exists
+                } else {
+                    output.push_back(ReflectedRegion(regions[i].to-(k-1), regions[i+1].from+(k-1)));      
+                }
+            }
+
+            if(i==cnt-1 && regions[i].to<size){
+                output.push_back(ReflectedRegion(regions[i].to-(k-1), size));  
+            }
+        }
+    } 
+
     Sequence get_sequence(SeqId id){
         auto sequence=Sequence();
         auto rgn_cnt=sequences__region_cnt[id];
@@ -55,7 +158,10 @@ struct Prokrustean {
         sequence.regions.resize(rgn_cnt);
         while(rgn_cnt>0){
             rgn_cnt--;
-            sequence.regions[rgn_cnt]=*sequences__region[rgn_cnt];
+            StratifiedData data=sequences__region[id][rgn_cnt];
+            auto rgn=StratifiedRegion(data.pos, data.pos +this->stratums__size[data.stratum_id], data.stratum_id);
+            sequence.regions[rgn_cnt]=rgn;
+            assert(0<=rgn.from && rgn.from < sequence.size && 0<rgn.to && rgn.to <= sequence.size);
         }
         return sequence;
     }
@@ -67,7 +173,10 @@ struct Prokrustean {
         stratum.regions.resize(rgn_cnt);
         while(rgn_cnt>0){
             rgn_cnt--;
-            stratum.regions[rgn_cnt]=*stratums__region[rgn_cnt];
+            auto data=stratums__region[id][rgn_cnt];
+            auto rgn=StratifiedRegion(data.pos, data.pos +this->stratums__size[data.stratum_id], data.stratum_id);
+            stratum.regions[rgn_cnt]=rgn;
+            assert(0<=rgn.from && rgn.from < stratum.size && 0<rgn.to && rgn.to <= stratum.size);
         }
         return stratum;
     }

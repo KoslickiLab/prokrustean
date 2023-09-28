@@ -11,7 +11,7 @@ using namespace std;
 /*
  * representation of a right-maximal substring (SA node) as a list of STRING intervals
  */
-struct SuffixArrayNode_NEW {
+struct SuffixArrayNode {
     // |characters| + 1 sa positions. The last element is not corresponding to any character
     // ex firsts[0] => sa location of starting terminator
     vector<SuffixArrayIdx> firsts;
@@ -51,7 +51,7 @@ struct ReprSuffixArrayIndexWorkspace {
 struct TreeWorkspace {
     /* Includes all information required to process, so that memory is reused.*/
     TreeWorkspace(int characters_cnt){
-        c_nodes=vector<SuffixArrayNode_NEW>(characters_cnt);
+        c_nodes=vector<SuffixArrayNode>(characters_cnt);
         c_nodes_open=vector<bool>(characters_cnt);
         c_first_ranks= vector<uint64_t>(characters_cnt+1);
         // prev_c_firsts=vector<optional<SuffixArrayIdx>>(characters_cnt);
@@ -68,9 +68,9 @@ struct TreeWorkspace {
     }
 
     // The node in interest
-    SuffixArrayNode_NEW node;
+    SuffixArrayNode node;
     // left extensions. Each means sa intervals of cW for each character c.
-    vector<SuffixArrayNode_NEW> c_nodes;
+    vector<SuffixArrayNode> c_nodes;
     // whether the corresponding c_node is open (the branch exists)
     vector<bool> c_nodes_open;
     
@@ -100,7 +100,7 @@ struct TreeWorkspace {
 * Input: suffix tree node N.
 * Output: 4 suffix tree nodes (explicit, implicit, or empty) reached applying LF for A,C,G,T from N
 */
-void extend_node_new(FmIndex &index, TreeWorkspace &ext){
+void extend_node(FmIndex &index, TreeWorkspace &ext){
     // auto start = std::chrono::steady_clock::now();
 
     // push node to left maximal. everytime only one left child found, update node.
@@ -185,7 +185,7 @@ void extend_node_new(FmIndex &index, TreeWorkspace &ext){
 /*
 * functions for suffix tree navigation
 */
-SuffixArrayNode_NEW get_root_new(FmIndex &index){
+SuffixArrayNode get_root(FmIndex &index){
     vector<uint64_t> firsts;
     for(auto rank: index.C){
         firsts.push_back(rank);
@@ -197,7 +197,7 @@ SuffixArrayNode_NEW get_root_new(FmIndex &index){
 template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 
 template<class T, NodeFunc_NEW<T> process_node>
-void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
+void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
     Lmin = Lmin >= 1? Lmin : 1;
     // assert(fm_idx.locator!=nullptr);
     // cout << "warning: sample x" << endl;
@@ -207,7 +207,7 @@ void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &
 
     auto start = std::chrono::steady_clock::now();
 
-    stack<SuffixArrayNode_NEW> stack;
+    stack<SuffixArrayNode> stack;
     stack.push(root);
     while(!stack.empty()){
         if(verbose) start = std::chrono::steady_clock::now();
@@ -220,7 +220,7 @@ void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &
         
         if(verbose) start = std::chrono::steady_clock::now();
         
-        extend_node_new(fm_idx, ext);
+        extend_node(fm_idx, ext);
         
         if(verbose) ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
         if(verbose) start = std::chrono::steady_clock::now();
@@ -252,12 +252,12 @@ void navigate_maximals(SuffixArrayNode_NEW &root, int Lmin, FmIndex &fm_idx, T &
     }
 }
 
-vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_idx, int depth_max){
+vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
     // assert(fm_idx.locator!=nullptr);
     cout << "warning: sample x" << endl;
 
-    std::stack<SuffixArrayNode_NEW> stack;
-    vector<SuffixArrayNode_NEW> nodes;
+    std::stack<SuffixArrayNode> stack;
+    vector<SuffixArrayNode> nodes;
 
     TreeWorkspace ext(fm_idx.characters_cnt);
     ext.any_measure=vector<uint64_t>(10,0);
@@ -272,7 +272,7 @@ vector<SuffixArrayNode_NEW> collect_nodes(SuffixArrayNode_NEW root, FmIndex &fm_
         if(ext.node.depth>=depth_max){
             nodes.push_back(ext.node);
         } else {
-            extend_node_new(fm_idx, ext);
+            extend_node(fm_idx, ext);
         
             for(int i=0; i<fm_idx.characters_cnt; i++){
                 // terminal

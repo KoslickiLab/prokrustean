@@ -8,8 +8,6 @@
 #include "util.cpp"	
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/fm_index/index.hpp"
-#include "../src/fm_index/locate.hpp"
-#include "../src/fm_index/tree.hpp"
 
 using namespace std;
 
