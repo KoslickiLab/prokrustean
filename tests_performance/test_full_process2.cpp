@@ -38,7 +38,7 @@ void test_step1_push2(){
     auto start = std::chrono::steady_clock::now();
     SuffixArrayNode root = get_root(fm_idx);
     
-    StratumProjectionWorkspace output(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
+    StratumProjectionWorkspace output(prokrustean, fm_idx);
     
     atomic<int> idx_gen;
     start = std::chrono::steady_clock::now();
@@ -89,7 +89,7 @@ void test_full_process_push(){
     vector<future<void>> futures;
 
     SuffixArrayNode root = get_root(fm_idx);
-    StratumProjectionWorkspace workspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
+    StratumProjectionWorkspace workspace(prokrustean, fm_idx);
     
     atomic<int> idx_gen;
     start = std::chrono::steady_clock::now();

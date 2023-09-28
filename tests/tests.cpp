@@ -1,6 +1,7 @@
 #include "test_naive_fm_index.cpp"
 #include "test_bitvector.cpp"
 #include "test_construction.cpp"
+#include "test_application.kmer.cpp"
 
 int main(void){
     cout << "--- main_naive_fm_index ---" << endl;
@@ -9,4 +10,7 @@ int main(void){
     main_bitvector();   
     cout << "--- main_construction ---" << endl;
     main_construction();
+
+    cout << "--- application kmer ---" << endl;
+    main_application_kmer();
 }

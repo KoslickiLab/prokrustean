@@ -263,7 +263,7 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
         // if(workspace.repr_work.locations[primary_idx] < workspace.repr_work.locations[i]){
         //     primary_idx=i;
         // }
-        if(workspace.repr_work.sa_indices[primary_idx] < workspace.repr_work.sa_indices[i]){
+        if(workspace.repr_work.sa_indices[i]<workspace.repr_work.sa_indices[primary_idx]){
             primary_idx=i;
         }
     }

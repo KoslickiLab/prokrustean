@@ -11,7 +11,7 @@
 using namespace std;
 using namespace sdsl;
 
-vector<string> collect_distinct_kmers_naive(vector<string> sequences, unsigned int k){
+vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k){
     set<string> mers;
     for(auto seq: sequences){
         if(seq.size()<k) continue;
@@ -25,19 +25,11 @@ vector<string> collect_distinct_kmers_naive(vector<string> sequences, unsigned i
     return output;
 }
 
-void test_basic_construction(){
-    int Lmin = 2;
-    auto str = WaveletString(PATH1_BWT);
-    auto fm_idx = FmIndex(str);
-    
-    Prokrustean prokrustean;
-    construct_prokrustean(fm_idx, prokrustean, Lmin);
-}
-
 // if prokrustean if correct, the kmers will be perfectly collected
-void test_basic_construction_w_kmers(){
+void test_distinct_kmers(){
     int Lmin = 1;
-    auto str = WaveletString(PATH1_BWT);
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    // auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -50,11 +42,12 @@ void test_basic_construction_w_kmers(){
     //     prokrustean.print_stratum(i, seq_texts);
     // }
     vector<string> output;
-    for(int k=1; k<20; k++){
+    for(int k=2; k<20; k++){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
         sort(output.begin(), output.end());
-        
-        assert(output==collect_distinct_kmers_naive(seq_texts, k));
+        auto output_naive = get_distinct_kmers_naive(seq_texts, k);
+        cout << "k: " << k << " cnt: " << output.size() << "  " << output_naive.size() << endl;
+        assert(output==output_naive);
     }
 }
 
@@ -101,8 +94,7 @@ void test_basic_construction_w_kmers(){
 //     // }
 // }
 
-void main_construction() {
-    test_basic_construction();
-    test_basic_construction_w_kmers();
+void main_application_kmer() {
+    test_distinct_kmers();
     // test_min_cover_algo();
 }

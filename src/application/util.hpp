@@ -4,49 +4,49 @@
 #include <tuple>
 #include "../prokrustean.hpp"
 
-struct Interval{
-    Pos from;
-    Pos to;
+// struct Interval{
+//     Pos from;
+//     Pos to;
 
-    uint64_t size(){
-        return to - from;
-    }
-    bool include(Interval other){
-        return from <= other.from && other.to <= to;
-    }
+//     uint64_t size(){
+//         return to - from;
+//     }
+//     bool include(Interval other){
+//         return from <= other.from && other.to <= to;
+//     }
 
-    vector<Interval> chop(unsigned int k){
-        assert(size()>=k);
-        vector<Interval> mers;
-        for(Pos l=from; l<=to-k; l++){
-            mers.push_back({l, l+k});
-        }
-        return mers;
-    }
+//     vector<Interval> chop(unsigned int k){
+//         assert(size()>=k);
+//         vector<Interval> mers;
+//         for(Pos l=from; l<=to-k; l++){
+//             mers.push_back({l, l+k});
+//         }
+//         return mers;
+//     }
 
-    bool is_suffix(Interval other){
-        return from <= other.from && other.to == to;
-    }
+//     bool is_suffix(Interval other){
+//         return from <= other.from && other.to == to;
+//     }
 
-    bool is_prefix(Interval other){
-        return from == other.from && other.to <= to;
-    }
+//     bool is_prefix(Interval other){
+//         return from == other.from && other.to <= to;
+//     }
 
-    bool operator==(const Interval& other)
-    {
-        return from == other.from && to == other.to;
-    }
-};
+//     bool operator==(const Interval& other)
+//     {
+//         return from == other.from && to == other.to;
+//     }
+// };
 
-struct Occurrence: Interval{
-    SeqId seq_id;
+// struct Occurrence: Interval{
+//     SeqId seq_id;
 
-    Occurrence(SeqId seq_id, Pos from, Pos to){
-        this->seq_id=seq_id;
-        this->from=from;
-        this->to=to;
-    }
-};
+//     Occurrence(SeqId seq_id, Pos from, Pos to){
+//         this->seq_id=seq_id;
+//         this->from=from;
+//         this->to=to;
+//     }
+// };
 
 // vector<Interval> get_gaps(Pos string_size, int degree, vector<Interval> reps){
 //     vector<Interval> gaps;
