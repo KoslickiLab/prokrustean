@@ -27,9 +27,10 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
-    int Lmin = 1;
+    int Lmin = 3;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     // auto str = WaveletString(PATH1_BWT);
+    // auto str = WaveletString(PATH2_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -38,15 +39,28 @@ void test_distinct_kmers(){
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
-    // for(int i=0; i<prokrustean.stratum_count(); i++){
-    //     prokrustean.print_stratum(i, seq_texts);
-    // }
+
+    for(int i=0; i<prokrustean.stratum_count(); i++){
+        prokrustean.print_stratum(i, seq_texts);
+    }
+
     vector<string> output;
-    for(int k=2; k<20; k++){
+    for(int k=1; k<20; k++){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
         sort(output.begin(), output.end());
         auto output_naive = get_distinct_kmers_naive(seq_texts, k);
-        cout << "k: " << k << " cnt: " << output.size() << "  " << output_naive.size() << endl;
+        if(output!=output_naive){
+            bool has_duplicates = false;
+            for (size_t i = 1; i < output.size(); ++i) {
+                if (output[i] == output[i-1]) {  // Compare current element with previous element
+                    // Print the duplicate element, only if it hasn't been printed before
+                    if(i == 1 || output[i] != output[i-2]) {
+                        std::cout << "Duplicate element: " << output[i] << std::endl;
+                        has_duplicates = true;
+                    }
+                }
+            }
+        }
         assert(output==output_naive);
     }
 }

@@ -245,6 +245,9 @@ struct Prokrustean {
         auto seq_id=get<0>(stratum_occ_samples[id]);
         auto pos=get<1>(stratum_occ_samples[id]);
         auto str = seq_texts[seq_id];
+        if(str.substr(pos, stratums__size[id]).find("GGC") == std::string::npos){
+            return;
+        }
         cout << "stratum("<< id <<"): " << str.substr(pos, stratums__size[id]) << endl; 
         for(auto &rgn: stratum.regions){
             cout << "stratified: " << str.substr(pos+rgn.from, rgn.size()) << endl; 

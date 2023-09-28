@@ -357,19 +357,23 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
             }
             // add right region
             regions.push_back(post_rgn);
+            if(workspace.seq_annot.position_annots[post_rgn.pidx].pos==21 && workspace.seq_annot.position_annots[post_rgn.pidx].regions[post_rgn.sidx].stratum_size==3){
+                cout << "pos " << workspace.seq_annot.position_annots[post_rgn.pidx].pos << " has parent " << parent_of_post_rgn.has_value() << endl;
+            }
 
             // move consuming pointer
             if(parent_of_post_rgn.has_value()){
-                workspace.consume_refs[primary_post_pidx.value()].pidx=parent_of_post_rgn.value().pidx;
-                workspace.consume_refs[primary_post_pidx.value()].sidx=parent_of_post_rgn.value().sidx;
+                // workspace.consume_refs[primary_post_pidx.value()].pidx=parent_of_post_rgn.value().pidx;
+                workspace.consume_refs[post_rgn.pidx].sidx=parent_of_post_rgn.value().sidx;
             } else {
                 // all exhausted
-                workspace.consume_refs[primary_post_pidx.value()].exhausted();
-                workspace.consume_refs[primary_post_pidx.value()].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
-                workspace.consume_refs[primary_rgn.value().pidx].post_pidx=primary_post_pidx;
+                // workspace.consume_refs[primary_post_pidx.value()].exhausted();
+                workspace.consume_refs[post_rgn.pidx].exhausted();
+                // workspace.consume_refs[post_rgn.pidx].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
+                workspace.consume_refs[primary_rgn.value().pidx].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
             }
             // go further to the right.
-            primary_post_pidx=workspace.consume_refs[primary_post_pidx.value()].post_pidx;
+            primary_post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
             // if(primary_post_pidx.has_value()){
             //     cout << "move further: " << primary_post_pidx.value() << endl;
             // } else {
