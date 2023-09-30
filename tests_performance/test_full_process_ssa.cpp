@@ -29,7 +29,7 @@
 //     auto sampling_factor=8;
 
 //     // auto str=WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-//     WaveletString str(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+//     WaveletString str(PATH_SREAD_FULL_GRLBWT_BWT, '$');
 //     // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
 //     FmIndex fm_idx(str);
 //     SampledSuffixArray ssa(fm_idx, sampling_factor);
@@ -84,7 +84,7 @@
 //     auto start = std::chrono::steady_clock::now();
 
 //     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
-//     // auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+//     // auto str=WaveletString(PATH_SREAD_FULL_GRLBWT_BWT, '$');
 //     // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
 //     auto str=WaveletString(PATH3_PERFORMANCE_SREAD_GUT_GRLBWT_BWT, '$');
 //     cout << "wavelet string: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

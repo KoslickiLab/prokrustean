@@ -4,7 +4,7 @@
 #include "../prokrustean.hpp"
 
 
-void get_uniform_unitigs(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
+void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
     prokrustean.setup_stratum_example_occ();
 
     vector<Region> spectrum;

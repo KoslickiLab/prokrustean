@@ -24,7 +24,7 @@ void test_sampling_push(){
     // auto str = WaveletString(PATH3_PERFORMANCE_SREAD_GUT_ROPEBWT2_BWT, '$');
     // auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-    auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    auto str=WaveletString(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     auto fm_idx=FmIndex(str);
     auto ssa=SampledSuffixArray(fm_idx, sampling_factor);
     
@@ -50,7 +50,7 @@ void test_sampling_push(){
 void test_sampling_still_works_if_factor_exceeds_seq_length(){
     auto num_threads=6;
     auto sampling_factor=500;// only first positions of sequences may be sampled
-    auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    auto str=WaveletString(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     auto fm_idx=FmIndex(str);
     auto ssa=SampledSuffixArray(fm_idx, sampling_factor);
     
@@ -74,7 +74,7 @@ void test_sampling_still_works_if_factor_exceeds_seq_length(){
 
 void test_sampling_works_the_same_for_sampling_factors(){
     int num_threads=6;
-    auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    auto str = WaveletString(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     auto fm_index = FmIndex(str);
     atomic<uint64_t> idx_generator;
     sdsl::bit_vector is_sampled_bv(str.size());

@@ -21,13 +21,13 @@ using namespace std;
 using namespace sdsl;
 
 void test_step1_push2(){
-    int Lmin=20;
+    int Lmin=1;
     auto num_threads=12;
-    int sleep = 10;
+    int sleep = 0;
     // auto sampling_factor=8;
 
     // auto str=WaveletString(PATH1_PERFORMANCE_SREAD_ROPEBWT2_BWT, '$');
-    WaveletString str(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    WaveletString str(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     FmIndex fm_idx(str);
@@ -66,6 +66,24 @@ void test_step1_push2(){
     std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 
+vector<string> _collect_distinct_kmers_naive(vector<string> sequences, unsigned int k){
+    int cnt=0;
+    set<string> mers;
+    for(auto seq: sequences){
+        if(seq.size()<k) continue;
+
+        for(int i=0; i<seq.size()-(k-1); i++){
+            string mer = seq.substr(i, k);
+            cnt++;
+            mers.insert(mer);
+        }
+    }
+    vector<string> output(mers.begin(), mers.end());
+    cout << "k:" << k << " total: " << cnt<<endl;
+    return output;
+}
+
+
 void test_full_process_push(){
     int Lmin=1;
     auto num_threads=12;
@@ -73,7 +91,7 @@ void test_full_process_push(){
     auto start = std::chrono::steady_clock::now();
 
     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
-    auto str=WaveletString(PATH2_PERFORMANCE_SREAD_FULL_GRLBWT_BWT, '$');
+    auto str=WaveletString(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH5_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
     // auto str=WaveletString(PATH3_PERFORMANCE_SREAD_GUT_GRLBWT_BWT, '$');
     cout << "wavelet string: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
@@ -151,13 +169,16 @@ void test_full_process_push(){
     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__recover_texts, ref(fm_idx), ref(seq_texts), ref(seq_id_iter2)));}
     for (auto &f : futures) {f.wait();}
     cout << "text recovery finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    vector<string> output;
+    vector<string> mers;
     // for(int k=1; k<20; k++){
     //     get_distinct_kmers(k, prokrustean, seq_texts, output);
     // }
     start = std::chrono::steady_clock::now();
-    for(int k=1; k<50; k++){
-        get_distinct_kmers(k, prokrustean, seq_texts, output);
+    for(int k=5; k<50; k++){
+        get_distinct_kmers(k, prokrustean, seq_texts, mers);
+        sort(mers.begin(), mers.end());
+
+        assert(mers==_collect_distinct_kmers_naive(seq_texts, k));
     }
     cout << "distinct kmers computed: " << (std::chrono::steady_clock::now()-start).count()/1000000 << " microsecond" << endl;
     

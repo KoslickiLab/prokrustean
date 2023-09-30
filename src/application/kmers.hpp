@@ -10,12 +10,16 @@ using namespace std;
 void get_distinct_kmers(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
     output.clear();
     // vector<string> unitigs;
-    get_uniform_unitigs(k, prokrustean, seq_texts, output);
+    get_reflectums(k, prokrustean, seq_texts, output);
     int uniform_cnt=output.size();
     
     // output.reserve(unitigs.size());
     for(int i=0; i<output.size(); i++){
-        if(output[i].size()>k){
+        if(output[i].size()==k){
+            // preserve the existing kmer
+
+        } else if(output[i].size()>k) {
+            // split the uniform unitig and add from 2nds
             string s=output[i];
             // swtich mer1
             string mer1 = s.substr(0, k);
@@ -25,10 +29,11 @@ void get_distinct_kmers(int k, Prokrustean &prokrustean, vector<string> &seq_tex
                 output.push_back(mer);
             }
         } else {
-            // output.push_back(s);
+            // reflectums of degree k cannot be shorter than k
+            assert(false);
         }
     }
-    cout << "k:" << k  << " uniform: " << uniform_cnt << " kmers:" << output.size() << endl;
+    // cout << "k:" << k  << " uniform: " << uniform_cnt << " kmers:" << output.size() << endl;
 }
 
 #endif

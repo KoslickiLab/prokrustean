@@ -37,7 +37,7 @@ public:
 	/*
 	 * constructor from ASCII file
 	 */
-	WaveletString(string path, char term='#'){
+	WaveletString(string path, char term='$'){
         construct(wt, path, std::is_rvalue_reference<string &&>::value);
         
         for(uint8_t c=0; c < std::numeric_limits<uint8_t>::max(); c++){
@@ -52,7 +52,7 @@ public:
         cout << "-- characters(" << characters.size() << ") --" << endl;
         for(auto c: characters){
             if(c!='A' && c!='C' && c!='G' && c!='T' && c!='N' && c!=term){
-                cout << "Warning: A symbol (" << c <<") not in AGCTN and term is included. The code still runs though." << endl;
+                cout << "Warning: A symbol (" << c <<") not in AGCTN and term("<< term <<") is included. The code still runs though." << endl;
                 only_ACGTN = false;
             }
         }
