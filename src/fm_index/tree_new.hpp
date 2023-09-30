@@ -254,7 +254,7 @@ void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, b
 
 vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
     // assert(fm_idx.locator!=nullptr);
-    cout << "warning: sample x" << endl;
+    // cout << "warning: sample x" << endl;
 
     std::stack<SuffixArrayNode> stack;
     vector<SuffixArrayNode> nodes;

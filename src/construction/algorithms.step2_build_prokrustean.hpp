@@ -335,17 +335,11 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
         //non-leftmost cases
         primary_post_pidx=workspace.consume_refs[primary_rgn.value().pidx].post_pidx;
         while(primary_post_pidx.has_value()){
-            // cout << "primary post: " << primary_post_pidx.value() << endl;
             post_rgn.pidx=workspace.consume_refs[primary_post_pidx.value()].pidx;
             post_rgn.sidx=workspace.consume_refs[primary_post_pidx.value()].sidx;
 
             // (1) If post.rgn ∉ primary.rgn,
             if(!workspace.check_inclusion(primary_rgn.value(), post_rgn)){
-                // cout << "inclusion not found ";
-                // cout << "(" << workspace.seq_annot.position_annots[primary_rgn.value().pidx].pos << ","<< workspace.seq_annot.position_annots[primary_rgn.value().pidx].pos+workspace.seq_annot.position_annots[primary_rgn.value().pidx].regions[primary_rgn.value().sidx].stratum_size<<")";
-                // cout << " on ";
-                // cout << "(" << workspace.seq_annot.position_annots[post_rgn.pidx].pos << ","<< workspace.seq_annot.position_annots[post_rgn.pidx].pos+workspace.seq_annot.position_annots[post_rgn.pidx].regions[post_rgn.sidx].stratum_size<<")";
-                // cout << endl;
                 break;
             }
 
@@ -357,9 +351,6 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
             }
             // add right region
             regions.push_back(post_rgn);
-            if(workspace.seq_annot.position_annots[post_rgn.pidx].pos==21 && workspace.seq_annot.position_annots[post_rgn.pidx].regions[post_rgn.sidx].stratum_size==3){
-                cout << "pos " << workspace.seq_annot.position_annots[post_rgn.pidx].pos << " has parent " << parent_of_post_rgn.has_value() << endl;
-            }
 
             // move consuming pointer
             if(parent_of_post_rgn.has_value()){
@@ -374,11 +365,6 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
             }
             // go further to the right.
             primary_post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
-            // if(primary_post_pidx.has_value()){
-            //     cout << "move further: " << primary_post_pidx.value() << endl;
-            // } else {
-            //     cout << "move further but last: " << endl;
-            // }
         }
         workspace.set_stratum_output(primary_rgn.value(), prokrustean, &regions);
         // move to next primary

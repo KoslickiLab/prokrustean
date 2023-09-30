@@ -27,7 +27,7 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
-    int Lmin = 3;
+    int Lmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     // auto str = WaveletString(PATH1_BWT);
     // auto str = WaveletString(PATH2_BWT);
@@ -40,9 +40,9 @@ void test_distinct_kmers(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
 
-    for(int i=0; i<prokrustean.stratum_count(); i++){
-        prokrustean.print_stratum(i, seq_texts);
-    }
+    // for(int i=0; i<prokrustean.stratum_count(); i++){
+    //     prokrustean.print_stratum(i, seq_texts);
+    // }
 
     vector<string> output;
     for(int k=1; k<20; k++){

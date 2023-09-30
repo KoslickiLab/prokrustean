@@ -8,6 +8,7 @@
 #include "../src/construction/algorithms.step1_project_stratums.hpp"
 #include "../src/construction/algorithms.step2_build_prokrustean.hpp"
 #include "../src/prokrustean.hpp"
+#include "../src/application/kmers.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/ssa.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
@@ -66,10 +67,9 @@ void test_step1_push2(){
 }
 
 void test_full_process_push(){
-    int Lmin=20;
+    int Lmin=1;
     auto num_threads=12;
-    // auto sampling_factor=16;
-    int sleep=10;
+    int sleep=0;
     auto start = std::chrono::steady_clock::now();
 
     // WaveletString str(PATH1_PERFORMANCE_SREAD_GRLBWT_BWT, '$');
@@ -86,13 +86,11 @@ void test_full_process_push(){
     Prokrustean prokrustean;
     
     start = std::chrono::steady_clock::now();
-    vector<future<void>> futures;
 
-    SuffixArrayNode root = get_root(fm_idx);
+    vector<future<void>> futures;
     StratumProjectionWorkspace workspace(prokrustean, fm_idx);
-    
     atomic<int> idx_gen;
-    start = std::chrono::steady_clock::now();
+    SuffixArrayNode root = get_root(fm_idx);
     vector<SuffixArrayNode> roots = collect_nodes(root, fm_idx, 3);
     
     auto func__navigate = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &idx_gen) {
@@ -111,15 +109,14 @@ void test_full_process_push(){
     for (auto &f : futures) {f.wait();}
     
     cout << "step1 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    cout << "cardinality: " << workspace.get_cardinality() << endl;
-    if(sleep>0) std::cout << "4. navigated sleeping... " << sleep << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(sleep));
-    if(sleep>0) std::cout << "start " << std::endl;
-    
+    if(sleep>0){
+        std::cout << "4. navigated sleeping... " << sleep << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(sleep));
+        if(sleep>0) std::cout << "start " << std::endl;
+    } 
     start = std::chrono::steady_clock::now();
     
     workspace.setup_prokrustean();
-
     auto func__build = [](FmIndex &fm_index, Prokrustean &prokrustean, StratumProjectionWorkspace &output, atomic<int> &idx_gen) {
         StratificationWorkSpace workspace;
         while(true){
@@ -136,7 +133,34 @@ void test_full_process_push(){
     for (auto &f : futures) {f.wait();}
     cout << "step2 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     cout << "cardinality:" << prokrustean.get_cardinality() << endl;
-    std::this_thread::sleep_for(std::chrono::seconds(sleep));
+    if(sleep>0) std::this_thread::sleep_for(std::chrono::seconds(sleep));
+
+    start = std::chrono::steady_clock::now();
+    auto func__recover_texts = [](FmIndex &fm_index, vector<string> &output, atomic<int> &idx_gen) {
+        StratificationWorkSpace workspace;
+        while(true){
+            auto idx = idx_gen.fetch_add(1);
+            if(idx>=fm_index.seq_cnt()){
+                break;
+            }
+            output[idx]=fm_index.recover_text(idx);
+        }
+    };
+    vector<string> seq_texts(fm_idx.seq_cnt());
+    atomic<int> seq_id_iter2;
+    for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__recover_texts, ref(fm_idx), ref(seq_texts), ref(seq_id_iter2)));}
+    for (auto &f : futures) {f.wait();}
+    cout << "text recovery finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    vector<string> output;
+    // for(int k=1; k<20; k++){
+    //     get_distinct_kmers(k, prokrustean, seq_texts, output);
+    // }
+    start = std::chrono::steady_clock::now();
+    for(int k=1; k<50; k++){
+        get_distinct_kmers(k, prokrustean, seq_texts, output);
+    }
+    cout << "distinct kmers computed: " << (std::chrono::steady_clock::now()-start).count()/1000000 << " microsecond" << endl;
+    
 }
 
 void main_performance_full2() {
