@@ -26,6 +26,7 @@ void test_basic_construction(){
 void test_basic_construction_w_kmers(){
     int Lmin = 1;
     auto str = WaveletString(PATH4_SREAD_PARTITIONED);
+    // auto str = WaveletString(PATH3_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -35,24 +36,12 @@ void test_basic_construction_w_kmers(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     
-    // vector<string> output;
-    // for(int k=1; k<20; k++){
-    //     get_distinct_kmers(k, prokrustean, seq_texts, output);
-    //     sort(output.begin(), output.end());
-        
-    //     assert(output==collect_distinct_kmers_naive(seq_texts, k));
-    // }
-
-    // vector<string> output;
-    // for(int k=1; k<21; k++){
-    //     get_distinct_kmers(k, prokrustean, seq_texts, output);
-    //     cout << "k: " << k << " " << output.size() << endl; 
-    // }
-
-    vector<uint64_t> counts;
-    count_kmers_of_range(10, 20, prokrustean, counts);
-    for(int i=0; i<counts.size(); i++){
-        cout << counts[i] << endl;
+    vector<string> output;
+    vector<int> testing_ks={1,5,10,20};
+    for(auto k: testing_ks){
+        get_distinct_kmers(k, prokrustean, seq_texts, output);
+        sort(output.begin(), output.end());
+        assert(output==collect_distinct_kmers_naive(seq_texts, k));
     }
 }
 

@@ -33,7 +33,7 @@ void get_distinct_kmers(int k, Prokrustean &prokrustean, vector<string> &seq_tex
             assert(false);
         }
     }
-    cout << "k:" << k  << " uniform: " << uniform_cnt << " kmers:" << output.size() << endl;
+    // cout << "k:" << k  << " uniform: " << uniform_cnt << " kmers:" << output.size() << endl;
 }
 
 #endif
