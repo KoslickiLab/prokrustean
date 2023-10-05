@@ -10,111 +10,6 @@
 
 using namespace std;
 
-struct Region {
-    Pos from;
-    Pos to;
-
-    bool is_stratified;
-    bool is_reflected;
-    // stratified only 
-    StratumId stratum_id;
-
-    Region(){}
-    Region(Pos from, Pos to, bool is_stratified): Region(from, to, is_stratified, 0){}
-    Region(Pos from, Pos to, bool is_stratified, StratumId stratum_id): from(from), to(to), is_stratified(is_stratified), is_reflected(!is_stratified), stratum_id(stratum_id) {}
-
-    uint64_t size(){
-        assert(from<to);
-        return to-from;
-    }
-};
-
-struct StratifiedRegion: Region{
-    StratifiedRegion(){}
-    StratifiedRegion(Pos from, Pos to, StratumId stratum_id): Region(from, to, true, stratum_id) {}
-};
-
-struct ReflectedRegion: Region{
-    ReflectedRegion(){}
-    ReflectedRegion(Pos from, Pos to): Region(from, to, false) {}
-};
-
-
-struct StratifiedData {
-    StratumId stratum_id;
-    Pos pos;
-    
-    StratifiedData(){}
-    StratifiedData(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
-    {}
-};
-
-// struct Stratum {
-//     StratumSize size;
-//     vector<StratifiedRegion> regions;
-//     tuple<SeqId, Pos> example_occ;
-
-//     void set_occ(SeqId seq_id, Pos pos){
-//         example_occ=make_tuple(seq_id, pos);
-//     }
-// };
-
-// struct Sequence {
-//     SeqId id;
-//     SequenceSize size;
-//     vector<StratifiedRegion> regions;
-// };
-
-struct Vertex {
-    uint32_t id;
-    uint32_t size;
-    vector<StratifiedRegion> regions;
-
-    bool is_sequence;
-    bool is_stratum;
-    
-    // stratum only
-    optional<tuple<SeqId, Pos>> example_occ;
-
-    void set_occ(SeqId seq_id, Pos pos){
-        example_occ=make_tuple(seq_id, pos);
-    }
-    Vertex(){}
-    Vertex(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions, bool is_stratum) :Vertex(id, size, regions, is_stratum, nullopt){}
-    Vertex(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions, bool is_stratum, optional<tuple<SeqId, Pos>> example_occ) :id(id),size(size),regions(regions),is_stratum(is_stratum), is_sequence(!is_stratum), example_occ(example_occ) {}    
-    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
-        regions.resize(rgn_cnt);
-        while(rgn_cnt>0){
-            rgn_cnt--;
-            StratifiedData d=data[rgn_cnt];
-            auto rgn=StratifiedRegion(d.pos, d.pos+stratum_sizes[d.stratum_id], d.stratum_id);
-            regions[rgn_cnt]=rgn;
-            assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size);
-        } 
-    }
-    void print(){
-        if(is_sequence) cout << "sequence("<< id <<"): " << endl;
-        if(is_stratum)  cout << "stratum("<< id <<"): " << endl; 
-        for(auto &r: regions){
-            cout << "edges: (" << r.from << ", " << r.to << ") - " << r.stratum_id << endl;
-        }
-    }
-};
-
-struct Stratum: Vertex{
-    Stratum(){}
-    Stratum(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions): Vertex(id, size, regions, true){}
-    Stratum(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
-};
-
-struct Sequence: Vertex{
-    Sequence(){}
-    Sequence(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions): Vertex(id, size, regions, false){}
-    Sequence(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
-};
-
-
-
 struct Prokrustean {
     /* data structure is succinct as possible*/
     vector<SequenceSize> sequences__size;
@@ -140,7 +35,7 @@ struct Prokrustean {
         vector<bool> visits(stratum_count());
         std::stack<Stratum> stratum_stack;
         for(int i=0; i<sequence_count(); i++){
-            for(auto &rgn: get_sequence(i).regions){
+            for(auto &rgn: get_sequence(i).s_regions){
                 auto stratum = get_stratum(rgn.stratum_id);
                 stratum.set_occ(i, rgn.from);
                 stratum_occ_samples[rgn.stratum_id]=stratum.example_occ.value();
@@ -150,7 +45,7 @@ struct Prokrustean {
                 while(!stratum_stack.empty()){
                     auto stratum=stratum_stack.top();
                     stratum_stack.pop();
-                    for(auto &c_rgn: stratum.regions){
+                    for(auto &c_rgn: stratum.s_regions){
                         if(visits[c_rgn.stratum_id]) continue;
                         SeqId seq_id = get<0>(stratum.example_occ.value());
                         Pos rel_pos = get<1>(stratum.example_occ.value())+c_rgn.from;
@@ -193,7 +88,7 @@ struct Prokrustean {
         // cout << "---- spectrum of -----" << endl;
         // v.print();
         vector<StratifiedRegion> regions_least_k;
-        for(auto &r:v.regions){
+        for(auto &r:v.s_regions){
             if(r.size()>=k){
                 regions_least_k.push_back(r);
             }
@@ -240,6 +135,7 @@ struct Prokrustean {
         return cnt;
     }
 
+
     void print_stratum(uint64_t id, vector<string> &seq_texts){
         auto stratum = get_stratum(id);
         auto seq_id=get<0>(stratum_occ_samples[id]);
@@ -249,10 +145,23 @@ struct Prokrustean {
             return;
         }
         cout << "stratum("<< id <<"): " << str.substr(pos, stratums__size[id]) << endl; 
-        for(auto &rgn: stratum.regions){
+        for(auto &rgn: stratum.s_regions){
             cout << "stratified: " << str.substr(pos+rgn.from, rgn.size()) << endl; 
         }
     }
 };
 
+struct ProkrusteanOptional{
+    bool collect_ext=false;
+    bool collect_occ_samples=false;
+
+    vector<uint8_t> stratum_left_ext_count;
+    vector<uint8_t> stratum_right_ext_count;
+
+    vector<tuple<SeqId, Pos>> stratum_occ_samples;
+
+    ProkrusteanOptional(bool collect_ext){
+        this->collect_ext=collect_ext;
+    }
+};
 #endif

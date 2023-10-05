@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "../prokrustean.hpp"
 #include "unitig.hpp"
-#include "util.hpp"
 
 using namespace std;
 

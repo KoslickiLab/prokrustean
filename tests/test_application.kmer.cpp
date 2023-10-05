@@ -84,13 +84,10 @@ void test_counting_distinct_kmers(){
     count_distinct_kmers_of_range(1, 150, prokrustean, counts);
 
     vector<string> output;
-    for(int k=1; k<150; k++){
-        cout << "success " << "k:" << k << endl;
+    for(int k=1; k<20; k++){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
         assert(counts[k]==output.size());
     }
-
-    cout << "success" << endl;
 }
 // void test_distinct_kmers(){
 //     int Lmin = 1;

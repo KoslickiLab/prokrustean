@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "../prokrustean.hpp"
 #include "unitig.hpp"
-#include "util.hpp"
 
 using namespace std;
 
@@ -125,22 +124,22 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
 
     for(int i=0; i<prokrustean.sequence_count(); i++){
         auto sequence=prokrustean.get_sequence(i);
-        output[from]+=_count_k_mers(sequence.size, sequence.regions, from);
+        output[from]+=_count_k_mers(sequence.size, sequence.s_regions, from);
         // _stratified_pop_event(sequence.size, sequence.regions, from, partial_C);
         // _during_no_stratified_event(sequence.size, sequence.regions, from, partial_C, partial_partial_C);
         // _during_intersection_exists_event(sequence.size, sequence.regions, from, partial_partial_C);
-        _viable_kmer_decreases(sequence.size, from, sequence.regions, partial_partial_C);
-        _each_stra_rgn_range_decided_by_intersection(sequence.size, from, sequence.regions, partial_partial_C);
+        _viable_kmer_decreases(sequence.size, from, sequence.s_regions, partial_partial_C);
+        _each_stra_rgn_range_decided_by_intersection(sequence.size, from, sequence.s_regions, partial_partial_C);
     }
 
     for(int i=0; i<prokrustean.stratum_count(); i++){
         auto stratum=prokrustean.get_stratum(i);
-        output[from]+=_count_k_mers(stratum.size, stratum.regions, from);
+        output[from]+=_count_k_mers(stratum.size, stratum.s_regions, from);
         // _stratified_pop_event(stratum.size, stratum.regions, from, partial_C);
         // _during_no_stratified_event(stratum.size, stratum.regions, from, partial_C, partial_partial_C);
         // _during_intersection_exists_event(stratum.size, stratum.regions, from, partial_partial_C);
-        _viable_kmer_decreases(stratum.size, from, stratum.regions, partial_partial_C);
-        _each_stra_rgn_range_decided_by_intersection(stratum.size, from, stratum.regions, partial_partial_C);
+        _viable_kmer_decreases(stratum.size, from, stratum.s_regions, partial_partial_C);
+        _each_stra_rgn_range_decided_by_intersection(stratum.size, from, stratum.s_regions, partial_partial_C);
     }
     for(int k=from+1; k<to+1; k++){
         dOutput[k]=dOutput[k-1] + partial_partial_C[k];

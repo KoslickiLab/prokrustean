@@ -11,11 +11,16 @@
 
 using namespace std;
 
-void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1){
+struct Configuration{
+    // 
+    bool collect_ext_count=false;
+};
+
+void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanOptional* opt=nullptr){
     auto start = std::chrono::steady_clock::now();
     cout << "step1 start" << endl;
     SuffixArrayNode root = get_root(fm_idx);
-    StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx);
+    StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt);
     navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_step1);
     cout << "step1 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     cout << "stratum: " << prokrustean.stratum_count() << ", stratified regions: "<< workspace_step1.get_cardinality() << endl;

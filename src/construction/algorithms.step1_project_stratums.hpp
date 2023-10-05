@@ -53,13 +53,16 @@ struct StratumProjectionWorkspace{
 
     uint64_t seq_total_length;
 
-    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index)
+    ProkrusteanOptional* prokrustean_optional;
+
+    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanOptional* prokrustean_optional)
     :prokrustean(prokrustean),seq_cnt(fm_index.seq_cnt()),seq_total_length(fm_index.size()){
         this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
         this->sequence_locks=vector<SpinLock>(seq_cnt);
         this->block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
         this->raw_region_blocks=vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
         this->region_block_locks=vector<SpinLock>(seq_total_length/this->block_size+1);
+        this->prokrustean_optional=prokrustean_optional;
         // this->raw_region_blocks=vector<vector<tuple<uint16_t, ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
         // this->raw_region_block_numbers=vector<unordered_map<uint16_t,bool>>(seq_total_length/this->block_size+1);
     }
@@ -73,6 +76,10 @@ struct StratumProjectionWorkspace{
         if(this->new_stratum_id==this->stratum_reserved){
             this->update_reserve_amount();
             this->prokrustean.stratums__size.reserve(this->stratum_reserved);
+        }
+        if(this->prokrustean_optional->collect_ext){
+            this->prokrustean_optional->stratum_left_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
+            this->prokrustean_optional->stratum_right_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
         }
         /* critical region */
         stratum_lock.unlock();
@@ -104,6 +111,11 @@ struct StratumProjectionWorkspace{
         // this->raw_region_block_numbers[block_idx][local_sa_idx]=true;
         // unlock
         this->region_block_locks[block_idx].unlock();
+    }
+
+    void add_stratum_optional(StratumId stratum_id, uint8_t left_ext_cnt, uint8_t right_ext_cnt){
+        this->prokrustean_optional->stratum_left_ext_count[stratum_id]=left_ext_cnt;
+        this->prokrustean_optional->stratum_right_ext_count[stratum_id]=right_ext_cnt;
     }
 
     optional<vector<ProjectedStratifiedRegion>*> fetch(SuffixArrayIdx sa_idx){
@@ -270,6 +282,18 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
     for(int i=0; i<idx_cnt; i++){
         // output.add_stratified_regions(workspace.repr_work.locations[i], workspace.stratum_id, primary_idx==i);
         output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
+    }
+
+    if(output.prokrustean_optional->collect_ext){
+        uint8_t left_ext_cnt=0; 
+        uint8_t right_ext_cnt=0;
+        for(auto ext: workspace.repr_work.left_repr){
+            if(ext) left_ext_cnt++;   
+        }
+        for(auto ext: workspace.repr_work.right_repr){
+            if(ext) right_ext_cnt++;   
+        }
+        output.add_stratum_optional(workspace.stratum_id, left_ext_cnt, right_ext_cnt);
     }
 }
 
