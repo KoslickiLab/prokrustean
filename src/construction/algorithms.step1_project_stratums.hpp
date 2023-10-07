@@ -287,11 +287,16 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
     if(output.prokrustean_optional->collect_ext){
         uint8_t left_ext_cnt=0; 
         uint8_t right_ext_cnt=0;
-        for(auto ext: workspace.repr_work.left_repr){
-            if(ext) left_ext_cnt++;   
-        }
-        for(auto ext: workspace.repr_work.right_repr){
-            if(ext) right_ext_cnt++;   
+        // for each letter
+        for(int c=0; c < workspace.characters_cnt; c++){
+            if(c==0) continue;
+
+            if(workspace.node.firsts[c]<workspace.node.firsts[c+1]){
+                right_ext_cnt++;
+            }
+            if(workspace.c_nodes_open[c]) {
+                left_ext_cnt++;;
+            }
         }
         output.add_stratum_optional(workspace.stratum_id, left_ext_cnt, right_ext_cnt);
     }
