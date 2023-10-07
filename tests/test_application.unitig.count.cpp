@@ -53,6 +53,20 @@ public:
                     std::string prefix = str.substr(i - 1, k);
                     graph[prefix].outgoing.insert(kmer);
                     graph[kmer].incoming.insert(prefix);
+                } else {
+                    if(graph.count(kmer)==0){
+                        graph[kmer]=Node();
+                    }
+                }
+                for (const auto& [node, nodeInfo] : graph){
+                    if(node.substr(node.size()-(k-1), k-1)==kmer.substr(0, k-1)){
+                        graph[kmer].incoming.insert(node);
+                        graph[node].outgoing.insert(kmer);
+                    }
+                    if(node.substr(0, k-1)==kmer.substr(kmer.size()-(k-1), k-1)){
+                        graph[kmer].outgoing.insert(node);
+                        graph[node].incoming.insert(kmer);
+                    }
                 }
             }
         }
@@ -61,19 +75,8 @@ public:
     
     void generateFromStrings(const std::vector<std::string>& strings, int k) {
         graph.clear();
-        // Constructing the initial de Bruijn graph
-        for (const auto& str : strings) {
-            if (str.size() < k) continue;
-            for (size_t i = 0; i <= str.size() - k; ++i) {
-                std::string kmer = str.substr(i, k);
-                if (i > 0) {
-                    std::string prefix = str.substr(i - 1, k);
-                    graph[prefix].outgoing.insert(kmer);
-                    graph[kmer].incoming.insert(prefix);
-                }
-            }
-        }
-
+        generatePlainFromStrings(strings, k);
+        
         // Compaction step
         bool changed = true;
         while (changed) {
@@ -84,7 +87,7 @@ public:
 
                     // Merge `node` into `prev`
                     std::string merged = node + next.substr(k-1);
-                    cout << "single-single found: " << node << " -> " << next << " merged " << merged << endl;
+                    // cout << "single-single found: " << node << " -> " << next << " merged " << merged << endl;
                     
                     // graph[node].outgoing.erase(next);
                     // graph[node].outgoing.insert(merged);
@@ -104,7 +107,7 @@ public:
                     // Remove old nodes
                     graph.erase(node);
                     graph.erase(next);
-                    cout << "graph size: " << graph.size() << endl;
+                    // cout << "graph size: " << graph.size() << endl;
 
                     changed = true;
                     break;  // Break to avoid iterator invalidation
@@ -160,7 +163,7 @@ int count_maximal_unitigs(ProkrusteanSupport& support, int k){
 
 void test_unitig_counting(){
     int Lmin = 1;
-    WaveletString str(PATH5_CDBG_SAMPLE, '$');
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -170,21 +173,22 @@ void test_unitig_counting(){
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
-    for(auto &txt: seq_texts){
-        cout << txt << endl;
-    }
-    int k = 4;
+    // for(auto &txt: seq_texts){
+    //     cout << txt << endl;
+    // }
+    int k = 5;
 
     CompactedDeBruijnGraph cdbg;
     cdbg.generatePlainFromStrings(seq_texts, k);
-    cdbg.print();
+    // cdbg.print();
     cdbg.generateFromStrings(seq_texts, k);
-    cdbg.print();
+    // cdbg.print();
     cout << "maximal unitigs naive: " << cdbg.maximal_unitig_cnt() << endl;
 
     // int mu_cnt= count_maximal_unitigs(support, k);
     // cout << "maximal unitigs: " << mu_cnt << endl;
-    support.fill_stratum_left_bound_single_right_extension(k);
+
+    support.compute_maximal_unitigs(k);
 }
 
 

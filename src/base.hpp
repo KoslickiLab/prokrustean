@@ -84,7 +84,7 @@ struct Vertex {
     void get_valid_indices(int k, vector<uint8_t>& indices){
         indices.clear();
         for(uint8_t i=0; i<s_regions.size(); i++){
-            if(s_regions[0].size()>=k){
+            if(s_regions[i].size()>=k){
                 indices.push_back(i);
             }
         }
