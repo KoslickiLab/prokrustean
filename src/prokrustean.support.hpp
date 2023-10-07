@@ -29,9 +29,21 @@ struct ProkrusteanSupport {
     
     ProkrusteanSupport(Prokrustean& prokrustean, ProkrusteanOptional& prokrustean_optional):prokrustean(prokrustean), prokrustean_optional(prokrustean_optional) {}
 
-    void compute_maximal_unitigs(int k){
+    int compute_maximal_unitigs(int k, vector<string> *sequences=nullptr){
+        if(sequences!=nullptr){
+            setup_stratum_example_occ();
+            int idx=0;
+            for(auto &pair: stratum_occ_samples){
+                cout << "sample: " << (*sequences)[get<0>(pair)].substr(get<1>(pair), prokrustean.stratums__size[idx]) << endl;
+                idx++;
+            }
+        }
+        
         int cnt=0;
-        vector<uint8_t> indices;
+        vector<int> stats(7);
+        vector<vector<string>> strings(7);
+        // vector<uint8_t> indices;
+        vector<Region> spectrum;
         /* single thread version of filling extensions */
         for(int i=0; i<prokrustean.sequence_count(); i++){
             Sequence seq = prokrustean.get_sequence(i);
@@ -39,13 +51,22 @@ struct ProkrusteanSupport {
                 continue;
             }
             // seq.print();
-            seq.get_valid_indices(k-1, indices);
-            if(indices.size()>0 && seq.s_regions[indices[0]].from==0 && seq.s_regions[indices[0]].size()>=k-1){
-                // not tip
-            } else {
-                cout << "tip at seq " << i << endl; 
+            // seq.get_valid_indices(k-1, indices);
+            prokrustean.get_spectrum(seq, k-1, spectrum);
+            if(spectrum[0].is_reflected){
                 cnt++;
+                stats[0]++;
+                if(sequences!=nullptr){
+                    auto txt = (*sequences)[i].substr(spectrum[0].from, spectrum[0].size());
+                    strings[0].push_back(txt);
+                }
             }
+            // if(indices.size()>0 && seq.s_regions[indices[0]].from==0 && seq.s_regions[indices[0]].size()>=k-1){
+            //     not tip
+            // } else {
+            //     cnt++;
+            //     stats[0]++;
+            // }
         }
         for(int i=0; i<prokrustean.stratum_count(); i++){
             Stratum stra = prokrustean.get_stratum(i);
@@ -53,45 +74,151 @@ struct ProkrusteanSupport {
                 continue;
             }
             // stra.print();
-            stra.get_valid_indices(k-1, indices);
-            
+            // stra.get_valid_indices(k-1, indices);
+            prokrustean.get_spectrum(stra, k-1, spectrum);
             if(stra.size>k-1){
-                if(indices.size()>0 && stra.s_regions[indices[0]].from==0 && stra.s_regions[indices[0]].size()>=k-1){
-                } else {
+                if(spectrum[0].is_reflected){
                     if(prokrustean_optional.stratum_left_ext_count[i]==0){
                         // tip
-                        cout << "tip at stratum " << i << endl; 
+                        // cout << "tip at stratum " << i << endl; 
                         cnt++;
+                        stats[1]++;
+                        if(sequences!=nullptr){
+                            auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(spectrum[0].from, spectrum[0].size());
+                            strings[1].push_back(txt);
+                        }
                     } else if(prokrustean_optional.stratum_left_ext_count[i]>1){
                         // convergence
-                        cout << "convergence at stratum " << i << endl; 
+                        // cout << "convergence at stratum " << i << endl; 
                         cnt++;
+                        stats[2]++;
+                        if(sequences!=nullptr){
+                            auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(spectrum[0].from, spectrum[0].size());
+                            strings[2].push_back(txt);
+                        }
                     }
-                }
-                if(indices.size()>0 && stra.s_regions[indices[indices.size()-1]].to==stra.size && stra.s_regions[indices[indices.size()-1]].size()>=k-1){
-                } else {
-                    if(prokrustean_optional.stratum_right_ext_count[i]>1){
+                } 
+                // if(indices.size()>0 && stra.s_regions[indices[0]].from==0 && stra.s_regions[indices[0]].size()>=k-1){
+                // } else {
+                //     if(prokrustean_optional.stratum_left_ext_count[i]==0){
+                //         // tip
+                //         // cout << "tip at stratum " << i << endl; 
+                //         cnt++;
+                //         stats[1]++;
+                //     } else if(prokrustean_optional.stratum_left_ext_count[i]>1){
+                //         // convergence
+                //         // cout << "convergence at stratum " << i << endl; 
+                //         cnt++;
+                //         stats[2]++;
+                //     }
+                // }
+                if(spectrum[spectrum.size()-1].is_reflected){
+                        if(prokrustean_optional.stratum_right_ext_count[i]>1){
                         // divergence
                         // cout << "divergence at stratum " << i << " (" << (int)prokrustean_optional.stratum_right_ext_count[i] << ")" << endl;  
                         cnt+=prokrustean_optional.stratum_right_ext_count[i];
+                        stats[3]+=prokrustean_optional.stratum_right_ext_count[i];
+                        if(sequences!=nullptr){
+                            // auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(spectrum[0].from, spectrum[0].size());
+                            auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(get<1>(stratum_occ_samples[i])+spectrum[spectrum.size()-1].from, spectrum[spectrum.size()-1].size());
+                            txt+="("+to_string(prokrustean_optional.stratum_right_ext_count[i])+")";
+                            strings[3].push_back(txt);
+                            // for(int i=0; i< prokrustean_optional.stratum_right_ext_count[i]; i++)
+                            // strings[3].push_back("div");
+                        }
                     }
-                }   
+                }
+                // if(indices.size()>0 && stra.s_regions[indices[indices.size()-1]].to==stra.size && stra.s_regions[indices[indices.size()-1]].size()>=k-1){
+                // } else {
+                //     if(prokrustean_optional.stratum_right_ext_count[i]>1){
+                //         // divergence
+                //         // cout << "divergence at stratum " << i << " (" << (int)prokrustean_optional.stratum_right_ext_count[i] << ")" << endl;  
+                //         cnt+=prokrustean_optional.stratum_right_ext_count[i];
+                //         stats[3]+=prokrustean_optional.stratum_right_ext_count[i];
+                //     }
+                // }
             } else {
                 // special case
                 if(prokrustean_optional.stratum_right_ext_count[i]>1){
                     // divergence multiple -> convergence does not matter
                     // cout << "divergence at stratum of k-1 " << i << " (" << (int)prokrustean_optional.stratum_right_ext_count[i] << ")" << endl;  
                     cnt+=prokrustean_optional.stratum_right_ext_count[i];
+                    stats[4]+=prokrustean_optional.stratum_right_ext_count[i];
+                    if(sequences!=nullptr){
+                        cout << "stratum xxxx " << i << endl;
+                        auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(get<1>(stratum_occ_samples[i])+spectrum[spectrum.size()-1].from, spectrum[spectrum.size()-1].size());
+                        txt+="("+to_string(prokrustean_optional.stratum_right_ext_count[i])+")";
+                        strings[4].push_back(txt);
+                        // for(int i=0; i< prokrustean_optional.stratum_right_ext_count[i]; i++){
+                        //     // strings[4].push_back("div");
+                        // }
+                    }
                 } else if(prokrustean_optional.stratum_right_ext_count[i]==1){
-                    if(prokrustean_optional.stratum_left_ext_count[i]!=1){
+                    if(prokrustean_optional.stratum_left_ext_count[i]==0){
                         // divergence single -> convergence can work
-                        cout << "convergence at stratum of k-1 " << i << endl;  
+                        // cout << "tip at stratum of k-1 " << i << endl;  
                         cnt++;
+                        stats[5]++;
+                        if(sequences!=nullptr){
+                            auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(get<1>(stratum_occ_samples[i])+spectrum[spectrum.size()-1].from, spectrum[spectrum.size()-1].size());
+                            strings[5].push_back(txt);
+                        }
+                    } else if(prokrustean_optional.stratum_left_ext_count[i]>1){
+                        // cout << "convergence at stratum of k-1 " << i << endl;  
+                        cnt++;
+                        stats[6]++;
+                        if(sequences!=nullptr){
+                            auto txt = (*sequences)[get<0>(stratum_occ_samples[i])].substr(spectrum[spectrum.size()-1].from, spectrum[spectrum.size()-1].size());
+                            strings[6].push_back(txt);
+                        }
                     }
                 }
             }
         }
         cout << "maximal unitigs : " << cnt << endl;
+        if(sequences==nullptr){
+            for(int i=0; i<stats.size(); i++){
+                if(i==0) cout << "tip at seq " << stats[i] << endl; 
+                if(i==1) cout << "tip at stratum " << stats[i] << endl; 
+                if(i==2) cout << "convergence at stratum " << stats[i] << endl; 
+                if(i==3) cout << "divergnece at stratum " << stats[i] << endl; 
+                if(i==4) cout << "divergnece at stratum of k-1 " << stats[i] << endl; 
+                if(i==5) cout << "tip at stratum of k-1 " << stats[i] << endl; 
+                if(i==6) cout << "convergence at stratum of k-1 " << stats[i] << endl; 
+            }
+        } else {
+            for(int i=0; i<stats.size(); i++){
+                if(i==0){
+                    cout << "tip at seq " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                } 
+                if(i==1) {
+                    cout << "tip at stratum " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                }
+                if(i==2){
+                    cout << "convergence at stratum " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                } 
+                if(i==3) {
+                     cout << "divergnece at stratum " << stats[i] << endl; 
+                     for(auto &s: strings[i]) cout << s << endl;
+                }
+                if(i==4) {
+                    cout << "divergnece at stratum of k-1 " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                }
+                if(i==5) {
+                    cout << "tip at stratum of k-1 " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                }
+                if(i==6) {
+                    cout << "convergence at stratum of k-1 " << stats[i] << endl; 
+                    for(auto &s: strings[i]) cout << s << endl;
+                }
+            }
+        }
+        return cnt;
     }
     void fill_stratum_left_bound_single_right_extension(int k){
         // for(int i=0; i<prokrustean.sequence_count(); i++){

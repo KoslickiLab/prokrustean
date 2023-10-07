@@ -43,9 +43,13 @@ private:
 
 public:
     void generatePlainFromStrings(const std::vector<std::string>& strings, int k) {
+        set<char> characters;
         graph.clear();
         // Constructing the initial de Bruijn graph
         for (const auto& str : strings) {
+            for(char c: str){
+                characters.insert(c);
+            }
             if (str.size() < k) continue;
             for (size_t i = 0; i <= str.size() - k; ++i) {
                 std::string kmer = str.substr(i, k);
@@ -58,16 +62,32 @@ public:
                         graph[kmer]=Node();
                     }
                 }
-                for (const auto& [node, nodeInfo] : graph){
-                    if(node.substr(node.size()-(k-1), k-1)==kmer.substr(0, k-1)){
+                auto kmer_prefix=kmer.substr(0, k-1);
+                auto kmer_suffix=kmer.substr(kmer.size()-(k-1), k-1);
+                for(auto c: characters){
+                    auto node = c+kmer_prefix;
+                    if(graph.count(node)>0){
                         graph[kmer].incoming.insert(node);
                         graph[node].outgoing.insert(kmer);
                     }
-                    if(node.substr(0, k-1)==kmer.substr(kmer.size()-(k-1), k-1)){
+                    node = kmer_suffix + c;
+                    if(graph.count(node)>0){
                         graph[kmer].outgoing.insert(node);
                         graph[node].incoming.insert(kmer);
                     }
                 }
+                // for (const auto& [node, nodeInfo] : graph){
+                //     // node is predecessor
+                //     if(node.substr(node.size()-(k-1), k-1)==kmer.substr(0, k-1)){
+                //         graph[kmer].incoming.insert(node);
+                //         graph[node].outgoing.insert(kmer);
+                //     }
+                //     // kmer is predecessor
+                //     if(node.substr(0, k-1)==kmer.substr(kmer.size()-(k-1), k-1)){
+                //         graph[kmer].outgoing.insert(node);
+                //         graph[node].incoming.insert(kmer);
+                //     }
+                // }
             }
         }
     }
@@ -116,7 +136,17 @@ public:
         }
     }
     int maximal_unitig_cnt(){
-        return graph.size();
+        int cnt=0;
+        for (const auto& [node, nodeInfo] : graph) {
+            if(graph[node].outgoing.size()==1){
+                auto next= graph[node].outgoing.begin();
+                if(node==*next){
+                    continue;
+                }
+            }
+            cnt++;
+        }
+        return cnt;
     }
     void print() {
         for (const auto& [node, nodeInfo] : graph) {
@@ -129,37 +159,6 @@ public:
     }
 };
 
-
-int count_maximal_unitigs(ProkrusteanSupport& support, int k){
-    int cnt=0;
-    Prokrustean& prokrustean = support.prokrustean;
-    /* single thread version of filling extensions */
-    for(int i=0; i<prokrustean.sequence_count(); i++){
-        Sequence seq = prokrustean.get_sequence(i);
-        if(seq.s_regions.size()==0){
-            cnt++;
-        } else if(seq.s_regions[0].from==0 && seq.s_regions[0].size()>=k){
-            // 0 is not reflectum
-        } else {
-            cnt++;
-        }
-    }
-    for(int i=0; i<prokrustean.stratum_count(); i++){
-        Stratum stra = prokrustean.get_stratum(i);
-        // cout << "left ext count: " << support.stratum_left_ext_count[i]<< endl;
-        // if(support.stratum_left_ext_count[i]==1){
-        //     continue;
-        // }
-        if(stra.s_regions.size()==0){
-            cnt++;
-        } else if(stra.s_regions[0].from==0 && stra.s_regions[0].size()>=k){
-            // 0 is not reflectum
-        } else {
-            cnt++;
-        }
-    }
-    return cnt;
-}
 
 void test_unitig_counting(){
     int Lmin = 1;
@@ -176,19 +175,23 @@ void test_unitig_counting(){
     // for(auto &txt: seq_texts){
     //     cout << txt << endl;
     // }
-    int k = 5;
+    int k = 15;
+    // cout << "maximal unitigs " << support.compute_maximal_unitigs(k) << endl;
+    // return;
 
     CompactedDeBruijnGraph cdbg;
-    cdbg.generatePlainFromStrings(seq_texts, k);
+    // cdbg.generatePlainFromStrings(seq_texts, k);
     // cdbg.print();
     cdbg.generateFromStrings(seq_texts, k);
     // cdbg.print();
-    cout << "maximal unitigs naive: " << cdbg.maximal_unitig_cnt() << endl;
 
-    // int mu_cnt= count_maximal_unitigs(support, k);
-    // cout << "maximal unitigs: " << mu_cnt << endl;
-
-    support.compute_maximal_unitigs(k);
+    auto cnt=support.compute_maximal_unitigs(k);
+    if(cdbg.maximal_unitig_cnt()==cnt){
+        cout << "maximal unitigs matched: " << cnt << endl;
+    } else {
+        cout << "maximal unitigs unmatched: " << cnt << ", " << cdbg.maximal_unitig_cnt() << endl;
+        assert(false);
+    }
 }
 
 
