@@ -2,7 +2,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
-#include "util.cpp"	
+#include "const.cpp"	
 #include "../src/sdsl/int_vector.hpp"
 #include "../src/sdsl/rank_support_v.hpp"
 #include "../src/sdsl/rrr_vector.hpp"

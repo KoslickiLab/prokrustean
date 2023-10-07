@@ -2,8 +2,7 @@
 #include "test_bitvector.cpp"
 #include "test_construction.cpp"
 #include "test_application.kmer.cpp"
-#include "test_application.unitig.count.cpp"
-
+#include "test_application.cdbg.count.cpp"
 
 int main(void){
     // cout << "--- main_naive_fm_index ---" << endl;
@@ -18,4 +17,5 @@ int main(void){
 
     cout << "--- application unitig counting ---" << endl;
     main_application_unitig_count();
+
 }

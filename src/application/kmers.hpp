@@ -2,7 +2,7 @@
 #define APPLICATION_KMER_HPP_
 #include <algorithm>
 #include "../prokrustean.hpp"
-#include "unitig.hpp"
+#include "cdbg.hpp"
 
 using namespace std;
 

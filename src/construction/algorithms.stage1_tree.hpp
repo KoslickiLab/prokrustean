@@ -1,7 +1,8 @@
 #ifndef FM_INDEX_TREE_NEW_HPP_
 #define FM_INDEX_TREE_NEW_HPP_
 
-#include "index.hpp"
+#include "../data_types.hpp"
+#include "../fm_index/index.hpp"
 #include <algorithm>
 #include <limits>
 #include <stack>

@@ -2,11 +2,13 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
-#include "util.cpp"	
+#include <set>
+#include "const.cpp"	
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.hpp"
 #include "../src/application/kmers.hpp"
+#include "../src/application/kmers.count.hpp"
 
 using namespace std;
 using namespace sdsl;

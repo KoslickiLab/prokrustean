@@ -6,8 +6,8 @@
 #include <thread>
 #include <future>
 #include <list>
-#include "algorithms.step1_project_stratums.hpp"
-#include "algorithms.step2_build_prokrustean.hpp"
+#include "algorithms.stage1_stratification.hpp"
+#include "algorithms.stage2_prokrustean.hpp"
 
 using namespace std;
 
@@ -16,7 +16,7 @@ struct Configuration{
     bool collect_ext_count=false;
 };
 
-void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanOptional* opt=nullptr){
+void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanEnhancement* opt=nullptr){
     auto start = std::chrono::steady_clock::now();
     cout << "step1 start" << endl;
     SuffixArrayNode root = get_root(fm_idx);

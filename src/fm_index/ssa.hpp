@@ -1,5 +1,5 @@
-#ifndef FM_INDEX_LOCATE_HPP_
-#define FM_INDEX_LOCATE_HPP_
+#ifndef FM_INDEX_SSA_HPP_
+#define FM_INDEX_SSA_HPP_
 
 #include <fstream>
 #include <vector>
@@ -14,8 +14,6 @@
 
 using namespace std;
 using namespace sdsl;
-
-typedef uint16_t SuffixArrayIdx_InBlock;
 
 struct SampleBlock{
     sdsl::bit_vector sampled_bv=sdsl::bit_vector(std::numeric_limits<SuffixArrayIdx_InBlock>::max());

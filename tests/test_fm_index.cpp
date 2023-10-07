@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
-#include "util.cpp"	
+#include "const.cpp"	
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/fm_index/index.hpp"
 

@@ -2,7 +2,7 @@
 #define APPLICATION_KMER_COUNT_HPP_
 #include <algorithm>
 #include "../prokrustean.hpp"
-#include "unitig.hpp"
+#include "cdbg.hpp"
 
 using namespace std;
 
@@ -98,6 +98,20 @@ void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<S
     }
 }
 
+
+uint64_t count_distinct_kmers(uint64_t k, Prokrustean &prokrustean){
+    uint64_t cnt=0;
+    for(int i=0; i<prokrustean.sequence_count(); i++){
+        auto sequence=prokrustean.get_sequence(i);
+        cnt+=_count_k_mers(sequence.size, sequence.s_regions, k);
+    }
+
+    for(int i=0; i<prokrustean.stratum_count(); i++){
+        auto stratum=prokrustean.get_stratum(i);
+        cnt+=_count_k_mers(stratum.size, stratum.s_regions, k);
+    }
+    return cnt;
+}
 
 void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prokrustean, vector<uint64_t> &output){
 // Definitions:

@@ -1,7 +1,7 @@
 #ifndef CONSTRUCTION_ALGO_PROCEDURES_NEW_HPP_
 #define CONSTRUCTION_ALGO_PROCEDURES_NEW_HPP_
-#include "../fm_index/tree_new.hpp"
-#include "../fm_index/ssa.hpp"
+#include "algorithms.stage1_tree.hpp"
+#include "../prokrustean.enhance.hpp"
 #include <algorithm>
 #include <stack>
 #include <tuple>
@@ -53,9 +53,9 @@ struct StratumProjectionWorkspace{
 
     uint64_t seq_total_length;
 
-    ProkrusteanOptional* prokrustean_optional;
+    ProkrusteanEnhancement* prokrustean_optional;
 
-    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanOptional* prokrustean_optional)
+    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanEnhancement* prokrustean_optional)
     :prokrustean(prokrustean),seq_cnt(fm_index.seq_cnt()),seq_total_length(fm_index.size()){
         this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
         this->sequence_locks=vector<SpinLock>(seq_cnt);
@@ -77,7 +77,7 @@ struct StratumProjectionWorkspace{
             this->update_reserve_amount();
             this->prokrustean.stratums__size.reserve(this->stratum_reserved);
         }
-        if(this->prokrustean_optional->collect_ext){
+        if(this->prokrustean_optional->collect_left_right_extensions){
             this->prokrustean_optional->stratum_left_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
             this->prokrustean_optional->stratum_right_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
         }
@@ -284,7 +284,7 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
         output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
     }
 
-    if(output.prokrustean_optional->collect_ext){
+    if(output.prokrustean_optional->collect_left_right_extensions){
         uint8_t left_ext_cnt=0; 
         uint8_t right_ext_cnt=0;
         // for each letter

@@ -3,15 +3,9 @@
 
 #include <algorithm>
 #include <ranges>
-#include "../prokrustean.hpp"
+#include "../data_types.hpp"
 
 using namespace std;
-
-//character ids -> lexicographical order of characters 
-typedef uint8_t CharId;
-typedef uint64_t SuffixArrayIdx;
-//C array of fm index. Each index is CharId 
-typedef vector<uint64_t> RankArray;
 
 class AbstractString{
 public:
