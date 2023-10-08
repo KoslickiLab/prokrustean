@@ -2,7 +2,6 @@
 #define APPLICATION_KMER_COUNT_HPP_
 #include <algorithm>
 #include "../prokrustean.hpp"
-#include "cdbg.hpp"
 
 using namespace std;
 
