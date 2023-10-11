@@ -27,6 +27,10 @@ struct Region {
         assert(from<to);
         return to-from;
     }
+
+    void print(){
+        cout << "stratified: " << is_stratified << ", from:to " << from << ":" << to << endl;
+    }
 };
 
 struct StratifiedRegion: Region{

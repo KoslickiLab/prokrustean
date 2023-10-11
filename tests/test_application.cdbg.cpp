@@ -32,14 +32,19 @@ void test_cdbg_single(){
     // for(auto &txt: seq_texts){
     //     cout << txt << endl;
     // }
-    int k = 2;
+    int k = 3;
     extract_compacted_dbg(k, enhancement, seq_texts);
 
-    vector<string> output;
-    get_reflectums(k-1, prokrustean, seq_texts, output);
-    for(auto &s: output){
-        cout << "reflectum: " << s << endl;
-    }
+    // vector<string> output;
+    // get_reflectums(k-1, prokrustean, seq_texts, output);
+    // for(auto &s: output){
+    //     cout << "reflectum: " << s << endl;
+    // }
+
+    NaiveCompactedDeBruijnGraph cdbg;
+    cdbg.construct_compacted(seq_texts, k);
+    auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
+    cdbg.print();
     // vector<int> ks={2, 7, 30, 50};
     // for(auto k: ks){
     //     auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
