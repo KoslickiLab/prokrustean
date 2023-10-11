@@ -30,14 +30,15 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
     int Lmin = 1;
-    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    WaveletString str(PATH5_CDBG_SAMPLE, '$');
     // auto str = WaveletString(PATH1_BWT);
     // auto str = WaveletString(PATH2_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     construct_prokrustean(fm_idx, prokrustean, Lmin);
-    prokrustean.setup_stratum_example_occ();
+    ProkrusteanEnhancement ext(prokrustean);
+    setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -47,7 +48,7 @@ void test_distinct_kmers(){
     // }
 
     vector<string> output;
-    for(int k=5; k<10; k++){
+    for(int k=2; k<10; k++){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
         sort(output.begin(), output.end());
         auto output_naive = get_distinct_kmers_naive(seq_texts, k);
@@ -77,7 +78,8 @@ void test_counting_distinct_kmers(){
     
     Prokrustean prokrustean;
     construct_prokrustean(fm_idx, prokrustean, Lmin);
-    prokrustean.setup_stratum_example_occ();
+    ProkrusteanEnhancement ext(prokrustean);
+    setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -136,5 +138,5 @@ void test_counting_distinct_kmers(){
 
 void main_application_kmer() {
     test_distinct_kmers();
-    test_counting_distinct_kmers();
+    // test_counting_distinct_kmers();
 }

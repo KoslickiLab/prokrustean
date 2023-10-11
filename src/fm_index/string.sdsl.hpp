@@ -49,13 +49,22 @@ public:
         }
         
         bool only_ACGTN = true;
+        bool has_term = false;
         cout << "-- characters(" << characters.size() << ") --" << endl;
         for(auto c: characters){
             if(c!='A' && c!='C' && c!='G' && c!='T' && c!='N' && c!=term){
                 cout << "Warning: A symbol (" << c <<") not in AGCTN and term("<< term <<") is included. The code still runs though." << endl;
                 only_ACGTN = false;
             }
+            if(c==term){
+                has_term=true;
+            }
         }
+        if(!has_term){
+            cout << "Term symbol ("<< term <<") does not exist." << endl;
+            assert(has_term);
+        }
+
         cout << "characters: ";
         for(auto c: characters){
             cout << c << " ";

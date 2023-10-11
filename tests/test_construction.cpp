@@ -32,7 +32,8 @@ void test_basic_construction_w_kmers(){
     
     Prokrustean prokrustean;
     construct_prokrustean(fm_idx, prokrustean, Lmin);
-    prokrustean.setup_stratum_example_occ();
+    ProkrusteanEnhancement ext(prokrustean);
+    setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);

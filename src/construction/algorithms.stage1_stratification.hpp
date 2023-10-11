@@ -77,7 +77,7 @@ struct StratumProjectionWorkspace{
             this->update_reserve_amount();
             this->prokrustean.stratums__size.reserve(this->stratum_reserved);
         }
-        if(this->prokrustean_optional->collect_left_right_extensions){
+        if(this->prokrustean_optional!=nullptr && this->prokrustean_optional->collect_left_right_extensions){
             this->prokrustean_optional->stratum_left_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
             this->prokrustean_optional->stratum_right_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
         }
@@ -284,7 +284,7 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
         output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
     }
 
-    if(output.prokrustean_optional->collect_left_right_extensions){
+    if(output.prokrustean_optional!=nullptr && output.prokrustean_optional->collect_left_right_extensions){
         uint8_t left_ext_cnt=0; 
         uint8_t right_ext_cnt=0;
         // for each letter
