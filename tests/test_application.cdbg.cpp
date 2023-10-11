@@ -19,7 +19,7 @@ using namespace sdsl;
 
 void test_cdbg_single(){
     int Lmin = 1;
-    WaveletString str(PATH5_CDBG_SAMPLE, '$');
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;

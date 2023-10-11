@@ -50,8 +50,8 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
                     continue;
                     SeqId seq_id=ext.stratum_sample_occ_seq_id[stratum_id];
                     Pos rel_pos=ext.stratum_sample_occ_pos[stratum_id]+c_rgn.from;
-                    ext.stratum_sample_occ_seq_id[c_rgn.stratum_id]=i;
-                    ext.stratum_sample_occ_pos[c_rgn.stratum_id]=c_rgn.from;
+                    ext.stratum_sample_occ_seq_id[c_rgn.stratum_id]=seq_id;
+                    ext.stratum_sample_occ_pos[c_rgn.stratum_id]=rel_pos;
                     visits[c_rgn.stratum_id]=true;
                     stratum_stack.push(c_rgn.stratum_id);
                 }
