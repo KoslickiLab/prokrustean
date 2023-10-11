@@ -34,7 +34,7 @@ struct PositionAnnotation{
     void print(){
         cout << "pos: " << pos << ", ";
         for(auto &r: regions){
-            cout << r.stratum_size << " ";
+            cout << r.stratum_id << "("<< r.stratum_size << ") ";
         }
         cout << endl;
     }
@@ -48,6 +48,13 @@ struct SequenceAnnotation {
     uint32_t seq_size;
     //
     vector<PositionAnnotation> position_annots;
+
+    void print(){
+        cout << "seq annot: " << seq_id << endl;
+        for(auto &pos_annot: position_annots){
+            pos_annot.print();
+        }
+    }
 };
 
 struct ConsumingReference{
@@ -232,34 +239,52 @@ struct StratificationWorkSpace {
         return RegionIdx(rgn.pidx, rgn.sidx+1);
     }
 
-    optional<RegionIdx> first_primary(){
+    // optional<RegionIdx> first_primary(){
+    //     uint32_t pidx = seq_annot.position_annots.size()-1;
+    //     uint16_t sidx = 0;
+    //     bool is_primary=get_region_annot(pidx, sidx)->is_primary;
+    //     auto rgn = RegionIdx(pidx, sidx);
+    //     if(is_primary){
+    //         return rgn;
+    //     } else {
+    //         return next_primary(rgn);
+    //     }
+    // }
+    // optional<RegionIdx> next_primary(RegionIdx &rgn){
+    //     uint32_t pidx = rgn.pidx;
+    //     uint16_t sidx = rgn.sidx;
+    //     while(true){
+    //         if(sidx+1<seq_annot.position_annots[pidx].regions.size()){
+    //             sidx++;
+    //         } else if(pidx>0){
+    //             pidx--;
+    //             sidx=0;
+    //         } else {
+    //             return nullopt;
+    //         }
+    //         if(get_region_annot(pidx, sidx)->is_primary){
+    //             return RegionIdx(pidx, sidx);
+    //         }
+    //     }
+    //     return nullopt;
+    // }
+
+    optional<RegionIdx> first_region(){
         uint32_t pidx = seq_annot.position_annots.size()-1;
         uint16_t sidx = 0;
-        bool is_primary=get_region_annot(pidx, sidx)->is_primary;
-        auto rgn = RegionIdx(pidx, sidx);
-        if(is_primary){
-            return rgn;
-        } else {
-            return next_primary(rgn);
-        }
+        return RegionIdx(pidx, sidx);
     }
-    optional<RegionIdx> next_primary(RegionIdx &rgn){
+
+    optional<RegionIdx> next_region(RegionIdx &rgn){
         uint32_t pidx = rgn.pidx;
         uint16_t sidx = rgn.sidx;
-        while(true){
-            if(sidx+1<seq_annot.position_annots[pidx].regions.size()){
-                sidx++;
-            } else if(pidx>0){
-                pidx--;
-                sidx=0;
-            } else {
-                return nullopt;
-            }
-            if(get_region_annot(pidx, sidx)->is_primary){
-                return RegionIdx(pidx, sidx);
-            }
+        if(sidx+1<seq_annot.position_annots[pidx].regions.size()){
+            return RegionIdx(pidx, sidx+1);
+        } else if(pidx>0){
+            return RegionIdx(pidx-1, 0);
+        } else {
+            return nullopt;
         }
-        return nullopt;
     }
 
     bool check_inclusion(RegionIdx &a, RegionIdx &b){
@@ -321,36 +346,41 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
     }
     // 1. initialize primaries
     vector<RegionIdx> regions;
-    optional<RegionIdx> primary_rgn=workspace.first_primary();
-    optional<uint32_t> primary_post_pidx;
+    optional<RegionIdx> focused_rgn=workspace.first_region();
+    optional<uint32_t> focused_post_pidx;
     RegionIdx post_rgn;
     optional<RegionIdx> parent_of_post_rgn;
-    while(primary_rgn.has_value()){
-        regions.clear();
-        //leftmost case
-        auto child = workspace.child(primary_rgn.value());
-        if(child.has_value()){
-            regions.push_back(child.value());
+    while(focused_rgn.has_value()){
+        auto is_primary=workspace.get_region_annot(focused_rgn.value().pidx, focused_rgn.value().sidx)->is_primary;
+        if(is_primary){
+            regions.clear();
+            //leftmost case
+            auto child = workspace.child(focused_rgn.value());
+            if(child.has_value()){
+                regions.push_back(child.value());
+            }
         }
+        
         //non-leftmost cases
-        primary_post_pidx=workspace.consume_refs[primary_rgn.value().pidx].post_pidx;
-        while(primary_post_pidx.has_value()){
-            post_rgn.pidx=workspace.consume_refs[primary_post_pidx.value()].pidx;
-            post_rgn.sidx=workspace.consume_refs[primary_post_pidx.value()].sidx;
+        focused_post_pidx=workspace.consume_refs[focused_rgn.value().pidx].post_pidx;
+        while(focused_post_pidx.has_value()){
+            post_rgn.pidx=workspace.consume_refs[focused_post_pidx.value()].pidx;
+            post_rgn.sidx=workspace.consume_refs[focused_post_pidx.value()].sidx;
 
             // (1) If post.rgn ∉ primary.rgn,
-            if(!workspace.check_inclusion(primary_rgn.value(), post_rgn)){
+            if(!workspace.check_inclusion(focused_rgn.value(), post_rgn)){
                 break;
             }
-
             // find the largest but included in the primary
             parent_of_post_rgn = workspace.parent(post_rgn);
-            while(parent_of_post_rgn.has_value() && workspace.check_inclusion(primary_rgn.value(), parent_of_post_rgn.value())){
+            while(parent_of_post_rgn.has_value() && workspace.check_inclusion(focused_rgn.value(), parent_of_post_rgn.value())){
                 post_rgn=parent_of_post_rgn.value();
                 parent_of_post_rgn=workspace.parent(post_rgn);
             }
-            // add right region
-            regions.push_back(post_rgn);
+            if(is_primary){
+                // add right region
+                regions.push_back(post_rgn);
+            }
 
             // move consuming pointer
             if(parent_of_post_rgn.has_value()){
@@ -361,14 +391,16 @@ void build_prokrustean(StratificationWorkSpace &workspace, Prokrustean &prokrust
                 // workspace.consume_refs[primary_post_pidx.value()].exhausted();
                 workspace.consume_refs[post_rgn.pidx].exhausted();
                 // workspace.consume_refs[post_rgn.pidx].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
-                workspace.consume_refs[primary_rgn.value().pidx].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
+                workspace.consume_refs[focused_rgn.value().pidx].post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
             }
             // go further to the right.
-            primary_post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
+            focused_post_pidx=workspace.consume_refs[post_rgn.pidx].post_pidx;
         }
-        workspace.set_stratum_output(primary_rgn.value(), prokrustean, &regions);
-        // move to next primary
-        primary_rgn = workspace.next_primary(primary_rgn.value());
+        if(is_primary){
+            workspace.set_stratum_output(focused_rgn.value(), prokrustean, &regions);
+        }
+        // move to next region
+        focused_rgn = workspace.next_region(focused_rgn.value());
     }
     regions.clear();
     for(auto &ref: workspace.consume_refs){
