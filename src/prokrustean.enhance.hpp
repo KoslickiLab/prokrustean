@@ -30,6 +30,81 @@ struct ProkrusteanEnhancement {
     ProkrusteanEnhancement(Prokrustean& prokrustean):prokrustean(prokrustean) {}
 };
 
+bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+    if(ext.prokrustean.stratums__region_cnt[id]==0)
+    return true;
+    for(int i=0; i< ext.prokrustean.stratums__region_cnt[id]; i++){
+        if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
+            return false;
+        }
+    }
+    return true;
+}
+
+// bool no_stratified_region_in_seq(SeqId id, int k, ProkrusteanEnhancement &ext){
+//     if(ext.prokrustean.sequences__region_cnt[id]==0)
+//     return true;
+//     for(int i=0; i< ext.prokrustean.sequences__region_cnt[id]; i++){
+//         if(ext.prokrustean.stratums__size[ext.prokrustean.sequences__region[id][i].stratum_id]>=k-1){
+//             return false;
+//         }
+//     }
+//     return true;
+// }
+
+uint8_t first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+    for(int i=0; i< ext.prokrustean.stratums__region_cnt[id]; i++){
+        if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
+            return i;
+        }
+    }
+    // no stratified region over k-1 found
+    assert(false);
+}
+
+uint8_t last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+    for(int i=ext.prokrustean.stratums__region_cnt[id]-1; i>=0; i--){
+        if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
+            return i;
+        }
+    }
+    // no stratified region over k-1 found
+    assert(false);
+}
+
+uint8_t next_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanEnhancement &ext){
+    idx++;
+    while(idx<ext.prokrustean.stratums__region_cnt[id]){
+        if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
+            return idx;
+        }
+        idx++;
+    }
+    // no stratified region over k-1 found
+    assert(false);
+}
+
+uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanEnhancement &ext){
+    idx--;
+    while(idx>=0){
+        if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
+            return idx;
+        }
+        idx--;
+    }
+    // no stratified region over k-1 found
+    assert(false);
+}
+// uint8_t first_stratified_region_idx_in_seq(SeqId id, int k, ProkrusteanEnhancement &ext){
+//     for(int i=0; i< ext.prokrustean.sequences__region_cnt[id]; i++){
+//         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k-1){
+//             return i;
+//         }
+//     }
+//     // no stratified region over k-1 found
+//     assert(false);
+// }
+
 void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
     ext.stratum_sample_occ_seq_id.resize(ext.prokrustean.stratum_count());
     ext.stratum_sample_occ_pos.resize(ext.prokrustean.stratum_count());

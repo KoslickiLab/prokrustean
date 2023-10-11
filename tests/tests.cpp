@@ -14,7 +14,7 @@ int main(void){
     // main_construction();
 
     cout << "--- application kmer ---" << endl;
-    main_application_kmer();
+    // main_application_kmer();
 
     // cout << "--- application unitig counting ---" << endl;
     // main_application_unitig_count();

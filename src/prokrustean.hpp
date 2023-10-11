@@ -230,15 +230,18 @@ struct Prokrustean {
                 output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), v.size));  
             }
         }
+        // for(auto &rgn: output){
+        //     assert(rgn.size()>=k);
+        // }
     } 
     
     uint64_t get_cardinality(){
         uint64_t cnt = 0;
         for(auto rcnt: sequences__region_cnt){
-            cnt+=rcnt;
+            cnt+=(int)rcnt;
         }
         for(auto rcnt: stratums__region_cnt){
-            cnt+=rcnt;
+            cnt+=(int)rcnt;
         }
         return cnt;
     }

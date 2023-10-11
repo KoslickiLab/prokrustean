@@ -15,9 +15,10 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
         if(seq.size<k){
             continue;
         }
+        // tip of sequence
         prokrustean.get_spectrum(seq, k-1, spectrum);
         if(spectrum[0].is_reflected){
-            cnt++;
+            // cnt++;
             stats[0]++;
         }
     }
@@ -32,12 +33,12 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
                 if(prokrustean_ext.stratum_left_ext_count[i]==0){
                     // tip
                     // cout << "tip at stratum " << i << endl; 
-                    cnt++;
+                    // cnt++;
                     stats[1]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // convergence
                     // cout << "convergence at stratum " << i << endl; 
-                    cnt++;
+                    // cnt++;
                     stats[2]++;
                 }
             } 
@@ -53,17 +54,17 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
             // special case
             if(prokrustean_ext.stratum_right_ext_count[i]>1){
                 // divergence multiple -> convergence does not matter
-                cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                // cnt+=prokrustean_ext.stratum_right_ext_count[i];
                 stats[4]+=prokrustean_ext.stratum_right_ext_count[i];
             } else if(prokrustean_ext.stratum_right_ext_count[i]==1){
                 if(prokrustean_ext.stratum_left_ext_count[i]==0){
                     // divergence single -> convergence can work
                     // cout << "tip at stratum of k-1 " << i << endl;  
-                    cnt++;
+                    // cnt++;
                     stats[5]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // cout << "convergence at stratum of k-1 " << i << endl;  
-                    cnt++;
+                    // cnt++;
                     stats[6]++;
                 }
             }
