@@ -20,7 +20,8 @@ struct Region {
     StratumId stratum_id;
 
     Region(){}
-    Region(Pos from, Pos to, bool is_stratified): Region(from, to, is_stratified, 0){}
+    Region(Pos from, Pos to): Region(from, to, false, 0){}
+    Region(Pos from, Pos to, StratumId stratum_id): Region(from, to, true, stratum_id){}
     Region(Pos from, Pos to, bool is_stratified, StratumId stratum_id): from(from), to(to), is_stratified(is_stratified), is_reflected(!is_stratified), stratum_id(stratum_id) {}
 
     uint64_t size(){
@@ -29,18 +30,22 @@ struct Region {
     }
 
     void print(){
-        cout << "stratified: " << is_stratified << ", from:to " << from << ":" << to << endl;
+        cout << "stratified"; 
+        if(is_stratified){
+            cout<<"("<< stratum_id <<")";
+        }
+        cout <<": " << is_stratified << ", from:to " << from << ":" << to << endl;
     }
 };
 
 struct StratifiedRegion: Region{
     StratifiedRegion(){}
-    StratifiedRegion(Pos from, Pos to, StratumId stratum_id): Region(from, to, true, stratum_id) {}
+    StratifiedRegion(Pos from, Pos to, StratumId stratum_id): Region(from, to, stratum_id) {}
 };
 
 struct ReflectedRegion: Region{
     ReflectedRegion(){}
-    ReflectedRegion(Pos from, Pos to): Region(from, to, false) {}
+    ReflectedRegion(Pos from, Pos to): Region(from, to) {}
 };
 
 
@@ -160,6 +165,7 @@ struct Prokrustean {
             StratifiedData &d=sequences__region[id][rgn_cnt];
             vertex.s_edges[rgn_cnt].from=d.pos;
             vertex.s_edges[rgn_cnt].to=d.pos+stratums__size[d.stratum_id];
+            vertex.s_edges[rgn_cnt].stratum_id=d.stratum_id;
             vertex.s_edges[rgn_cnt].is_stratified=true;
             vertex.s_edges[rgn_cnt].is_reflected=false;
         }
@@ -178,6 +184,7 @@ struct Prokrustean {
             StratifiedData &d=stratums__region[id][rgn_cnt];
             vertex.s_edges[rgn_cnt].from=d.pos;
             vertex.s_edges[rgn_cnt].to=d.pos+stratums__size[d.stratum_id];
+            vertex.s_edges[rgn_cnt].stratum_id=d.stratum_id;
             vertex.s_edges[rgn_cnt].is_stratified=true;
             vertex.s_edges[rgn_cnt].is_reflected=false;
         }

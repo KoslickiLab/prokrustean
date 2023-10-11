@@ -44,7 +44,8 @@ void test_cdbg_single(){
     NaiveCompactedDeBruijnGraph cdbg;
     cdbg.construct_compacted(seq_texts, k);
     auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
-    cdbg.print();
+    // cdbg.print();
+    cout << "naive count: " << naive_unitig_cnt << endl;
     // vector<int> ks={2, 7, 30, 50};
     // for(auto k: ks){
     //     auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
