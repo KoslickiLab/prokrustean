@@ -6,19 +6,23 @@
 
 int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ext, bool verbose=false){
     Prokrustean &prokrustean = prokrustean_ext.prokrustean;
+    optional<int> turn_on;
+    turn_on=6;
 
     int cnt=0;
     vector<int> stats(7);
     vector<Region> spectrum;
     for(int i=0; i<prokrustean.sequence_count(); i++){
         Sequence seq = prokrustean.get_sequence(i);
-        if(seq.size<k){
+        if(seq.size<k-1){
             continue;
         }
         // tip of sequence
         prokrustean.get_spectrum(seq, k-1, spectrum);
         if(spectrum[0].is_reflected){
-            // cnt++;
+            if(!turn_on.has_value() || turn_on.value()==1){
+                cnt++;
+            }
             stats[0]++;
         }
     }
@@ -33,12 +37,16 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
                 if(prokrustean_ext.stratum_left_ext_count[i]==0){
                     // tip
                     // cout << "tip at stratum " << i << endl; 
-                    // cnt++;
+                    if(!turn_on.has_value() || turn_on.value()==2){
+                        cnt++;
+                    }
                     stats[1]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // convergence
                     // cout << "convergence at stratum " << i << endl; 
-                    // cnt++;
+                    if(!turn_on.has_value() || turn_on.value()==3){
+                        cnt++;
+                    }
                     stats[2]++;
                 }
             } 
@@ -46,25 +54,36 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
                     if(prokrustean_ext.stratum_right_ext_count[i]>1){
                     // divergence
                     // cout << "divergence at stratum " << i << " (" << (int)prokrustean_optional.stratum_right_ext_count[i] << ")" << endl;  
-                    cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                    if(!turn_on.has_value() || turn_on.value()==4){
+                        cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                    }
                     stats[3]+=prokrustean_ext.stratum_right_ext_count[i];
                 }
             }
         } else {
-            // special case
+            // special case k-1
             if(prokrustean_ext.stratum_right_ext_count[i]>1){
                 // divergence multiple -> convergence does not matter
-                // cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                if(!turn_on.has_value() || turn_on.value()==5){
+                    cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                }
                 stats[4]+=prokrustean_ext.stratum_right_ext_count[i];
             } else if(prokrustean_ext.stratum_right_ext_count[i]==1){
+                
                 if(prokrustean_ext.stratum_left_ext_count[i]==0){
-                    // divergence single -> convergence can work
-                    // cout << "tip at stratum of k-1 " << i << endl;  
+                    // cout << "tip at stratum of k-1 " << i << endl; divergence single -> convergence can work
+                    /*stratum tip at stratum of k-1 && right ext count 1 is impossible:
+                    If right ext count is 1, that means at least one extension was terminal (to make stratum)
+                    and being left side tip means all occurrences are terminal -> meaning the string is k-1
+                    */
+                    assert(false); // leave this as assert
                     // cnt++;
                     stats[5]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // cout << "convergence at stratum of k-1 " << i << endl;  
-                    // cnt++;
+                    if(!turn_on.has_value() || turn_on.value()==6){
+                        cnt++;
+                    }
                     stats[6]++;
                 }
             }
