@@ -32,7 +32,7 @@ void test_cdbg_single(){
     // for(auto &txt: seq_texts){
     //     cout << txt << endl;
     // }
-    int k = 32;
+    
     // for(int k=2; k<300; k++){
     //     auto assembled_cnt=extract_compacted_dbg(k, enhancement, seq_texts);
     //     auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, enhancement);
@@ -41,6 +41,7 @@ void test_cdbg_single(){
     //     }
     //     // assert(assembled_cnt==calculated_unitig_cnt);
     // }
+    int k = 10;
     auto assembled_cnt=extract_compacted_dbg(k, enhancement, seq_texts);
     auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, enhancement);
     cout << "assembled_cnt: " << assembled_cnt << endl;

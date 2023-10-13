@@ -339,4 +339,22 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //     }
 // }
 
+void debug(ProkrusteanEnhancement &ext, StratumId target_stratum_id){
+    for(int i=0; i<ext.prokrustean.sequence_count(); i++){
+        for(auto& edge: ext.prokrustean.get_sequence(i).s_edges){
+            if(edge.stratum_id==target_stratum_id){
+                cout << "parent seq: " << i << endl;
+                ext.prokrustean.get_sequence(i).print();
+            }
+        }
+    }
+    for(int i=0; i<ext.prokrustean.stratum_count(); i++){
+        for(auto& edge: ext.prokrustean.get_stratum(i).s_edges){
+            if(edge.stratum_id==target_stratum_id){
+                cout << "parent stratum: " << i << endl;
+                ext.prokrustean.get_stratum(i).print();
+            }
+        }
+    }
+}
 #endif

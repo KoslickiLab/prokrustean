@@ -30,11 +30,12 @@ struct Region {
     }
 
     void print(){
-        cout << "stratified"; 
         if(is_stratified){
-            cout<<"("<< stratum_id <<")";
+            cout<<"stratified("<< stratum_id <<")";
+        } else {
+            cout<<"refracted";
         }
-        cout <<": " << is_stratified << ", from:to " << from << ":" << to << endl;
+        cout << " from:to " << from << ":" << to << endl;
     }
 };
 
