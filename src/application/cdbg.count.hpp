@@ -6,8 +6,10 @@
 
 int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ext, bool verbose=false){
     Prokrustean &prokrustean = prokrustean_ext.prokrustean;
-    optional<int> turn_on;
-    turn_on=6;
+    optional<int> turn_on=nullopt;
+    if(turn_on.has_value()){
+        cout << "filter turned on: investigating maximal unitig starting point by components" << endl;
+    }
 
     int cnt=0;
     vector<int> stats(7);
@@ -20,6 +22,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
         // tip of sequence
         prokrustean.get_spectrum(seq, k-1, spectrum);
         if(spectrum[0].is_reflected){
+            // maximal case 1
             if(!turn_on.has_value() || turn_on.value()==1){
                 cnt++;
             }
@@ -36,14 +39,14 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
             if(spectrum[0].is_reflected){
                 if(prokrustean_ext.stratum_left_ext_count[i]==0){
                     // tip
-                    // cout << "tip at stratum " << i << endl; 
+                    // maximal case 2
                     if(!turn_on.has_value() || turn_on.value()==2){
                         cnt++;
                     }
                     stats[1]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // convergence
-                    // cout << "convergence at stratum " << i << endl; 
+                    // maximal case 3
                     if(!turn_on.has_value() || turn_on.value()==3){
                         cnt++;
                     }
@@ -53,7 +56,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
             if(spectrum[spectrum.size()-1].is_reflected){
                     if(prokrustean_ext.stratum_right_ext_count[i]>1){
                     // divergence
-                    // cout << "divergence at stratum " << i << " (" << (int)prokrustean_optional.stratum_right_ext_count[i] << ")" << endl;  
+                    // maximal case 4
                     if(!turn_on.has_value() || turn_on.value()==4){
                         cnt+=prokrustean_ext.stratum_right_ext_count[i];
                     }
@@ -64,6 +67,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
             // special case k-1
             if(prokrustean_ext.stratum_right_ext_count[i]>1){
                 // divergence multiple -> convergence does not matter
+                // maximal case 5
                 if(!turn_on.has_value() || turn_on.value()==5){
                     cnt+=prokrustean_ext.stratum_right_ext_count[i];
                 }
@@ -81,6 +85,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ex
                     stats[5]++;
                 } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
                     // cout << "convergence at stratum of k-1 " << i << endl;  
+                    // maximal case 6
                     if(!turn_on.has_value() || turn_on.value()==6){
                         cnt++;
                     }
