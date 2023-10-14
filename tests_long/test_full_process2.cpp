@@ -178,7 +178,7 @@ void test_full_process_push(){
         get_distinct_kmers(k, prokrustean, seq_texts, mers);
         sort(mers.begin(), mers.end());
 
-        assert(mers==_collect_distinct_kmers_naive(seq_texts, k));
+        assert(mers==get_distinct_kmers_naive(seq_texts, k));
     }
     cout << "distinct kmers computed: " << (std::chrono::steady_clock::now()-start).count()/1000000 << " microsecond" << endl;
     

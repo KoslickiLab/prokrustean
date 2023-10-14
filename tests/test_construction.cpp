@@ -43,7 +43,7 @@ void test_basic_construction_w_kmers(){
     for(auto k: testing_ks){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
         sort(output.begin(), output.end());
-        assert(output==collect_distinct_kmers_naive(seq_texts, k));
+        assert(output==get_distinct_kmers_naive(seq_texts, k));
     }
 }
 

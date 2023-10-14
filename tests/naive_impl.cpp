@@ -273,22 +273,6 @@ public:
     }
 };
 
-
-
-vector<string> collect_distinct_kmers_naive(vector<string> sequences, unsigned int k){
-    set<string> mers;
-    for(auto seq: sequences){
-        if(seq.size()<k) continue;
-
-        for(int i=0; i<seq.size()-(k-1); i++){
-            string mer = seq.substr(i, k);
-            mers.insert(mer);
-        }
-    }
-    vector<string> output(mers.begin(), mers.end());
-    return output;
-}
-
 vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k){
     set<string> mers;
     for(auto seq: sequences){
