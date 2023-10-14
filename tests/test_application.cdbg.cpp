@@ -56,38 +56,91 @@ void test_cdbg_with_verifier(){
 }
 
 void _explore(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
-    // if(unitigs[uni_id].is_start_of_maximal){
-    //     cout << "[max] ";    
-    // }
-    // cout << unitigs[uni_id].get_string(sequences) << " -> ";
-
     int next_cnt=unitigs[uni_id].nexts.size();
     if(next_cnt>0){
         cout << "-> ";
     }
     for(auto next: unitigs[uni_id].nexts){
-        cout << unitigs[next].get_string(sequences, k) << " ";
-        // if(unitigs[next].is_void_k_minus_1_unitig){
-
-        // }
-
+        cout << unitigs[next].get_string(sequences) << " ";
     }
     if(unitigs[uni_id].nexts.size()==1){
         _explore(unitigs[uni_id].nexts[0], unitigs, sequences, k);
     }
 }
 
+void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
+    assert(unitigs[uni_id].is_start_of_maximal);
+    // implement string
+    unitigs[uni_id].content=unitigs[uni_id].get_string(sequences);
+    if(unitigs[uni_id].nexts.size()!=1){
+        return;
+    }
+    UnitigId curr_id=uni_id;
+    UnitigId next_id=unitigs[curr_id].nexts[0];
+    Unitig &next_unitig=unitigs[next_id];
+    while(true){
+        next_unitig=unitigs[next_id];
+        // normal case
+        if(next_unitig.is_void_k_minus_1_unitig==false){
+            if(next_unitig.is_convergence){
+                unitigs[uni_id].nexts.clear();
+                unitigs[uni_id].nexts.push_back(next_id);
+                break;
+            } else {
+                // merge
+                unitigs[uni_id].content+=next_unitig.get_string(sequences).substr(k-1);
+                if(next_unitig.is_start_of_maximal || next_unitig.nexts.size()==0){
+                    unitigs[uni_id].nexts=next_unitig.nexts;
+                    break;
+                } else {
+                    curr_id=next_id;
+                    next_id=next_unitig.nexts[0];
+                }
+            }
+        } else {
+            // void case
+            if(unitigs[curr_id].is_void_k_minus_1_unitig && next_unitig.is_void_k_minus_1_unitig){
+                // merge only one letter void-void
+                unitigs[uni_id].content+=next_unitig.get_string(sequences).substr(k-2);
+            }
+
+            if(next_unitig.is_start_of_maximal || next_unitig.nexts.size()==0){
+                unitigs[uni_id].nexts=next_unitig.nexts;
+                break;
+            } else {
+                curr_id=next_id;
+                next_id=next_unitig.nexts[0];
+            }
+        }
+    }
+}
+
 void construct_cdbg(vector<Unitig> &unitigs, vector<string> &sequences, int k){
     int idx=0;
+    cout << "----- construct ------" << endl;
     for(auto& unitig: unitigs){
         if(unitig.is_start_of_maximal){
             auto uni_id = idx;
-            cout << "[max]," << idx << " " << unitigs[idx].get_string(sequences, k);
-            _explore(uni_id, unitigs, sequences, k);
-            cout << endl;
+            // cout << "[max]," << idx << " " << unitigs[idx].get_string(sequences, k);
+            // _explore(uni_id, unitigs, sequences, k);
+            // cout << endl;
+            build_strings(uni_id, unitigs, sequences, k);
         }
         // unitig.print(sequences);
         idx++;
+    }
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        auto &unitig = unitigs[id];
+        if(unitig.is_start_of_maximal){
+            cout << unitig.content;
+            if(unitig.nexts.size()>0){
+                cout << "-> ";
+            }
+            for(auto next: unitig.nexts){
+                cout << unitigs[next].content << " ";
+            }
+            cout << endl;
+        }
     }
 }
 

@@ -46,11 +46,13 @@ struct Unitig {
     Pos loc_from;
     Pos loc_to;
     bool is_start_of_maximal=false;
+    bool is_convergence=false;
     bool is_from_stratum=false;
     bool is_from_void_intersection=false;
     bool is_void_k_minus_1_unitig=false;
     vector<UnitigId> nexts; // optimize
-    Unitig(){}
+    string content;
+
     void extend_left(Pos size){
         assert(loc_from>=size);
         loc_from-=size;
@@ -66,7 +68,7 @@ struct Unitig {
     void print(vector<string> &sequences){
         cout << "unitig: " << sequences[loc_id].substr(loc_from, loc_to-loc_from) << " seq id: " << loc_id << endl;
     }
-    string get_string(vector<string> &sequences, int k){
+    string get_string(vector<string> &sequences){
         bool valid=loc_id<sequences.size() && 0<=loc_from && loc_to<=sequences[loc_id].size();
         if(!valid){
             cout << "sequence location invalid: " << loc_id << ": " << loc_from << ": " << loc_to << "(seq size " << sequences[loc_id].size() << ")" << endl;
@@ -152,13 +154,13 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement
         work.unitigs[unitig_id].loc_from=work.working_bands[0].from;
         work.unitigs[unitig_id].loc_to=work.working_bands[0].to;
         work.unitigs[unitig_id].is_from_stratum=true;
+        work.unitigs[unitig_id].is_convergence=is_first_convergence;
         //maximal-tips or convergence
         if(ext.prokrustean.stratums__size[stratum_id]>k-1){
             // maximal case 3
             if(is_first_convergence) work.unitigs[unitig_id].is_start_of_maximal=true;
             // maximal case 2
             if(is_first_tip) work.unitigs[unitig_id].is_start_of_maximal=true;
-            work.unitigs[unitig_id].is_void_k_minus_1_unitig=false;    
         } 
         // the other place covers it (the case 6)
         // else {
@@ -358,6 +360,7 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
             if(ext.stratum_left_ext_count[right_descendent_id]>1){
                 // maximal case 6
                 unitig.is_start_of_maximal=true;
+                unitig.is_convergence=true;
                 // the others be literally void: 
                 // * if right cnt multiple -> then each branch gets maximal. 
                 // * if right cnt single/zero -> impossible
