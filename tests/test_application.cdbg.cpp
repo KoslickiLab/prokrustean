@@ -32,8 +32,8 @@ void test_cdbg_with_verifier(){
 
     vector<int> ks={4, 8, 12, 16, 40, 80};
     // vector<int> ks={7};
-    // for(auto k: ks){
-    for(int k=2; k<100; k++){
+    for(auto k: ks){
+    // for(int k=2; k<100; k++){
         CompactedDBGWorkspace workspace;
         extract_paritial_unitigs(k, enhancement, seq_texts, workspace);
         CdbgVerificationQuantity veritifer;
@@ -55,9 +55,45 @@ void test_cdbg_with_verifier(){
     // cout << "naive count: " << naive_unitig_cnt << endl;
 }
 
+void _explore(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
+    // if(unitigs[uni_id].is_start_of_maximal){
+    //     cout << "[max] ";    
+    // }
+    // cout << unitigs[uni_id].get_string(sequences) << " -> ";
+
+    int next_cnt=unitigs[uni_id].nexts.size();
+    if(next_cnt>0){
+        cout << "-> ";
+    }
+    for(auto next: unitigs[uni_id].nexts){
+        cout << unitigs[next].get_string(sequences, k) << " ";
+        // if(unitigs[next].is_void_k_minus_1_unitig){
+
+        // }
+
+    }
+    if(unitigs[uni_id].nexts.size()==1){
+        _explore(unitigs[uni_id].nexts[0], unitigs, sequences, k);
+    }
+}
+
+void construct_cdbg(vector<Unitig> &unitigs, vector<string> &sequences, int k){
+    int idx=0;
+    for(auto& unitig: unitigs){
+        if(unitig.is_start_of_maximal){
+            auto uni_id = idx;
+            cout << "[max]," << idx << " " << unitigs[idx].get_string(sequences, k);
+            _explore(uni_id, unitigs, sequences, k);
+            cout << endl;
+        }
+        // unitig.print(sequences);
+        idx++;
+    }
+}
+
 void test_cdbg_construction(){
     int Lmin = 1;
-    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    WaveletString str(PATH5_CDBG_SAMPLE, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -68,7 +104,7 @@ void test_cdbg_construction(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     
-    int k=10;
+    int k=4;
     CompactedDBGWorkspace workspace;
     extract_paritial_unitigs(k, enhancement, seq_texts, workspace);
 
@@ -81,13 +117,15 @@ void test_cdbg_construction(){
     NaiveCompactedDeBruijnGraph cdbg;
     cdbg.construct_compacted(seq_texts, k);
     auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
-    // cdbg.print();
-    cout << "naive count: " << naive_unitig_cnt << "veritifer.maximal_starting_unitig_count: " << calculated_unitig_cnt << endl;
+    cdbg.print();
     assert(veritifer.maximal_starting_unitig_count==naive_unitig_cnt);
+
+    update_stratum_based_loc_to_seq_based_loc(enhancement, workspace);
+    construct_cdbg(workspace.unitigs, seq_texts, k);
 }
 
 
 void main_application_cdbg() {
-    test_cdbg_with_verifier();
-    // test_cdbg_construction();
+    // test_cdbg_with_verifier();
+    test_cdbg_construction();
 }
