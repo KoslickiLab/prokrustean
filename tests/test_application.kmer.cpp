@@ -30,9 +30,7 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
     int Lmin = 1;
-    WaveletString str(PATH5_CDBG_SAMPLE, '$');
-    // auto str = WaveletString(PATH1_BWT);
-    // auto str = WaveletString(PATH2_BWT);
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;

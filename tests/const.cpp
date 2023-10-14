@@ -12,8 +12,8 @@ string PATH2_BWT = "../data/2_ebwt.txt";
 string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
 string PATH3_BWT = "../data/3_ebwt.txt";
 string PATH4_SREAD_PARTITIONED="../../../prokrustean_data/SRR20044276.001001.bwt";
-string PATH4_SREAD_PARTITIONED_BI="../../../prokrustean_data/SRR20044276.001001.bidirection.bwt";
 string PATH5_CDBG_SAMPLE="../../../prokrustean_data/cdbg_sample.bwt";
+string PATH6_CDBG_SAMPLE2="../../../prokrustean_data/cdbg_sample2.bwt";
 // If parameter is not true, test fails
 // This check function would be provided by the test framework
 #define IS_TRUE(x) { if (!(x)) std::cout << __FUNCTION__ << " failed on line " << __LINE__ << std::endl; }

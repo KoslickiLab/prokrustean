@@ -19,7 +19,7 @@ using namespace sdsl;
 
 void test_unitig_counting_single(){
     int Lmin = 1;
-    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -29,10 +29,7 @@ void test_unitig_counting_single(){
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
-    // for(auto &txt: seq_texts){
-    //     cout << txt << endl;
-    // }
-    // int k = 30;
+    
     vector<int> ks={2, 7, 30, 50};
     for(auto k: ks){
         auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
@@ -40,9 +37,7 @@ void test_unitig_counting_single(){
         NaiveCompactedDeBruijnGraph cdbg;
         cdbg.construct_compacted(seq_texts, k);
         auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
-        // cout << " unitigs in naive: " << naive_unitig_cnt << endl;
 
-        cout << "unitigs: " << unitig_cnt<< endl;
         assert(unitig_cnt==naive_unitig_cnt);
     }
 }

@@ -18,14 +18,14 @@ struct Configuration{
 
 void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanEnhancement* opt=nullptr){
     auto start = std::chrono::steady_clock::now();
-    cout << "step1 start" << endl;
+    cout << "step1: ";
     SuffixArrayNode root = get_root(fm_idx);
     StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt);
     navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_step1);
-    cout << "step1 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
 
     start = std::chrono::steady_clock::now();
-    cout << "step2 start" << endl;
+    cout << "step2: ";
     workspace_step1.setup_prokrustean();
     StratificationWorkSpace workspace_step2;
     uint64_t cnt=prokrustean.sequence_count();
@@ -33,8 +33,7 @@ void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t L
         workspace_step2.update_contexts_for_seq(i, fm_idx, workspace_step1, prokrustean.stratums__size);
         build_prokrustean(workspace_step2, prokrustean);
     }
-    cout << "step2 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    cout << "stratum: " << prokrustean.stratum_count() << ", stratified regions new: "<< prokrustean.get_cardinality() << endl;
+    cout << "finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
 #endif

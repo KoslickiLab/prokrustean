@@ -50,10 +50,9 @@ public:
         
         bool only_ACGTN = true;
         bool has_term = false;
-        cout << "-- characters(" << characters.size() << ") --" << endl;
         for(auto c: characters){
             if(c!='A' && c!='C' && c!='G' && c!='T' && c!='N' && c!=term){
-                cout << "Warning: A symbol (" << c <<") not in AGCTN and term("<< term <<") is included. The code still runs though." << endl;
+                cout << "warning: A symbol (" << c <<") not in AGCTN and term("<< term <<")." << endl;
                 only_ACGTN = false;
             }
             if(c==term){
@@ -61,15 +60,20 @@ public:
             }
         }
         if(!has_term){
-            cout << "Term symbol ("<< term <<") does not exist." << endl;
+            cout << "the termination ("<< term <<") does not exist." << endl;
             assert(has_term);
         }
 
-        cout << "characters: ";
+        cout << "characters(" << characters.size() << "): ";
         for(auto c: characters){
             cout << c << " ";
         }
         cout << endl;
+        cout << "abundances("<< wt.size() << "): ";
+		for(auto c: characters){
+			cout << c << ":" << wt.rank(wt.size(),c) << " ";
+		}
+		cout << endl;
     }
 
     vector<char> get_characters(){

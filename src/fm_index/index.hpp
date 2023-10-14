@@ -41,14 +41,8 @@ public:
 		this->TERM = TERM;
 
         this->C = get_c_array(string);
-		this->char_abundances = get_abundences(this->C);
-		this->characters_ranked_by_abundance = get_char_ids_by_abundence_desc(this->char_abundances);
-		cout << "total length: " << this->STRING->size() << endl;
-		cout << "abundences:";
-		for(int c=0; c<characters_cnt; c++){
-			cout << " " << STRING->get_characters()[c]<< ":" << this->char_abundances[c];
-		}
-		cout << endl;
+		this->char_abundances = get_abundances(this->C);
+		this->characters_ranked_by_abundance = get_char_ids_by_abundance_desc(this->char_abundances);
     }
 	char TERM='$'; //Lexicographically first
 	CharId term_id=0;
@@ -84,7 +78,7 @@ public:
 		this->STRING=nullptr;
 	}
 
-	string recover_text(int seq_id){
+	string recover_text(int seq_id, bool include_term=false){
 		uint64_t L = seq_id;
 		uint64_t F = this->LF(L);
 
@@ -94,12 +88,14 @@ public:
 			L = F;
 			F = this->LF(L);
 		}
-		// must be terminator symbol
-		// seq += (*this->STRING)[L]; 
+		
+		if(include_term){
+			seq += (*this->STRING)[L]; 
+		}
 		return seq;
 	}
 
-	void recover_all_texts(vector<string> &seqs){
+	void recover_all_texts(vector<string> &seqs, bool include_term=false){
 		for(int i=0; i<this->seq_cnt(); i++){
 			seqs.push_back(recover_text(i));
 		}
@@ -111,11 +107,14 @@ public:
 	first: sa index
 	second: actual suffix
 	*/
-	vector<pair<uint64_t, string>> recover_suffix_array(FmIndex &fm_idx, int seq_no, bool with_term=true){
+	vector<pair<uint64_t, string>> recover_suffix_array(int seq_no, bool with_term=false){
 		uint64_t L = seq_no;
 		uint64_t F = this->LF(L);
 
-		string seq(1, this->TERM);
+		string seq;
+		if(with_term){
+			seq.push_back(this->TERM);
+		}
 		vector<pair<uint64_t, string>> sa;
 		while(F >= this->seq_cnt()){
 			seq = (*this->STRING)[L] + seq;
@@ -137,10 +136,10 @@ public:
 	debugging purpose
 	index is sa index
 	*/
-	vector<string> recover_suffix_array(FmIndex &fm_idx, bool with_term=true){
+	vector<string> recover_suffix_array(bool with_term=true){
 		vector<pair<uint64_t, string>> sa;
 		for(int i=0; i<this->seq_cnt(); i++){
-			for(auto pair: recover_suffix_array(fm_idx, i, with_term)){
+			for(auto pair: recover_suffix_array(i, with_term)){
 				sa.push_back(pair);
 			}
 		}
@@ -168,7 +167,7 @@ private:
 		return c_array;
 	}
 
-	vector<uint64_t> get_abundences(vector<uint64_t> C){
+	vector<uint64_t> get_abundances(vector<uint64_t> C){
 		vector<uint64_t> abundances;
 		for(int c=0; c<this->characters_cnt-1; c++){
 			abundances.push_back(C[c+1]-C[c]);
@@ -177,7 +176,7 @@ private:
 		return abundances;
 	}
 
-	vector<CharId> get_char_ids_by_abundence_desc(vector<uint64_t> abundances){
+	vector<CharId> get_char_ids_by_abundance_desc(vector<uint64_t> abundances){
 		vector<CharId> char_id_by_abundance;
 		for(int c=0; c<this->characters_cnt; c++){
 			char_id_by_abundance.push_back(c);

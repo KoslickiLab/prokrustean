@@ -11,7 +11,7 @@ using namespace std;
 class NaiveFmIndex{
 
 public:
-	NaiveFmIndex(vector<string> sequences, int s_factor=1){
+	NaiveFmIndex(vector<string> &sequences, int s_factor=1){
         // sort(sequences.begin(), sequences.end());
         this->sequences = sequences;
         this->sa = get_gsa(this->sequences);
@@ -19,7 +19,7 @@ public:
         this->ebwt = get_ebwt(this->sa);
     }
 
-    char TERM = '#';
+    char TERM = '$';
     vector<string> sequences;
     vector<pair<int, string>> sa;
     vector<pair<int, string>> ssa;
@@ -32,7 +32,7 @@ public:
             auto seq = sequences[i];
             for (int j=0; j< seq.size(); j++){
                 // string suffix = seq.substr(j, seq.size()) + TERM;
-                string suffix = seq.substr(j, seq.size());
+                string suffix = seq.substr(j);
                 suffixes.push_back(make_pair(global_idx, suffix));
                 global_idx++;
             }
@@ -103,7 +103,7 @@ public:
     }
 };
 
-vector<string> get_sequences(string path){
+vector<string> get_sequences_naive(string path, char TERM='$'){
     ifstream ifs(path);
     string seq;
     vector<string> sequences;
@@ -111,10 +111,15 @@ vector<string> get_sequences(string path){
         char c;
         ifs.read((char*)&c, sizeof(char));
         seq += c;
-        if(c=='#'){
+        if(c==TERM){
             sequences.push_back(seq);
             seq.clear();
         } 
+
+        // if(c==TERM){
+        //     sequences.push_back(seq);
+        //     seq.clear();
+        // } 
         // else {
         //     seq += c;
         // }
