@@ -176,6 +176,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement
         // exceptional - first is last
         if(work.working_bands.size()==1){
             work.stratum_exts[stratum_id].last_unitig=unitig_id;
+            work.unitigs[unitig_id].is_void_k_minus_1_unitig=ext.prokrustean.stratums__size[stratum_id]==k-1;
         }
     }
     // last if maximal
@@ -374,11 +375,11 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
 void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
     ext.prokrustean.get_sequence(seq_id, work.working_vertex);
     ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
-    if(seq_id==0){
-        for(auto &band: work.working_bands){
-            band.print();
-        }
-    }
+    // if(seq_id==0){
+    //     for(auto &band: work.working_bands){
+    //         band.print();
+    //     }
+    // }
     for(int i=0; i<work.working_bands.size(); i++){
         auto &band=work.working_bands[i];
         if(!band.is_reflected){
@@ -581,7 +582,7 @@ void update_stratum_based_loc_to_seq_based_loc(ProkrusteanEnhancement &ext, Comp
     }
 }
 
-struct CdbgVerificationQuantity {
+struct CdbgInvariants {
     int total_left_count=0;
     int total_pointers_pointing_down=0;
 
@@ -589,6 +590,7 @@ struct CdbgVerificationQuantity {
     int total_pointers_pointing_up=0;
 
     int maximal_starting_unitig_count=0;
+    int multiple_branches_include_a_void_branch=0;
 
     vector<optional<int>> each_left_extension_count_of_stratum; // reflectum at pos 0
     vector<optional<int>> each_unitig_attached_on_first_of_stratum_referenced_count; // reflectum at pos 0
@@ -638,6 +640,13 @@ struct CdbgVerificationQuantity {
         int void_cnt=0;
         int void_intersection_cnt=0;
         for(auto &unitig: work.unitigs){
+            if(unitig.nexts.size()>1){
+                for(auto next: unitig.nexts){
+                    if(work.unitigs[next].is_void_k_minus_1_unitig){
+                        this->multiple_branches_include_a_void_branch++;
+                    }
+                }
+            }
             if(unitig.is_void_k_minus_1_unitig){
                 void_cnt++;
             }
@@ -653,6 +662,7 @@ struct CdbgVerificationQuantity {
     void assert_result(){
         assert(total_right_count==total_pointers_pointing_up);
         assert(total_left_count==total_pointers_pointing_down);
+        assert(multiple_branches_include_a_void_branch==0);
     }
     void print_result(){
         cout << "total left count: " << total_left_count << ", total pointing down: " << total_pointers_pointing_down << endl;
