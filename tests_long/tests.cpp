@@ -6,8 +6,8 @@
 // #include "test_step3_build_prokrustean.cpp"
 // #include "test_full_process.cpp"
 // #include "test_ssa.cpp"
-#include "test_full_process2.cpp"
-#include "test_application.cdbg.naive.cpp"
+#include "test_construction.cpp"
+// #include "test_application.cdbg.naive.cpp"
 int main(void){
     // cout << "--- bitvector ---" << endl;
     // main_performance_bitvector();
@@ -23,14 +23,14 @@ int main(void){
     // cout << "--- step1 repr ---" << endl;
     // main_performance_step1_repr();
 
-    // cout << "--- full process ---" << endl;
-    // main_performance_full();
+    cout << "--- construction ---" << endl;
+    main_construction();
     // cout << "--- test ssa ---" << endl;
     // main_performance_ssa();
     // cout << "--- full process2 ---" << endl;
     // main_performance_full2();
 
 
-    cout << "--- application naive cdbg ---" << endl;
-    main_application_naive_cdbg();
+    // cout << "--- application naive cdbg ---" << endl;
+    // main_application_naive_cdbg();
 }

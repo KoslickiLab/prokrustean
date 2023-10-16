@@ -217,8 +217,6 @@ void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, b
         stack.pop();
         
         if(verbose) ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
-        
-        
         if(verbose) start = std::chrono::steady_clock::now();
         
         extend_node(fm_idx, ext);
@@ -234,14 +232,12 @@ void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, b
         if(verbose) start = std::chrono::steady_clock::now();
 
         for(int i=0; i<fm_idx.characters_cnt; i++){
-            // terminal
-            if(i==0) continue;
+            if(i==0 // skip terminal
+                || !ext.c_nodes_open[i] // not existing branch
+                || !ext.c_nodes[i].right_maximal // not right maximal
+                ) continue;
 
-            if(!ext.c_nodes_open[i]) continue;
-
-            if(ext.c_nodes[i].right_maximal){
-                stack.push(ext.c_nodes[i]);
-            }
+            stack.push(ext.c_nodes[i]);
         }
         
         if(verbose) ext.any_measure[1]+=(std::chrono::steady_clock::now()-start).count();
@@ -253,41 +249,75 @@ void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, b
     }
 }
 
-vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
-    // assert(fm_idx.locator!=nullptr);
-    // cout << "warning: sample x" << endl;
+// vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
+//     // assert(fm_idx.locator!=nullptr);
+//     // cout << "warning: sample x" << endl;
 
-    std::stack<SuffixArrayNode> stack;
-    vector<SuffixArrayNode> nodes;
+//     std::stack<SuffixArrayNode> stack;
+//     vector<SuffixArrayNode> nodes;
+
+//     TreeWorkspace ext(fm_idx.characters_cnt);
+//     ext.any_measure=vector<uint64_t>(10,0);
+
+//     auto start = std::chrono::steady_clock::now();
+
+//     stack.push(root);
+//     while(!stack.empty()){
+//         ext.node = stack.top();
+//         stack.pop();
+        
+//         if(ext.node.depth>=depth_max){
+//             nodes.push_back(ext.node);
+//         } else {
+//             extend_node(fm_idx, ext);
+
+//             for(int i=0; i<fm_idx.characters_cnt; i++){
+//                 // terminal
+//                 if(i==0) continue;
+
+//                 if(!ext.c_nodes_open[i]) continue;
+
+//                 if(ext.c_nodes[i].right_maximal){
+//                     stack.push(ext.c_nodes[i]);
+//                 }
+//             }
+//         }
+//     }
+//     return nodes;
+// }
+
+template<class T, NodeFunc_NEW<T> process_node>
+vector<SuffixArrayNode> collect_roots_while_navigate_maximals(int Lmin, FmIndex &fm_idx, T &t, int depth_max){
+    assert(Lmin>=1 && depth_max >=1);
 
     TreeWorkspace ext(fm_idx.characters_cnt);
-    ext.any_measure=vector<uint64_t>(10,0);
-
-    auto start = std::chrono::steady_clock::now();
-
-    stack.push(root);
+    vector<SuffixArrayNode> roots;
+    
+    stack<SuffixArrayNode> stack;
+    stack.push(get_root(fm_idx));
     while(!stack.empty()){
         ext.node = stack.top();
         stack.pop();
         
         if(ext.node.depth>=depth_max){
-            nodes.push_back(ext.node);
+            roots.push_back(ext.node);
         } else {
             extend_node(fm_idx, ext);
+            if(ext.node.depth>=Lmin){    
+                process_node(fm_idx, ext, t);
+            }
         
             for(int i=0; i<fm_idx.characters_cnt; i++){
-                // terminal
-                if(i==0) continue;
+                if(i==0 // skip terminal
+                || !ext.c_nodes_open[i] // not existing branch
+                || !ext.c_nodes[i].right_maximal // not right maximal
+                ) continue;
 
-                if(!ext.c_nodes_open[i]) continue;
-
-                if(ext.c_nodes[i].right_maximal){
-                    stack.push(ext.c_nodes[i]);
-                }
+                stack.push(ext.c_nodes[i]);
             }
         }
     }
-    return nodes;
+    return roots;
 }
 
 

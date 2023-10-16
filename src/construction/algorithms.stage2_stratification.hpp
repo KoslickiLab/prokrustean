@@ -4,7 +4,7 @@
 #include <stack>
 #include <tuple>
 #include <unordered_set>
-#include "algorithms.stage1_stratum.hpp"
+#include "algorithms.stage1_projection.hpp"
 
 using namespace std;
 

@@ -73,10 +73,6 @@ struct StratumProjectionWorkspace{
         StratumId new_id=this->new_stratum_id;
         this->new_stratum_id++;
         this->prokrustean.stratums__size.push_back(size);
-        if(this->new_stratum_id==this->stratum_reserved){
-            this->update_reserve_amount();
-            this->prokrustean.stratums__size.reserve(this->stratum_reserved);
-        }
         if(this->prokrustean_optional!=nullptr && this->prokrustean_optional->collect_left_right_extensions){
             this->prokrustean_optional->stratum_left_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
             this->prokrustean_optional->stratum_right_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
@@ -84,11 +80,6 @@ struct StratumProjectionWorkspace{
         /* critical region */
         stratum_lock.unlock();
         return new_id;
-    }
-
-    void update_reserve_amount(){
-        // todo: clever strategy
-        this->stratum_reserved+=pow(10, 7);
     }
 
     // void add_stratified_regions(tuple<SeqId, Pos> loc, StratumId stratum_id, bool is_primary){
@@ -139,7 +130,7 @@ struct StratumProjectionWorkspace{
         // }
     }
 
-    void setup_prokrustean(){
+    void prepare_prokrustean_spaces(){
         // sequence size is inferred at step2
         this->prokrustean.sequences__size.resize(this->seq_cnt);
         this->prokrustean.sequences__region.resize(this->seq_cnt);
