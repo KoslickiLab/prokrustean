@@ -5,8 +5,8 @@
 // #include <random>
 // #include <future>
 // #include "const.cpp"	
-// #include "../src/construction/algorithms.stage1_stratification.hpp"
-// #include "../src/construction/algorithms.stage2_prokrustean.hpp"
+// #include "../src/construction/algorithms.stage1_stratum.hpp"
+// #include "../src/construction/algorithms.stage2_stratified_rgn.hpp"
 // #include "../src/prokrustean.hpp"
 // #include "../src/fm_index/index.hpp"
 // #include "../src/fm_index/ssa.hpp"

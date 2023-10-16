@@ -6,8 +6,8 @@
 #include <thread>
 #include <future>
 #include <list>
-#include "algorithms.stage1_stratification.hpp"
-#include "algorithms.stage2_prokrustean.hpp"
+#include "algorithms.stage1_stratum.hpp"
+#include "algorithms.stage2_stratified_rgn.hpp"
 
 using namespace std;
 
