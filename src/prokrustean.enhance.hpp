@@ -106,11 +106,11 @@ uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, Pro
 // }
 
 void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
-    ext.stratum_sample_occ_seq_id.resize(ext.prokrustean.stratum_count());
-    ext.stratum_sample_occ_pos.resize(ext.prokrustean.stratum_count());
-    vector<bool> visits(ext.prokrustean.stratum_count());
+    ext.stratum_sample_occ_seq_id.resize(ext.prokrustean.stratum_count);
+    ext.stratum_sample_occ_pos.resize(ext.prokrustean.stratum_count);
+    vector<bool> visits(ext.prokrustean.stratum_count);
     std::stack<StratumId> stratum_stack;
-    for(int i=0; i<ext.prokrustean.sequence_count(); i++){
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
         for(auto &rgn: ext.prokrustean.get_sequence(i).s_edges){
             ext.stratum_sample_occ_seq_id[rgn.stratum_id]=i;
             ext.stratum_sample_occ_pos[rgn.stratum_id]=rgn.from;
@@ -137,18 +137,18 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 }
 
 // void fill_stratum_left_bound_single_right_extension(int k){
-//     // for(int i=0; i<prokrustean.sequence_count(); i++){
+//     // for(int i=0; i<prokrustean.sequence_count; i++){
 //     //     Sequence seq = prokrustean.get_sequence(i);
 //     //     seq.print();
 //     // }
-//     // for(int i=0; i<prokrustean.stratum_count(); i++){
+//     // for(int i=0; i<prokrustean.stratum_count; i++){
 //     //     Stratum stra = prokrustean.get_stratum(i);
 //     //     stra.print();
 //     // }
-//     this->stratum__left_bound_stratum_is_branching=vector<optional<bool>>(prokrustean.stratum_count());
+//     this->stratum__left_bound_stratum_is_branching=vector<optional<bool>>(prokrustean.stratum_count);
 //     vector<uint8_t> indices;
 //     /* single thread version of filling extensions */
-//     for(int i=0; i<prokrustean.sequence_count(); i++){
+//     for(int i=0; i<prokrustean.sequence_count; i++){
 //         Sequence seq = prokrustean.get_sequence(i);
 //         // seq.print();
 //         seq.get_valid_indices(k, indices);
@@ -158,7 +158,7 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //             fill_for_two_(seq.s_regions[indices[r]], seq.s_regions[indices[r+1]], k);
 //         }
 //     }
-//     for(int i=0; i<prokrustean.stratum_count(); i++){
+//     for(int i=0; i<prokrustean.stratum_count; i++){
 //         Stratum stra = prokrustean.get_stratum(i);
 //         stra.print();
 //         stra.get_valid_indices(k, indices);
@@ -168,11 +168,11 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //         }
 //     }
 
-//     this->stratum__is_start_of_maximal_unitig=vector<bool>(prokrustean.stratum_count(), false);
-//     this->sequence__is_start_of_maximal_unitig=vector<bool>(prokrustean.sequence_count(), false);
+//     this->stratum__is_start_of_maximal_unitig=vector<bool>(prokrustean.stratum_count, false);
+//     this->sequence__is_start_of_maximal_unitig=vector<bool>(prokrustean.sequence_count, false);
 //     // count
 //     int cnt=0;
-//     for(int i=0; i<prokrustean.sequence_count(); i++){
+//     for(int i=0; i<prokrustean.sequence_count; i++){
 //         Sequence seq = prokrustean.get_sequence(i);
 //         if(seq.size<k){
 //             continue;
@@ -188,7 +188,7 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //         }
 //     }
 
-//     for(int i=0; i<prokrustean.stratum_count(); i++){
+//     for(int i=0; i<prokrustean.stratum_count; i++){
 //         Stratum stra = prokrustean.get_stratum(i);
 //         if(stra.size<k){
 //             continue;
@@ -213,7 +213,7 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //     }
 
 //     vector<Region> spectrum;
-//     for(int i=0; i<prokrustean.sequence_count(); i++){
+//     for(int i=0; i<prokrustean.sequence_count; i++){
 //         Sequence seq = prokrustean.get_sequence(i);
 //         prokrustean.get_spectrum(seq, k, spectrum);
 //         for(int r=0; r< spectrum.size(); r++){
@@ -227,7 +227,7 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //         }
 //     }
 
-//     for(int i=0; i<prokrustean.stratum_count(); i++){
+//     for(int i=0; i<prokrustean.stratum_count; i++){
 //         Stratum stra = prokrustean.get_stratum(i);
 //         prokrustean.get_spectrum(stra, k, spectrum);
 //         for(int r=0; r< spectrum.size(); r++){
@@ -310,10 +310,10 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 // }
 
 // void setup_stratum_example_occ(){
-//     stratum_occ_samples.resize(prokrustean.stratum_count());
-//     vector<bool> visits(prokrustean.stratum_count());
+//     stratum_occ_samples.resize(prokrustean.stratum_count);
+//     vector<bool> visits(prokrustean.stratum_count);
 //     std::stack<Stratum> stratum_stack;
-//     for(int i=0; i<prokrustean.sequence_count(); i++){
+//     for(int i=0; i<prokrustean.sequence_count; i++){
 //         for(auto &rgn: prokrustean.get_sequence(i).s_regions){
 //             auto stratum = prokrustean.get_stratum(rgn.stratum_id);
 //             stratum.set_occ(i, rgn.from);
@@ -340,7 +340,7 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 // }
 
 void debug(ProkrusteanEnhancement &ext, StratumId target_stratum_id){
-    for(int i=0; i<ext.prokrustean.sequence_count(); i++){
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
         for(auto& edge: ext.prokrustean.get_sequence(i).s_edges){
             if(edge.stratum_id==target_stratum_id){
                 cout << "parent seq: " << i << endl;
@@ -348,7 +348,7 @@ void debug(ProkrusteanEnhancement &ext, StratumId target_stratum_id){
             }
         }
     }
-    for(int i=0; i<ext.prokrustean.stratum_count(); i++){
+    for(int i=0; i<ext.prokrustean.stratum_count; i++){
         for(auto& edge: ext.prokrustean.get_stratum(i).s_edges){
             if(edge.stratum_id==target_stratum_id){
                 cout << "parent stratum: " << i << endl;

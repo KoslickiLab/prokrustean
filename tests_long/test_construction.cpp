@@ -51,12 +51,12 @@ void test_step1_push(){
     // for (auto &f : futures) {
     //     f.wait();
     // }
-    // cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    // cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count << endl;
     // std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 
 void test_full_process_push(){
-    int Lmin=20;
+    int Lmin=1;
     auto num_threads=12;
     int sleep=0;
     auto start = std::chrono::steady_clock::now();
@@ -73,13 +73,19 @@ void test_full_process_push(){
     FmIndex fm_idx(str);
     // SampledSuffixArray ssa(fm_idx, sampling_factor);
     Prokrustean prokrustean;
-    
+
     start = std::chrono::steady_clock::now();
 
     vector<future<void>> futures;
     construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin, nullptr);
-    
-    std::cout << "sleeping... " << sleep << std::endl;
+    // unordered_map<uint8_t, int> counts;
+    // for(auto cnt: prokrustean.stratums__region_cnt){
+    //     counts[cnt]++;
+    // }
+    // for(auto [k,v]: counts){
+    //     cout << "cnt: " << (int)k << " amount: " << v << endl;
+    // }
+    if(sleep>0) std::cout << "sleeping... " << sleep << std::endl;
     fm_idx.dispose();
     prokrustean=Prokrustean();
     std::this_thread::sleep_for(std::chrono::seconds(1000));
@@ -88,7 +94,7 @@ void test_full_process_push(){
 
 
 void test_full_process_push_check_kmers(){
-    int Lmin=1;
+    int Lmin=20;
     auto num_threads=12;
     int sleep=0;
     auto start = std::chrono::steady_clock::now();
@@ -132,6 +138,6 @@ void test_full_process_push_check_kmers(){
 
 void main_construction() {
     // test_step1_push2();
-    // test_full_process_push();
-    test_full_process_push_check_kmers();
+    test_full_process_push();
+    // test_full_process_push_check_kmers();
 }

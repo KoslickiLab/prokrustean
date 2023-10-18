@@ -545,8 +545,8 @@ void _count_maximal_unitig_of_reflectum(vector<Unitig> &unitigs, UnitigId id, in
 
 void extract_paritial_unitigs(int k, ProkrusteanEnhancement &ext, vector<string> &sequences, CompactedDBGWorkspace &work, bool verbose=false){
     assert(k>1);
-    int stratum_count=ext.prokrustean.stratum_count();
-    int seq_count=ext.prokrustean.sequence_count();
+    int stratum_count=ext.prokrustean.stratum_count;
+    int seq_count=ext.prokrustean.sequence_count;
     
     work.reset(stratum_count);
 
@@ -599,10 +599,10 @@ struct CdbgInvariants {
     vector<optional<int>> each_right_extension_count_of_stratum; // reflectum at pos last
 
     void set(CompactedDBGWorkspace &work, ProkrusteanEnhancement &ext){
-        this->each_left_extension_count_of_stratum.resize(ext.prokrustean.stratum_count());
-        this->each_right_extension_count_of_stratum.resize(ext.prokrustean.stratum_count());
-        this->each_unitig_attached_on_first_of_stratum_referenced_count.resize(ext.prokrustean.stratum_count());
-        this->each_unitig_attached_on_last_of_stratum_next_count.resize(ext.prokrustean.stratum_count());
+        this->each_left_extension_count_of_stratum.resize(ext.prokrustean.stratum_count);
+        this->each_right_extension_count_of_stratum.resize(ext.prokrustean.stratum_count);
+        this->each_unitig_attached_on_first_of_stratum_referenced_count.resize(ext.prokrustean.stratum_count);
+        this->each_unitig_attached_on_last_of_stratum_next_count.resize(ext.prokrustean.stratum_count);
 
         for(int i=0; i<work.stratum_exts.size(); i++){
             if(work.stratum_exts[i].last_unitig.has_value()){

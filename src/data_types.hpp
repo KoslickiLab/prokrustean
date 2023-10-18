@@ -10,11 +10,11 @@
 typedef uint32_t StratumId; // 
 typedef uint32_t SeqId; //
 typedef uint32_t StratumOrSeqId; //
-typedef uint16_t Pos; // Sequence max length
+typedef uint32_t Pos; // Sequence max length
 typedef uint16_t StratumSize; 
 typedef uint32_t SequenceSize; 
 typedef uint8_t BandIdx; //
-typedef uint32_t RegionGlobalIdx; 
+typedef uint8_t CoveringRegionIdx; 
 
 /* For prokrustean construction */
 typedef uint16_t SuffixArrayIdx_InBlock;

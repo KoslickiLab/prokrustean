@@ -78,7 +78,7 @@ void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<S
     for(int i=0; i<rgn_cnt; i++){
         int increase_k_from;
         if(i<rgn_cnt-1){
-            increase_k_from=max(2,regions[indices[i]].to-regions[indices[i+1]].from+2);
+            increase_k_from=max<Pos>(2,regions[indices[i]].to-regions[indices[i+1]].from+2);
         } else {
             increase_k_from=2;
         }
@@ -100,12 +100,12 @@ void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<S
 
 uint64_t count_distinct_kmers(uint64_t k, Prokrustean &prokrustean){
     uint64_t cnt=0;
-    for(int i=0; i<prokrustean.sequence_count(); i++){
+    for(int i=0; i<prokrustean.sequence_count; i++){
         auto sequence=prokrustean.get_sequence(i);
         cnt+=_count_k_mers(sequence.size, sequence.s_edges, k);
     }
 
-    for(int i=0; i<prokrustean.stratum_count(); i++){
+    for(int i=0; i<prokrustean.stratum_count; i++){
         auto stratum=prokrustean.get_stratum(i);
         cnt+=_count_k_mers(stratum.size, stratum.s_edges, k);
     }
@@ -135,7 +135,7 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
     vector<int64_t> partial_partial_C(to+1, 0);
     vector<int64_t> dOutput(to+1, 0);
 
-    for(int i=0; i<prokrustean.sequence_count(); i++){
+    for(int i=0; i<prokrustean.sequence_count; i++){
         auto sequence=prokrustean.get_sequence(i);
         output[from]+=_count_k_mers(sequence.size, sequence.s_edges, from);
         // _stratified_pop_event(sequence.size, sequence.regions, from, partial_C);
@@ -145,7 +145,7 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
         _each_stra_rgn_range_decided_by_intersection(sequence.size, from, sequence.s_edges, partial_partial_C);
     }
 
-    for(int i=0; i<prokrustean.stratum_count(); i++){
+    for(int i=0; i<prokrustean.stratum_count; i++){
         auto stratum=prokrustean.get_stratum(i);
         output[from]+=_count_k_mers(stratum.size, stratum.s_edges, from);
         // _stratified_pop_event(stratum.size, stratum.regions, from, partial_C);

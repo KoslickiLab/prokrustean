@@ -14,7 +14,7 @@ void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, 
     vector<Region> spectrum;
     
     //prokrustean
-    for(int i=0; i<prokrustean.sequence_count(); i++){
+    for(int i=0; i<prokrustean.sequence_count; i++){
         auto seq=prokrustean.get_sequence(i);
         if(seq.size<k){
             continue;
@@ -29,7 +29,7 @@ void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, 
         }
     }
 
-    for(int i=0; i<prokrustean.stratum_count(); i++){
+    for(int i=0; i<prokrustean.stratum_count; i++){
         auto stratum=prokrustean.get_stratum(i);
         if(stratum.size<k){
             continue;
