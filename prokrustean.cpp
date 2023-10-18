@@ -26,12 +26,12 @@ char TERM = '#';
 void help(){
 
 	cout << "prokrustean [options]" << endl <<
-	"Input: ebwt of a collection of sequences. Output: Prokrustean Index." << endl <<
+	"Input: ebwt of a collection of sequences. Output: A data structure representing Prokrustean Graph." << endl <<
 	"Options:" << endl <<
 	"-h          Print this help" << endl <<
 	"-i <arg>    Input ebwt (REQUIRED)" << endl <<
 	"-o <arg>    Output file name (REQUIRED)" << endl <<
-	"-t          ASCII code of the terminator. Default:" << int('#') << " (#). Cannot be the code for A,C,G,T,N." << endl;
+	"-t          ASCII code of the terminator. Default:" << int('$') << " ($). Cannot be the code for A,C,G,T,N." << endl;
 	exit(0);
 }
 
@@ -61,11 +61,9 @@ int main(int argc, char** argv){
 	}
 
 	if(TERM == 'A' or TERM == 'C' or TERM == 'G' or TERM == 'T' or TERM == 'N'){
-
 		cout << "Error: invalid terminator '" << TERM << "'" << endl;
 		help();
 	}
-
 	if(input_bwt.size()==0) help();
 	if(output_file.size()==0) help();
 

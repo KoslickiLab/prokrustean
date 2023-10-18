@@ -1,10 +1,10 @@
 #ifndef APPLICATION_CDBG_COUNTING_HPP_
 #define APPLICATION_CDBG_COUNTING_HPP_
 #include <algorithm>
-#include "../prokrustean.enhance.hpp"
+#include "../prokrustean.support.hpp"
 
 
-int count_maximal_unitigs_single_k(int k, ProkrusteanEnhancement &prokrustean_ext, bool verbose=false){
+int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext, bool verbose=false){
     Prokrustean &prokrustean = prokrustean_ext.prokrustean;
     optional<int> turn_on=nullopt;
     if(turn_on.has_value()){

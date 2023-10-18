@@ -1,7 +1,7 @@
 #ifndef APPLICATION_CDBG_HPP_
 #define APPLICATION_CDBG_HPP_
 #include <algorithm>
-#include "../prokrustean.enhance.hpp"
+#include "../prokrustean.support.hpp"
 
 /* 
 * (0) Data Structure
@@ -133,7 +133,7 @@ struct CompactedDBGWorkspace {
     }
 };
 
-void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     // optimize
     ext.prokrustean.get_stratum(stratum_id, work.working_vertex);
     ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
@@ -197,7 +197,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement
     }
 }
 
-void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     auto &prokrustean=ext.prokrustean;
     if(!work.is_leftmost_descendent_set[stratum_id]){
         work.working_stratum_ids.clear();
@@ -271,7 +271,7 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanEnhancemen
     }
 }
 
-void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     if(ext.prokrustean.stratums__size[stratum_id]<k-1){
         return;
     }
@@ -310,7 +310,7 @@ void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, 
     }
 }
 
-void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     if(ext.prokrustean.stratums__size[stratum_id]<k-1){
         return;
     }
@@ -372,7 +372,7 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
     }
 }
 
-void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     ext.prokrustean.get_sequence(seq_id, work.working_vertex);
     ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
     // if(seq_id==0){
@@ -439,7 +439,7 @@ void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanEnhancement &ext, Compa
     }
 }
 
-void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     ext.prokrustean.get_stratum(stratum_id, work.working_vertex);
     ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
 
@@ -520,7 +520,7 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanEnhancement &e
     }
 }
 
-void switch_loc(Unitig &unitig, ProkrusteanEnhancement &ext){
+void switch_loc(Unitig &unitig, ProkrusteanExtension &ext){
     //line order matter
     unitig.loc_from=ext.stratum_sample_occ_pos[unitig.loc_id]+unitig.loc_from;
     unitig.loc_to=ext.stratum_sample_occ_pos[unitig.loc_id]+unitig.loc_to;
@@ -543,7 +543,7 @@ void _count_maximal_unitig_of_reflectum(vector<Unitig> &unitigs, UnitigId id, in
 
 }
 
-void extract_paritial_unitigs(int k, ProkrusteanEnhancement &ext, vector<string> &sequences, CompactedDBGWorkspace &work, bool verbose=false){
+void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, vector<string> &sequences, CompactedDBGWorkspace &work, bool verbose=false){
     assert(k>1);
     int stratum_count=ext.prokrustean.stratum_count;
     int seq_count=ext.prokrustean.sequence_count;
@@ -569,7 +569,7 @@ void extract_paritial_unitigs(int k, ProkrusteanEnhancement &ext, vector<string>
     }
 }
 
-void update_stratum_based_loc_to_seq_based_loc(ProkrusteanEnhancement &ext, CompactedDBGWorkspace &work){
+void update_stratum_based_loc_to_seq_based_loc(ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     setup_stratum_example_occ(ext);
     for(auto &unitig: work.unitigs){
         if(unitig.is_from_stratum){
@@ -598,7 +598,7 @@ struct CdbgInvariants {
     vector<optional<int>> each_unitig_attached_on_last_of_stratum_next_count; // reflectum at pos last
     vector<optional<int>> each_right_extension_count_of_stratum; // reflectum at pos last
 
-    void set(CompactedDBGWorkspace &work, ProkrusteanEnhancement &ext){
+    void set(CompactedDBGWorkspace &work, ProkrusteanExtension &ext){
         this->each_left_extension_count_of_stratum.resize(ext.prokrustean.stratum_count);
         this->each_right_extension_count_of_stratum.resize(ext.prokrustean.stratum_count);
         this->each_unitig_attached_on_first_of_stratum_referenced_count.resize(ext.prokrustean.stratum_count);

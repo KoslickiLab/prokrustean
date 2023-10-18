@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <future>
 #include "../data_types.hpp"
 
 using namespace std;
@@ -190,4 +191,28 @@ private:
 
 };
 
+/********************************************************************************************************/
+/*                              parallel text recovery                                                  */
+/********************************************************************************************************/
+auto func__recover_texts = [](FmIndex &fm_index, vector<string> &output, atomic<int> &idx_gen) {
+    while(true){
+        auto idx = idx_gen.fetch_add(1);
+        if(idx>=fm_index.seq_cnt()){
+            break;
+        }
+        output[idx]=fm_index.recover_text(idx);
+    }
+};
+
+void recover_sequences_parallel(FmIndex &fm_idx, vector<string> &sequences, int num_threads){
+    sequences.resize(fm_idx.seq_cnt());
+    vector<future<void>> futures;
+    atomic<int> seq_id_iter;
+    for(int i=0; i<num_threads; i++){
+        futures.push_back(std::async(std::launch::async, func__recover_texts, ref(fm_idx), ref(sequences), ref(seq_id_iter)));
+    }
+    for (auto &f : futures) {
+        f.wait();
+    }
+}
 #endif /* FM_INDEX_INDEX_HPP_ */

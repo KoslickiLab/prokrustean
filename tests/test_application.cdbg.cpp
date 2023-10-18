@@ -7,7 +7,7 @@
 #include "const.cpp"	
 #include "naive_impl.cpp"	
 #include "../src/prokrustean.hpp"
-#include "../src/prokrustean.enhance.hpp"
+#include "../src/prokrustean.support.hpp"
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.hpp"
@@ -23,7 +23,7 @@ void test_cdbg_with_verifier(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    ProkrusteanEnhancement enhancement(prokrustean);
+    ProkrusteanExtension enhancement(prokrustean);
     enhancement.collect_left_right_extensions=true;
     construct_prokrustean(fm_idx, prokrustean, Lmin, &enhancement);
 
@@ -160,7 +160,7 @@ void test_cdbg_construction(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    ProkrusteanEnhancement enhancement(prokrustean);
+    ProkrusteanExtension enhancement(prokrustean);
     enhancement.collect_left_right_extensions=true;
     construct_prokrustean(fm_idx, prokrustean, Lmin, &enhancement);
 

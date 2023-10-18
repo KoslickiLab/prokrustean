@@ -8,7 +8,7 @@ using namespace std;
 
 void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
     // prokrustean.setup_stratum_example_occ();
-    ProkrusteanEnhancement ext(prokrustean);
+    ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
     vector<Region> spectrum;

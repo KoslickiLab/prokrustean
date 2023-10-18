@@ -4,7 +4,7 @@
 #include <stack>
 #include <tuple>
 #include "algorithms.stage1_tree.hpp"
-#include "../prokrustean.enhance.hpp"
+#include "../prokrustean.support.hpp"
 #include "../sdsl/int_vector.hpp"
 #include "../sdsl/rank_support_v.hpp"
 #include "../sdsl/rrr_vector.hpp"
@@ -229,9 +229,9 @@ struct StratumProjectionWorkspace{
 
     uint64_t seq_total_length;
 
-    ProkrusteanEnhancement* prokrustean_optional;
+    ProkrusteanExtension* prokrustean_optional;
 
-    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanEnhancement* prokrustean_optional, int thread_cnt=1)
+    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanExtension* prokrustean_optional, int thread_cnt=1)
     :prokrustean(prokrustean),seq_cnt(fm_index.seq_cnt()),seq_total_length(fm_index.size()){
         this->block_count=seq_total_length/this->block_size+1;
         this->block_locks=vector<SpinLock>(this->block_count);

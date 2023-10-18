@@ -1,6 +1,6 @@
 #ifndef PROKRUSTEAN_SUPPORT_HPP_
 #define PROKRUSTEAN_SUPPORT_HPP_
-
+#include <fstream>
 #include <vector>
 #include <cassert>
 #include <iostream>
@@ -9,7 +9,7 @@
 
 using namespace std;
 
-struct ProkrusteanEnhancement {
+struct ProkrusteanExtension {
     Prokrustean& prokrustean;
 
     vector<SeqId> stratum_sample_occ_seq_id;
@@ -27,10 +27,10 @@ struct ProkrusteanEnhancement {
     vector<bool> stratum__is_start_of_maximal_unitig;
     vector<bool> sequence__is_start_of_maximal_unitig;
     
-    ProkrusteanEnhancement(Prokrustean& prokrustean):prokrustean(prokrustean) {}
+    ProkrusteanExtension(Prokrustean& prokrustean):prokrustean(prokrustean) {}
 };
 
-bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
     if(ext.prokrustean.stratums__region_cnt[id]==0)
     return true;
     for(int i=0; i< ext.prokrustean.stratums__region_cnt[id]; i++){
@@ -41,7 +41,7 @@ bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanEnhancement &e
     return true;
 }
 
-// bool no_stratified_region_in_seq(SeqId id, int k, ProkrusteanEnhancement &ext){
+// bool no_stratified_region_in_seq(SeqId id, int k, ProkrusteanExtension &ext){
 //     if(ext.prokrustean.sequences__region_cnt[id]==0)
 //     return true;
 //     for(int i=0; i< ext.prokrustean.sequences__region_cnt[id]; i++){
@@ -52,7 +52,7 @@ bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanEnhancement &e
 //     return true;
 // }
 
-uint8_t first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+uint8_t first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
     for(int i=0; i< ext.prokrustean.stratums__region_cnt[id]; i++){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
             return i;
@@ -62,7 +62,7 @@ uint8_t first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnha
     assert(false);
 }
 
-uint8_t last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnhancement &ext){
+uint8_t last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
     for(int i=ext.prokrustean.stratums__region_cnt[id]-1; i>=0; i--){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
             return i;
@@ -72,7 +72,7 @@ uint8_t last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanEnhan
     assert(false);
 }
 
-uint8_t next_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanEnhancement &ext){
+uint8_t next_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanExtension &ext){
     idx++;
     while(idx<ext.prokrustean.stratums__region_cnt[id]){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
@@ -84,7 +84,7 @@ uint8_t next_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, Pro
     assert(false);
 }
 
-uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanEnhancement &ext){
+uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, ProkrusteanExtension &ext){
     idx--;
     while(idx>=0){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
@@ -95,7 +95,7 @@ uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, Pro
     // no stratified region over k-1 found
     assert(false);
 }
-// uint8_t first_stratified_region_idx_in_seq(SeqId id, int k, ProkrusteanEnhancement &ext){
+// uint8_t first_stratified_region_idx_in_seq(SeqId id, int k, ProkrusteanExtension &ext){
 //     for(int i=0; i< ext.prokrustean.sequences__region_cnt[id]; i++){
 //         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k-1){
 //             return i;
@@ -105,7 +105,7 @@ uint8_t prev_stratified_region_idx_in_stra(StratumId id, uint8_t idx, int k, Pro
 //     assert(false);
 // }
 
-void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
+void setup_stratum_example_occ(ProkrusteanExtension &ext){
     ext.stratum_sample_occ_seq_id.resize(ext.prokrustean.stratum_count);
     ext.stratum_sample_occ_pos.resize(ext.prokrustean.stratum_count);
     vector<bool> visits(ext.prokrustean.stratum_count);
@@ -338,8 +338,125 @@ void setup_stratum_example_occ(ProkrusteanEnhancement &ext){
 //         }
 //     }
 // }
+/********************************************************************************************************/
+/*                              save/load                                                                */
+/********************************************************************************************************/
 
-void debug(ProkrusteanEnhancement &ext, StratumId target_stratum_id){
+// Define serialization function for StratifiedData
+void _serializeStratifiedData(std::ofstream& file, StratifiedData* data) {
+    file.write(reinterpret_cast<const char*>(&data->stratum_id), sizeof(StratumId));
+    file.write(reinterpret_cast<const char*>(&data->pos), sizeof(Pos));
+}
+
+// Define deserialization function for StratifiedData
+void _deserializeStratifiedData(std::ifstream& file, StratifiedData* data) {
+    // StratifiedData* data = new StratifiedData();
+    file.read(reinterpret_cast<char*>(&data->stratum_id), sizeof(StratumId));
+    file.read(reinterpret_cast<char*>(&data->pos), sizeof(Pos));
+    // return data;
+}
+
+// Serialize the Prokrustean structure
+void serializeProkrustean(const Prokrustean& data, const std::string& filename) {
+    std::ofstream file(filename, std::ios::binary);
+    if (file.is_open()) {
+        // Serialize the sizes
+        file.write(reinterpret_cast<const char*>(&data.sequence_count), sizeof(data.sequence_count));
+        file.write(reinterpret_cast<const char*>(&data.stratum_count), sizeof(data.stratum_count));
+
+        // Serialize the SequenceSize vector
+        for (const auto& size : data.sequences__size) {
+            file.write(reinterpret_cast<const char*>(&size), sizeof(SequenceSize));
+        }
+
+        // Serialize sequences__region_cnt and StratifiedData vectors
+        for (int i = 0; i < data.sequence_count; ++i) {
+            uint8_t count = data.sequences__region_cnt[i];
+            file.write(reinterpret_cast<const char*>(&count), sizeof(uint8_t));
+            
+            for (int j = 0; j < count; ++j) {
+                _serializeStratifiedData(file, &data.sequences__region[i][j]);
+            }
+        }
+
+        // Serialize the StratumSize vector
+        for (const auto& size : data.stratums__size) {
+            file.write(reinterpret_cast<const char*>(&size), sizeof(StratumSize));
+        }
+
+        // Serialize stratums__region_cnt and StratifiedData vectors
+        for (int i = 0; i < data.stratum_count; ++i) {
+            uint8_t count = data.stratums__region_cnt[i];
+            file.write(reinterpret_cast<const char*>(&count), sizeof(uint8_t));
+            
+            for (int j = 0; j < count; ++j) {
+                _serializeStratifiedData(file, &data.stratums__region[i][j]);
+            }
+        }
+        
+        file.close();
+    } else {
+        std::cerr << "Unable to open the file for writing." << std::endl;
+    }
+}
+
+// Deserialize the Prokrustean structure
+Prokrustean deserializeProkrustean(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    Prokrustean data;
+    
+    if (file.is_open()) {
+        size_t sequence_count, stratum_count;
+        
+        // Deserialize the sizes
+        file.read(reinterpret_cast<char*>(&sequence_count), sizeof(sequence_count));
+        file.read(reinterpret_cast<char*>(&stratum_count), sizeof(stratum_count));
+        
+        data.set_seq_count(sequence_count);
+        data.set_stratum_count(stratum_count);
+        // Deserialize the SequenceSize vector
+        for (int i = 0; i < sequence_count; ++i) {
+            file.read(reinterpret_cast<char*>(&data.sequences__size[i]), sizeof(SequenceSize));
+        }
+        
+        // Deserialize sequences__region_cnt and StratifiedData vectors
+        for (int i = 0; i < data.sequence_count; ++i) {
+            uint8_t count;
+            file.read(reinterpret_cast<char*>(&count), sizeof(uint8_t));
+            data.sequences__region_cnt[i]=count;
+            data.sequences__region[i]=new StratifiedData[count];
+            
+            for (int j = 0; j < count; ++j) {
+                _deserializeStratifiedData(file, &data.sequences__region[i][j]);
+            }
+        }
+        
+        // Deserialize the StratumSize vector
+        for (int i = 0; i < stratum_count; ++i) {
+            file.read(reinterpret_cast<char*>(&data.stratums__size[i]), sizeof(StratumSize));
+        }
+
+        // Deserialize sequences__region_cnt and StratifiedData vectors
+        for (int i = 0; i < data.stratum_count; ++i) {
+            uint8_t count;
+            file.read(reinterpret_cast<char*>(&count), sizeof(uint8_t));
+            data.stratums__region_cnt[i]=count;
+            data.stratums__region[i]=new StratifiedData[count];
+            for (int j = 0; j < count; ++j) {
+                _deserializeStratifiedData(file, &data.stratums__region[i][j]);
+            }
+        }
+        
+        file.close();
+    } else {
+        std::cerr << "Unable to open the file for reading." << std::endl;
+    }
+    
+    return data;
+}
+
+
+void debug(ProkrusteanExtension &ext, StratumId target_stratum_id){
     for(int i=0; i<ext.prokrustean.sequence_count; i++){
         for(auto& edge: ext.prokrustean.get_sequence(i).s_edges){
             if(edge.stratum_id==target_stratum_id){
@@ -357,4 +474,6 @@ void debug(ProkrusteanEnhancement &ext, StratumId target_stratum_id){
         }
     }
 }
+
+
 #endif

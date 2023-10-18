@@ -81,7 +81,7 @@ void test_basic_construction_w_kmers(){
     
     Prokrustean prokrustean;
     construct_prokrustean(fm_idx, prokrustean, Lmin);
-    ProkrusteanEnhancement ext(prokrustean);
+    ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
@@ -98,6 +98,6 @@ void test_basic_construction_w_kmers(){
 
 void main_construction() {
     test_step1_binary_storage();
-    // test_basic_construction();
-    // test_basic_construction_w_kmers();
+    test_basic_construction();
+    test_basic_construction_w_kmers();
 }

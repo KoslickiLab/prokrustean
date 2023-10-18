@@ -23,7 +23,7 @@ void test_distinct_kmers(){
     
     Prokrustean prokrustean;
     construct_prokrustean(fm_idx, prokrustean, Lmin);
-    ProkrusteanEnhancement ext(prokrustean);
+    ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;

@@ -16,7 +16,7 @@ struct Configuration{
     bool collect_ext_count=false;
 };
 
-void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanEnhancement* opt=nullptr){
+void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanExtension* opt=nullptr){
     auto start = std::chrono::steady_clock::now();
     cout << "step1: ";
     SuffixArrayNode root = get_root(fm_idx);
@@ -70,7 +70,7 @@ auto func__stage2_stratifiaction = [](FmIndex &fm_index, Prokrustean &prokrustea
     }
 };
 
-void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int num_threads, int Lmin=10, ProkrusteanEnhancement* opt=nullptr){
+void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int num_threads, int Lmin=10, ProkrusteanExtension* opt=nullptr){
     assert(Lmin>=1);
     assert(num_threads>0);
     int root_depth = 5; // is there a clever way to decide the scale of parallelism?
@@ -117,25 +117,4 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
     cout << "finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
-auto func__recover_texts = [](FmIndex &fm_index, vector<string> &output, atomic<int> &idx_gen) {
-    while(true){
-        auto idx = idx_gen.fetch_add(1);
-        if(idx>=fm_index.seq_cnt()){
-            break;
-        }
-        output[idx]=fm_index.recover_text(idx);
-    }
-};
-
-void recover_sequences_parallel(FmIndex &fm_idx, vector<string> &sequences, int num_threads){
-    sequences.resize(fm_idx.seq_cnt());
-    vector<future<void>> futures;
-    atomic<int> seq_id_iter;
-    for(int i=0; i<num_threads; i++){
-        futures.push_back(std::async(std::launch::async, func__recover_texts, ref(fm_idx), ref(sequences), ref(seq_id_iter)));
-    }
-    for (auto &f : futures) {
-        f.wait();
-    }
-}
 #endif
