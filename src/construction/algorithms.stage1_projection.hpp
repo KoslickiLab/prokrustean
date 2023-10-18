@@ -1,12 +1,15 @@
 #ifndef CONSTRUCTION_ALGO_PROCEDURES_NEW_HPP_
 #define CONSTRUCTION_ALGO_PROCEDURES_NEW_HPP_
-#include "algorithms.stage1_tree.hpp"
-#include "../prokrustean.enhance.hpp"
 #include <algorithm>
 #include <stack>
 #include <tuple>
-
+#include "algorithms.stage1_tree.hpp"
+#include "../prokrustean.enhance.hpp"
+#include "../sdsl/int_vector.hpp"
+#include "../sdsl/rank_support_v.hpp"
+#include "../sdsl/rrr_vector.hpp"
 using namespace std;
+using namespace sdsl;
 
 struct ProjectedStratifiedRegion{
     StratumId stratum_id;
@@ -17,6 +20,190 @@ struct ProjectedStratifiedRegion{
     {}
 };
 
+struct SuccinctStratifiedData {
+    StratumId* data;
+
+    void set_data(uint8_t annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
+        assert(annot_cnt>0);
+        uint8_t bits_per_type=(8*sizeof(StratumId));
+        uint8_t extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
+        data=new StratumId[annot_cnt+extra]; // 8* size means bits available so that is_primaries are added
+        for(int i=0; i<annot_cnt; i++){
+            data[i]=stratum_ids[i];
+        }
+        StratumId result=0;
+        if(extra==1){
+            for (uint8_t i = 0; i < annot_cnt; ++i) {
+                result |= (is_primaries[i] ? 1 : 0) << (i % bits_per_type);
+            }
+            data[annot_cnt]=result;
+        } else {
+            vector<StratumId> results;
+            for (uint8_t i = 0; i < annot_cnt; ++i) {
+                result |= (is_primaries[i] ? 1 : 0) << (i % bits_per_type);
+                if ((i + 1) % bits_per_type == 0) {
+                    results.push_back(result);
+                    result = 0;
+                }
+            }
+            results.push_back(result);
+            assert(results.size()==extra);
+            for(int i=0; i<extra; i++){
+                data[annot_cnt+i]=results[i];
+            }
+        }
+    }
+    void get_data(int annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
+        stratum_ids.resize(annot_cnt);
+        is_primaries.resize(annot_cnt);
+        int bits_per_type=(8*sizeof(StratumId));
+        uint8_t extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
+        for (int8_t i = 0; i < annot_cnt; ++i) {
+            stratum_ids[i]=data[i];
+        }
+        if(extra==1){
+            for (int8_t i = 0; i < annot_cnt; ++i) {
+                is_primaries[i] = ((data[annot_cnt] >> (i % bits_per_type)) & 1) != 0;
+            }
+        } else {
+            for(int idx=0; idx<extra; idx++){
+                for (int8_t i = 0; i < bits_per_type; ++i) {
+                    is_primaries[bits_per_type*idx+i] = ((data[annot_cnt+idx] >> (i % bits_per_type)) & 1) != 0;
+                }
+            }
+        }
+    }
+    void dispose(){
+        delete data;
+    }
+};
+
+struct RawStratifiedRegionBlock{
+    int block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
+    // raw
+    vector<SuffixArrayIdx_InBlock> raw_sa_indices;
+    vector<StratumId> raw_stratum_ids;
+    vector<bool> raw_is_primarys;
+
+    void add_projected_region(SuffixArrayIdx_InBlock local_sa_idx, StratumId stratum_id, bool is_primary){
+        this->raw_stratum_ids.push_back(stratum_id);
+        this->raw_sa_indices.push_back(local_sa_idx);
+        this->raw_is_primarys.push_back(is_primary);
+    }
+
+    void dispose_block(){
+        this->raw_stratum_ids.clear();
+        this->raw_stratum_ids.shrink_to_fit();
+        this->raw_sa_indices.clear();
+        this->raw_sa_indices.shrink_to_fit();
+        this->raw_is_primarys.clear();
+        this->raw_is_primarys.shrink_to_fit();
+    }
+};
+
+
+struct SuffixArrayAnnotationBlock{
+    int block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
+    // query
+    bit_vector sa_bv;
+    rank_support_v<> sa_rb;
+    vector<uint8_t> sa_idx_abundances;
+    vector<SuccinctStratifiedData> sa_idx_data;
+    int sa_idx_queriable_left;
+
+    void set_contents(RawStratifiedRegionBlock &raw_block){
+        if(raw_block.raw_sa_indices.size()==0){
+            return;
+        }
+        auto &raw_sa_indices = raw_block.raw_sa_indices;
+        auto &raw_is_primarys = raw_block.raw_is_primarys;
+        auto &raw_stratum_ids = raw_block.raw_stratum_ids;
+        // sa indices
+        // unordered_map<SuffixArrayIdx_InBlock, int> counts_of_idx;
+        this->sa_bv.resize(block_size);
+        for(auto idx: raw_sa_indices){
+            sa_bv[idx]=true;
+        }
+        this->sa_rb=rank_support_v<>(&this->sa_bv);
+        
+        // content indices
+        int sa_idx_cnt=this->sa_rb.rank(this->sa_bv.size());
+        this->sa_idx_abundances.resize(sa_idx_cnt, 0);
+        this->sa_idx_data.resize(sa_idx_cnt);
+
+        vector<vector<int>> raw_indices_by_content_indices(sa_idx_cnt);
+        vector<StratumId> stratum_ids;
+        vector<bool> is_primaries;
+        for(int i=0; i< raw_sa_indices.size(); i++){
+            int content_idx = this->sa_rb.rank(raw_sa_indices[i]);
+            this->sa_idx_abundances[content_idx]++;
+            raw_indices_by_content_indices[content_idx].push_back(i);
+        }
+        for(int content_idx=0; content_idx<sa_idx_cnt; content_idx++){
+            stratum_ids.clear();
+            is_primaries.clear();
+            for(auto i: raw_indices_by_content_indices[content_idx]){
+                stratum_ids.push_back(raw_stratum_ids[i]);
+                is_primaries.push_back(raw_is_primarys[i]);
+            }
+            this->sa_idx_data[content_idx].set_data(raw_indices_by_content_indices[content_idx].size(), stratum_ids, is_primaries);
+        }
+
+        sa_idx_queriable_left=sa_idx_cnt;
+    }
+
+    bool fetch(SuffixArrayIdx_InBlock local_sa_idx, int &annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
+        if(!this->sa_bv[local_sa_idx]){
+            return false;
+        } 
+        int sa_idx_rank=this->sa_rb.rank(local_sa_idx);
+        annot_cnt=sa_idx_abundances[sa_idx_rank];
+        assert(sa_idx_rank< this->sa_idx_data.size());
+        this->sa_idx_data[sa_idx_rank].get_data(annot_cnt, stratum_ids, is_primaries);
+        
+        // will be fetched only once
+        delete this->sa_idx_data[sa_idx_rank].data;
+        return true;
+    }
+};
+
+
+// struct RawDataByThread{
+//     vector<SpinLock> locks;
+//     int block_size;
+//     // vector<vector<ProjectedStratifiedRegion>> raw_data_blocks;
+//     vector<vector<StratumId>> stratum_id_blocks;
+//     vector<vector<SuffixArrayIdx_InBlock>> sa_idx_blocks;
+//     vector<vector<bool>> is_primary_blocks;
+
+//     RawDataByThread(int block_size, int block_count): block_size(block_size){
+//         this->locks=vector<SpinLock>(block_count);
+//         // this->raw_data_blocks.resize(block_count);
+//         this->stratum_id_blocks.resize(block_count);
+//         this->sa_idx_blocks.resize(block_count);
+//         this->is_primary_blocks.resize(block_count);
+//     }
+
+//     void add_projected_region(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){
+//         int block_idx=sa_idx/block_size;
+//         SuffixArrayIdx_InBlock local_sa_idx=sa_idx%block_size;
+//         // this->raw_data_blocks[block_idx].push_back(ProjectedStratifiedRegion(stratum_id, local_sa_idx, is_primary));
+//         this->locks[block_idx].lock();
+//         this->stratum_id_blocks[block_idx].push_back(stratum_id);
+//         this->sa_idx_blocks[block_idx].push_back(local_sa_idx);
+//         this->is_primary_blocks[block_idx].push_back(is_primary);
+//         this->locks[block_idx].unlock();
+//     }
+
+//     void dispose_block(int block_idx){
+//         this->stratum_id_blocks[block_idx].clear();
+//         this->stratum_id_blocks[block_idx].shrink_to_fit();
+//         this->sa_idx_blocks[block_idx].clear();
+//         this->sa_idx_blocks[block_idx].shrink_to_fit();
+//         this->is_primary_blocks[block_idx].clear();
+//         this->is_primary_blocks[block_idx].shrink_to_fit();
+//     }
+// };
 
 struct StratumProjectionWorkspace{
     /* 
@@ -25,29 +212,21 @@ struct StratumProjectionWorkspace{
     */
     // manage block to occupy less space for stratum size
     // uint8_t stratum_block_unit=numeric_limits<uint8_t>::max();
-    //
-    // atomic<StratumId>* stratum_id_generator;
     StratumId new_stratum_id=0;
     //
     SpinLock stratum_lock;
     //
     Prokrustean& prokrustean;
-    //
-    uint64_t stratum_reserved=0;
-    //
-    vector<vector<ProjectedStratifiedRegion>> sequence_regions;
 
-    int block_size;
+    int block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
 
-    vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>> raw_region_blocks;
-    // vector<vector<tuple<uint16_t, ProjectedStratifiedRegion>>> raw_region_blocks;
+    int block_count;
 
-    // vector<unordered_map<uint16_t, bool>> raw_region_block_numbers;
+    vector<RawStratifiedRegionBlock*> raw_data_blocks;
 
-    //
-    vector<SpinLock> region_block_locks;
-    //
-    vector<SpinLock> sequence_locks;
+    vector<SuffixArrayAnnotationBlock*> suffix_array_annot_blocks;
+
+    vector<SpinLock> block_locks;
 
     uint64_t seq_cnt;
 
@@ -55,16 +234,19 @@ struct StratumProjectionWorkspace{
 
     ProkrusteanEnhancement* prokrustean_optional;
 
-    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanEnhancement* prokrustean_optional)
+    StratumProjectionWorkspace(Prokrustean &prokrustean, FmIndex &fm_index, ProkrusteanEnhancement* prokrustean_optional, int thread_cnt=1)
     :prokrustean(prokrustean),seq_cnt(fm_index.seq_cnt()),seq_total_length(fm_index.size()){
-        this->sequence_regions=vector<vector<ProjectedStratifiedRegion>>(seq_cnt);
-        this->sequence_locks=vector<SpinLock>(seq_cnt);
-        this->block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
-        this->raw_region_blocks=vector<unordered_map<uint16_t, vector<ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
-        this->region_block_locks=vector<SpinLock>(seq_total_length/this->block_size+1);
+        this->block_count=seq_total_length/this->block_size+1;
+        this->block_locks=vector<SpinLock>(this->block_count);
+        this->raw_data_blocks=vector<RawStratifiedRegionBlock*>(this->block_count);
+        // for(int i=0; i<this->block_count; i++){
+        //     this->raw_data_blocks[i]=new RawStratifiedRegionBlock();
+        // }
+        this->suffix_array_annot_blocks=vector<SuffixArrayAnnotationBlock*>(this->block_count);
+        // for(auto &block: this->suffix_array_annot_blocks){
+        //     block.block_size=this->block_size;
+        // }
         this->prokrustean_optional=prokrustean_optional;
-        // this->raw_region_blocks=vector<vector<tuple<uint16_t, ProjectedStratifiedRegion>>>(seq_total_length/this->block_size+1);
-        // this->raw_region_block_numbers=vector<unordered_map<uint16_t,bool>>(seq_total_length/this->block_size+1);
     }
 
     StratumId make_stratum(StratumSize size){
@@ -82,52 +264,41 @@ struct StratumProjectionWorkspace{
         return new_id;
     }
 
-    // void add_stratified_regions(tuple<SeqId, Pos> loc, StratumId stratum_id, bool is_primary){
-    //     this->sequence_locks[get<0>(loc)].lock();
-    //     this->sequence_regions[get<0>(loc)].push_back(ProjectedStratifiedRegion(stratum_id, get<1>(loc), is_primary));
-    //     this->sequence_locks[get<0>(loc)].unlock();
-    // }
-
-    void add_projected_regions(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){        
-        auto block_idx=sa_idx/block_size;
-        auto local_sa_idx=sa_idx%block_size;
-        
-        // lock
-        this->region_block_locks[block_idx].lock();
-        // add 
-        if(this->raw_region_blocks[block_idx].count(local_sa_idx)==0){
-            this->raw_region_blocks[block_idx][local_sa_idx]=vector<ProjectedStratifiedRegion>();
-        }
-        this->raw_region_blocks[block_idx][local_sa_idx].push_back(ProjectedStratifiedRegion(stratum_id, sa_idx, is_primary));
-        // this->raw_region_block_numbers[block_idx][local_sa_idx]=true;
-        // unlock
-        this->region_block_locks[block_idx].unlock();
-    }
 
     void add_stratum_optional(StratumId stratum_id, uint8_t left_ext_cnt, uint8_t right_ext_cnt){
         this->prokrustean_optional->stratum_left_ext_count[stratum_id]=left_ext_cnt;
         this->prokrustean_optional->stratum_right_ext_count[stratum_id]=right_ext_cnt;
     }
 
-    optional<vector<ProjectedStratifiedRegion>*> fetch(SuffixArrayIdx sa_idx){
-        auto block_idx=sa_idx/block_size;
-        auto local_sa_idx=sa_idx%block_size;
-        if(this->raw_region_blocks[block_idx].count(local_sa_idx)>0){
-            return &this->raw_region_blocks[block_idx][local_sa_idx];
-        } else {
-            return std::nullopt;
+    void add_projected_region(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){
+        int block_idx= sa_idx/this->block_size;
+        this->block_locks[block_idx].lock();
+        if(this->raw_data_blocks[block_idx]==nullptr){
+            this->raw_data_blocks[block_idx]=new RawStratifiedRegionBlock();
         }
-        // if(this->raw_region_block_numbers[block_idx].count(local_sa_idx)>0){
-        //     vector<ProjectedStratifiedRegion*> regions;
-        //     for(auto &r: this->raw_region_blocks[block_idx]){
-        //         if(get<0>(r)==local_sa_idx){
-        //             regions.push_back(&get<1>(r));
-        //         }
-        //     }
-        //     return regions;
-        // } else {
-        //     return nullopt;
-        // }
+        this->raw_data_blocks[block_idx]->add_projected_region(sa_idx%block_size, stratum_id, is_primary);
+        this->block_locks[block_idx].unlock();
+    }
+
+
+    bool fetch(SuffixArrayIdx sa_idx, int &cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
+        auto block_idx=sa_idx/block_size;
+        if(this->suffix_array_annot_blocks[block_idx]==nullptr){
+            return false;
+        }
+        bool fetched=this->suffix_array_annot_blocks[block_idx]->fetch(sa_idx%block_size, cnt, stratum_ids, is_primaries);
+        return fetched;
+    }
+
+    void set_block(int block_idx){
+        if(this->raw_data_blocks[block_idx]==nullptr){
+            return;
+        }
+        
+        this->suffix_array_annot_blocks[block_idx]=new SuffixArrayAnnotationBlock();
+        this->suffix_array_annot_blocks[block_idx]->set_contents(*this->raw_data_blocks[block_idx]);
+        this->raw_data_blocks[block_idx]->dispose_block();
+        delete this->raw_data_blocks[block_idx];
     }
 
     void prepare_prokrustean_spaces(){
@@ -144,15 +315,13 @@ struct StratumProjectionWorkspace{
     void dispose(SuffixArrayIdx sa_idx){
         auto block_idx=sa_idx/block_size;
         auto local_sa_idx=sa_idx%block_size;
-        this->raw_region_blocks[block_idx][local_sa_idx].clear();
-        this->raw_region_blocks[block_idx][local_sa_idx].shrink_to_fit();
     }
 
     uint64_t get_cardinality() {
         uint64_t cnt=0;
-        for (auto& m: this->raw_region_blocks){
-            cnt+=m.size();
-        }
+        // for (auto& m: this->raw_region_blocks){
+        //     cnt+=m.size();
+        // }
         return cnt;
     }
 };
@@ -271,8 +440,10 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
         }
     }
     for(int i=0; i<idx_cnt; i++){
-        // output.add_stratified_regions(workspace.repr_work.locations[i], workspace.stratum_id, primary_idx==i);
-        output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
+        // output.add_projected_regions(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
+        // output.raw_data_by_threads[workspace.thread_idx].add_projected_region(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
+        // output.add_projected_regions_single(workspace.thread_idx, workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
+        output.add_projected_region(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
     }
 
     if(output.prokrustean_optional!=nullptr && output.prokrustean_optional->collect_left_right_extensions){

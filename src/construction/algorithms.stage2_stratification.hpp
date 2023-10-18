@@ -164,14 +164,16 @@ struct StratificationWorkSpace {
         uint64_t idx;
         Pos reverse_pos=0;
         vector<Pos> reverse_positions;
+        vector<bool> is_primaries;
+        vector<StratumId> stratum_ids;
+        int cnt;
         while(F >= seq_cnt){
-            optional<vector<ProjectedStratifiedRegion>*> regions=output.fetch(F);
-            if(regions.has_value()){
+            if(output.fetch(F, cnt, stratum_ids, is_primaries)){
                 auto annot = PositionAnnotation();
                 annot.pos=reverse_pos;
                 // vector<ProjectedStratifiedRegion> aa =regions.value();
-                for(auto &r: *regions.value()){
-                    annot.regions.push_back(RegionAnnotation(r.stratum_id, stratum_sizes[r.stratum_id], r.is_primary));
+                for(int i=0; i<cnt; i++){
+                    annot.regions.push_back(RegionAnnotation(stratum_ids[i], stratum_sizes[stratum_ids[i]], is_primaries[i]));
                 }
                 output.dispose(F);
                 this->seq_annot.position_annots.push_back(annot);

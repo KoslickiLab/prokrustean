@@ -21,7 +21,7 @@ void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t L
     cout << "step1: ";
     SuffixArrayNode root = get_root(fm_idx);
     StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt);
-    navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_step1);
+    navigate_strata<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_step1);
     cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
 
     start = std::chrono::steady_clock::now();
@@ -36,12 +36,21 @@ void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t L
     cout << "finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
-auto func__stage1_projection = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &root_idx_gen) {
+auto func__stage1_projection = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &root_idx_gen, int thread_idx) {
     while(true){
         auto idx=root_idx_gen.fetch_add(1);
         if(idx>=roots.size()) 
         break;
-        navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+        navigate_strata<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Lmin, fm_idx, output, thread_idx);
+    }
+};
+
+auto func__stage1_flip = [](StratumProjectionWorkspace &output, atomic<int> &block_idx_gen) {
+    while(true){
+        auto idx=block_idx_gen.fetch_add(1);
+        if(idx>=output.block_count) 
+        break;
+        output.set_block(idx);
     }
 };
 
@@ -58,23 +67,38 @@ auto func__stage2_stratifiaction = [](FmIndex &fm_index, Prokrustean &prokrustea
 
 void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int num_threads, int Lmin=10, ProkrusteanEnhancement* opt=nullptr){
     assert(Lmin>=1);
-    assert(num_threads>1);
+    assert(num_threads>0);
     int root_depth = 5; // is there a clever way to decide the scale of parallelism?
-    StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt);
+    StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt, 1);
     vector<future<void>> futures;
     atomic<int> root_idx_gen;
+    atomic<int> block_idx_gen;
     atomic<int> seq_id_iter;
 
     cout << "step1: ";
     auto start = std::chrono::steady_clock::now();
-    vector<SuffixArrayNode> roots = collect_roots_while_navigate_maximals<StratumProjectionWorkspace, report_representative_locations>(Lmin, fm_idx, workspace_step1, root_depth);
+    vector<SuffixArrayNode> roots = collect_roots_while_navigate_strata<StratumProjectionWorkspace, report_representative_locations>(Lmin, fm_idx, workspace_step1, root_depth);
     for(int i=0; i<num_threads; i++){
-        futures.push_back(std::async(std::launch::async, func__stage1_projection, ref(roots), ref(fm_idx), Lmin, ref(workspace_step1), ref(root_idx_gen)));
+        futures.push_back(std::async(std::launch::async, func__stage1_projection, ref(roots), ref(fm_idx), Lmin, ref(workspace_step1), ref(root_idx_gen), 0));
     }
     for (auto &f : futures) {
         f.wait();
     }
-    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    // workspace_step1.dispose();
+    cout << "finished1 " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    futures.clear();
+    for(int i=0; i<num_threads; i++){
+        futures.push_back(std::async(std::launch::async, func__stage1_flip, ref(workspace_step1), ref(block_idx_gen)));
+    }
+    for (auto &f : futures) {
+        f.wait();
+    }
+    futures.clear();
+    cout << "finished2 " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    
+    // sleep for memory check
+    std::this_thread::sleep_for(std::chrono::seconds(1000));
+
     start = std::chrono::steady_clock::now();
     cout << "step2: ";
     workspace_step1.prepare_prokrustean_spaces();

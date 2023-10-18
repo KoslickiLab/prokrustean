@@ -51,7 +51,7 @@ struct ReprSuffixArrayIndexWorkspace {
 
 struct TreeWorkspace {
     /* Includes all information required to process, so that memory is reused.*/
-    TreeWorkspace(int characters_cnt){
+    TreeWorkspace(int characters_cnt, int thread_idx=0){
         c_nodes=vector<SuffixArrayNode>(characters_cnt);
         c_nodes_open=vector<bool>(characters_cnt);
         c_first_ranks= vector<uint64_t>(characters_cnt+1);
@@ -59,6 +59,7 @@ struct TreeWorkspace {
         for(int i=0; i<characters_cnt; i++){
             c_nodes[i].firsts=vector<SuffixArrayIdx>(characters_cnt+1);
         }
+        this->thread_idx=thread_idx;
         this->characters_cnt=characters_cnt;
         this->repr_work.left_cnts=vector<int>(characters_cnt);
         this->repr_work.left_paired_a_char=vector<CharId>(characters_cnt);
@@ -79,6 +80,7 @@ struct TreeWorkspace {
 
     StratumId stratum_id;
 
+    int thread_idx;
     // alphabet size
     int characters_cnt;
     // temporary first ranks gathered when c_nodes are computed
@@ -198,12 +200,12 @@ SuffixArrayNode get_root(FmIndex &index){
 template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 
 template<class T, NodeFunc_NEW<T> process_node>
-void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, bool verbose=false){
+void navigate_strata(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, int thread_idx=0, bool verbose=false){
     Lmin = Lmin >= 1? Lmin : 1;
     // assert(fm_idx.locator!=nullptr);
     // cout << "warning: sample x" << endl;
 
-    TreeWorkspace ext(fm_idx.characters_cnt);
+    TreeWorkspace ext(fm_idx.characters_cnt, thread_idx);
     ext.any_measure=vector<uint64_t>(10,0);
 
     auto start = std::chrono::steady_clock::now();
@@ -287,7 +289,7 @@ void navigate_maximals(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, b
 // }
 
 template<class T, NodeFunc_NEW<T> process_node>
-vector<SuffixArrayNode> collect_roots_while_navigate_maximals(int Lmin, FmIndex &fm_idx, T &t, int depth_max){
+vector<SuffixArrayNode> collect_roots_while_navigate_strata(int Lmin, FmIndex &fm_idx, T &t, int depth_max){
     assert(Lmin>=1 && depth_max >=1);
 
     TreeWorkspace ext(fm_idx.characters_cnt);
