@@ -18,7 +18,7 @@ using namespace sdsl;
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
     int Lmin = 1;
-    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    WaveletString str(PATH5_CDBG_SAMPLE, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
@@ -29,10 +29,6 @@ void test_distinct_kmers(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
 
-    // for(int i=0; i<prokrustean.stratum_count; i++){
-    //     prokrustean.print_stratum(i, seq_texts);
-    // }
-    cout << "prokrustean cout " << prokrustean.sequence_count << " cout2 " << prokrustean.sequences__size.size() << endl;
     vector<string> output;
     for(int k=2; k<10; k++){
         get_distinct_kmers(k, prokrustean, seq_texts, output);
@@ -50,6 +46,7 @@ void test_distinct_kmers(){
                 }
             }
         }
+        // cout << "output " << output.size() << " output_naive " << output_naive.size() << endl;
         assert(output==output_naive);
     }
 }

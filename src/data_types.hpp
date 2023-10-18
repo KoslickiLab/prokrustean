@@ -7,13 +7,20 @@
 #include <algorithm>
 
 /* These types influence the output size */
-typedef uint32_t StratumId; // 
+
+/* Has to be under no. of sequences */
 typedef uint32_t SeqId; //
+/* Has to be under maximum no. of stratums(maximal repeats) */
+typedef uint32_t StratumId; // 
+/* Has to be at least (SeqId or StratumId) */
 typedef uint32_t StratumOrSeqId; //
-typedef uint32_t Pos; // Sequence max length
+/* Has to be under possible sequence max length. Has to be synced together */
+typedef uint16_t Pos; 
+typedef uint16_t SequenceSize; 
+/* Has to be under possible stratum length */
 typedef uint16_t StratumSize; 
-typedef uint32_t SequenceSize; 
-typedef uint8_t BandIdx; //
+/* Can covering region be over 255? meaning stratified regions are at least 122? */ 
+/*I doubt about it even if the dataset is very largein normal cases */
 typedef uint8_t CoveringRegionIdx; 
 
 /* For prokrustean construction */

@@ -225,7 +225,9 @@ struct Prokrustean {
             output.push_back(regions_least_k[i]);
 
             if(i<cnt-1){
-                if(regions_least_k[i].to - regions_least_k[i+1].from >= k-1){
+                // careful - unsigned integers can flip the result
+                if(regions_least_k[i+1].from <= regions_least_k[i].to && regions_least_k[i].to - regions_least_k[i+1].from >= k-1){
+                    // large intersection
                 } else {
                     output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), regions_least_k[i+1].from+(k-1)));          
                 }
@@ -235,8 +237,9 @@ struct Prokrustean {
                 output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), v.size));  
             }
         }
+
         // for(auto &rgn: output){
-        //     assert(rgn.size()>=k);
+        //     rgn.print();
         // }
     } 
     
