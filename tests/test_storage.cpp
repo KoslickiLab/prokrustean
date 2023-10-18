@@ -41,12 +41,13 @@ void test_store_and_retrieve() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData;
+    load_prokrustean("data.bin", loadedData);
 
     // Now, loadedData contains the deserialized data
     for(int i=0; i<sequence_cnt; i++){
@@ -96,12 +97,13 @@ void test_store_and_retrieve_simple() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData;
+    load_prokrustean("data.bin", loadedData);
 
     // Now, loadedData contains the deserialized data
     for(int i=0; i<sequence_cnt; i++){
@@ -166,12 +168,13 @@ void test_store_and_retrieve_random_data() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData;  
+    load_prokrustean("data.bin", loadedData);
 
     // Now, loadedData contains the deserialized data
     for(int i=0; i<sequence_cnt; i++){

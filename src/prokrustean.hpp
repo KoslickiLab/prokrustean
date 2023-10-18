@@ -125,8 +125,7 @@ public:
 
 
 struct Prokrustean {
-// private:
-    /* data structure is succinct as possible*/
+    uint64_t lmin;
     uint64_t sequence_count;
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
@@ -136,14 +135,7 @@ struct Prokrustean {
     vector<StratumSize> stratums__size;
     vector<StratifiedData*> stratums__region;
     vector<uint8_t> stratums__region_cnt;
-// public:
-    // uint64_t sequence_count(){
-    //     return this->sequences__size.size();
-    // }
 
-    // uint64_t stratum_count(){
-    //     return this->stratums__size.size();
-    // }
 
     Sequence get_sequence(SeqId id){
         auto sequence=Sequence(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], stratums__size);

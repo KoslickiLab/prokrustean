@@ -27,7 +27,7 @@ typedef uint8_t CoveringRegionIdx;
 typedef uint16_t SuffixArrayIdx_InBlock;
 typedef uint8_t CharId; //character ids -> lexicographical order of characters 
 typedef uint64_t SuffixArrayIdx;
-typedef vector<uint64_t> RankArray; 
+typedef std::vector<uint64_t> RankArray; 
 /* For application */
 typedef uint32_t UnitigId; // 
 typedef uint32_t UnitigOrMaxUnitigId; // 

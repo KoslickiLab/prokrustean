@@ -18,19 +18,18 @@ struct Configuration{
 
 void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanExtension* opt=nullptr){
     auto start = std::chrono::steady_clock::now();
-    cout << "step1: ";
+    cout << "step1 collect strata, prepare suffix array annotation: ";
+    prokrustean.lmin=Lmin;
     SuffixArrayNode root = get_root(fm_idx);
     StratumProjectionWorkspace workspace_step1(prokrustean, fm_idx, opt);
     navigate_strata<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_step1);
-    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
-    cout << "step1.5: ";
     for(int i=0; i< workspace_step1.block_count; i++){
         workspace_step1.set_block(i);
     }
-    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
 
     start = std::chrono::steady_clock::now();
-    cout << "step2: ";
+    cout << "step2 build prokrustean: ";
     workspace_step1.prepare_prokrustean_spaces();
     StratificationWorkSpace workspace_step2;
     uint64_t cnt=prokrustean.sequence_count;
@@ -80,7 +79,7 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
     atomic<int> block_idx_gen;
     atomic<int> seq_id_iter;
 
-    cout << "step1: ";
+    cout << "step1 collect strata, prepare suffix array annotation: ";
     auto start = std::chrono::steady_clock::now();
     vector<SuffixArrayNode> roots = collect_roots_while_navigate_strata<StratumProjectionWorkspace, report_representative_locations>(Lmin, fm_idx, workspace_step1, root_depth);
     for(int i=0; i<num_threads; i++){
@@ -89,9 +88,6 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
     for (auto &f : futures) {
         f.wait();
     }
-    // workspace_step1.dispose();
-    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
-    cout << "step1.5: ";
     futures.clear();
     for(int i=0; i<num_threads; i++){
         futures.push_back(std::async(std::launch::async, func__stage1_flip, ref(workspace_step1), ref(block_idx_gen)));
@@ -100,13 +96,10 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
         f.wait();
     }
     futures.clear();
-    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    
-    // sleep for memory check
-    // std::this_thread::sleep_for(std::chrono::seconds(1000));
+    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
 
     start = std::chrono::steady_clock::now();
-    cout << "step2: ";
+    cout << "step2 build prokrustean: ";
     workspace_step1.prepare_prokrustean_spaces();
     for(int i=0; i<num_threads; i++){
         futures.push_back(std::async(std::launch::async, func__stage2_stratifiaction, ref(fm_idx), ref(prokrustean), ref(workspace_step1), ref(seq_id_iter)));

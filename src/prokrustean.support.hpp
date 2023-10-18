@@ -357,7 +357,7 @@ void _deserializeStratifiedData(std::ifstream& file, StratifiedData* data) {
 }
 
 // Serialize the Prokrustean structure
-void serializeProkrustean(const Prokrustean& data, const std::string& filename) {
+void store_prokrustean(const Prokrustean& data, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
         // Serialize the sizes
@@ -401,9 +401,8 @@ void serializeProkrustean(const Prokrustean& data, const std::string& filename) 
 }
 
 // Deserialize the Prokrustean structure
-Prokrustean deserializeProkrustean(const std::string& filename) {
+void load_prokrustean(const std::string& filename, Prokrustean& data) {
     std::ifstream file(filename, std::ios::binary);
-    Prokrustean data;
     
     if (file.is_open()) {
         size_t sequence_count, stratum_count;
@@ -451,8 +450,6 @@ Prokrustean deserializeProkrustean(const std::string& filename) {
     } else {
         std::cerr << "Unable to open the file for reading." << std::endl;
     }
-    
-    return data;
 }
 
 

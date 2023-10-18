@@ -26,7 +26,7 @@ void deserializeStratifiedData(std::ifstream& file, StratifiedData* data) {
 }
 
 // Serialize the Prokrustean structure
-void serializeProkrustean(const Prokrustean& data, const std::string& filename) {
+void store_prokrustean(const Prokrustean& data, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
         // Serialize the sizes
@@ -73,7 +73,7 @@ void serializeProkrustean(const Prokrustean& data, const std::string& filename) 
 }
 
 // Deserialize the Prokrustean structure
-Prokrustean deserializeProkrustean(const std::string& filename) {
+Prokrustean load_prokrustean(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary);
     Prokrustean data;
     
@@ -159,13 +159,13 @@ void test_store_and_retrieve() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     cout << "save: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData = load_prokrustean("data.bin");
 
     cout << "load: "  << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     // Now, loadedData contains the deserialized data
@@ -218,13 +218,13 @@ void test_store_and_retrieve_simple() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     cout << "save: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData = load_prokrustean("data.bin");
 
     cout << "load: "  << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     // Now, loadedData contains the deserialized data
@@ -291,13 +291,13 @@ void test_store_and_retrieve_random_data() {
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
-    serializeProkrustean(originalData, "data.bin");
+    store_prokrustean(originalData, "data.bin");
 
     cout << "save: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();
 
     // Deserialize the data from the file
-    Prokrustean loadedData = deserializeProkrustean("data.bin");
+    Prokrustean loadedData = load_prokrustean("data.bin");
 
     cout << "load: "  << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     // Now, loadedData contains the deserialized data
