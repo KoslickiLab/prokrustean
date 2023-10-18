@@ -251,10 +251,10 @@ struct StratumProjectionWorkspace{
         /* critical region */
         StratumId new_id=this->new_stratum_id;
         this->new_stratum_id++;
-        this->prokrustean.stratums__size.push_back(size);
+        this->prokrustean.set_stratum_size(size);
         if(this->prokrustean_optional!=nullptr && this->prokrustean_optional->collect_left_right_extensions){
-            this->prokrustean_optional->stratum_left_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
-            this->prokrustean_optional->stratum_right_ext_count.resize(this->prokrustean.stratums__size.size(), 0);
+            this->prokrustean_optional->stratum_left_ext_count.resize(this->new_stratum_id, 0);
+            this->prokrustean_optional->stratum_right_ext_count.resize(this->new_stratum_id, 0);
         }
         /* critical region */
         stratum_lock.unlock();
@@ -299,14 +299,8 @@ struct StratumProjectionWorkspace{
     }
 
     void prepare_prokrustean_spaces(){
-        // sequence size is inferred at step2
-        this->prokrustean.sequences__size.resize(this->seq_cnt);
-        this->prokrustean.sequences__region.resize(this->seq_cnt);
-        this->prokrustean.sequences__region_cnt.resize(this->seq_cnt, 0);
-        
-        // stratum size is already collected
-        this->prokrustean.stratums__region.resize(this->prokrustean.stratums__size.size());
-        this->prokrustean.stratums__region_cnt.resize(this->prokrustean.stratums__size.size(), 0);
+        this->prokrustean.set_seq_count(this->seq_cnt);
+        this->prokrustean.set_stratum_count(this->new_stratum_id);
     }
 
     uint64_t get_cardinality() {

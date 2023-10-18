@@ -30,7 +30,7 @@ void construct_prokrustean(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t L
     StratificationWorkSpace workspace_step2;
     uint64_t cnt=prokrustean.sequence_count();
     for(uint64_t i=0; i<cnt; i++){
-        workspace_step2.update_contexts_for_seq(i, fm_idx, workspace_step1, prokrustean.stratums__size);
+        workspace_step2.update_contexts_for_seq(i, fm_idx, workspace_step1, prokrustean);
         build_prokrustean(workspace_step2, prokrustean);
     }
     cout << "finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
@@ -60,7 +60,7 @@ auto func__stage2_stratifiaction = [](FmIndex &fm_index, Prokrustean &prokrustea
         auto idx = seq_idx_gen.fetch_add(1);
         if(idx>=prokrustean.sequence_count())
         break;
-        workspace.update_contexts_for_seq(idx, fm_index, output, prokrustean.stratums__size);
+        workspace.update_contexts_for_seq(idx, fm_index, output, prokrustean);
         build_prokrustean(workspace, prokrustean);
     }
 };

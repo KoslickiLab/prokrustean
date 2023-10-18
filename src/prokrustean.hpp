@@ -125,6 +125,7 @@ public:
 
 
 struct Prokrustean {
+// private:
     /* data structure is succinct as possible*/
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
@@ -133,7 +134,7 @@ struct Prokrustean {
     vector<StratumSize> stratums__size;
     vector<StratifiedData*> stratums__region;
     vector<uint8_t> stratums__region_cnt;
-
+// public:
     uint64_t sequence_count(){
         return this->sequences__size.size();
     }
@@ -237,16 +238,152 @@ struct Prokrustean {
         // }
     } 
     
-    uint64_t get_cardinality(){
-        uint64_t cnt = 0;
-        for(auto rcnt: sequences__region_cnt){
-            cnt+=(int)rcnt;
-        }
-        for(auto rcnt: stratums__region_cnt){
-            cnt+=(int)rcnt;
-        }
-        return cnt;
+    StratumSize get_stratum_size(StratumId id){
+        return this->stratums__size[id];
+    }
+
+    void set_seq_count(uint64_t seq_cnt){
+        this->sequences__size.resize(seq_cnt);
+        this->sequences__region.resize(seq_cnt);
+        this->sequences__region_cnt.resize(seq_cnt, 0);
+    }
+
+    void set_stratum_count(uint64_t stratum_cnt){
+        // stratum sizes are assumed to be set
+        this->stratums__region.resize(stratum_cnt);
+        this->stratums__region_cnt.resize(stratum_cnt, 0);
+    }
+
+    void set_stratum_size(StratumSize stratum_size){
+        this->stratums__size.push_back(stratum_size);
+    }
+
+    void set_seq_regions(SeqId id, uint64_t seq_size, StratifiedData* data, uint8_t rgn_cnt){
+        this->sequences__size[id]=seq_size;
+        this->sequences__region[id]=data;
+        this->sequences__region_cnt[id]=rgn_cnt;
+    }
+
+    void set_stratum_regions(StratumId id, StratifiedData* data, uint8_t rgn_cnt){
+        this->stratums__region[id]=data;
+        this->stratums__region_cnt[id]=rgn_cnt;
     }
 };
+
+// struct ProkrusteanNew {
+// private:
+//     /* data structure is succinct as possible*/
+//     vector<SequenceSize> sequences__size;
+//     vector<StratumId> sequences__region_stratum_id;
+//     vector<Pos> sequences__region_pos;
+//     vector<RegionGlobalIdx> sequences__region_idx;
+    
+//     vector<StratumSize> stratums__size;
+//     vector<StratumId> stratums__region_stratum_id;
+//     vector<Pos> stratums__region_pos;
+//     vector<RegionGlobalIdx> stratums__region_idx;
+    
+// public:
+//     SeqId sequences__count;
+//     StratumId stratums__count;
+//     RegionGlobalIdx sequences__region__count;
+//     RegionGlobalIdx stratums__region__count;
+
+//     uint8_t seq_rgn_cnt(SeqId id){
+//         if(id+1<sequences__region__count){
+//             return sequences__region__count-id;
+//         }
+//         return sequences__region_idx[id+1]-sequences__region_idx[id];
+//     }
+
+//     uint8_t stra_rgn_cnt(StratumId id){
+//         if(id+1<stratums__region__count){
+//             return stratums__region__count-id;
+//         }
+//         return stratums__region_idx[id+1]-stratums__region_idx[id];
+//     }
+
+//     void get_sequence(SeqId id, Vertex &vertex){
+//         // memory efficient
+//         vertex.id=id;
+//         vertex.size= sequences__size[id];
+//         vertex.is_sequence=true;
+//         vertex.is_stratum=false;
+//         auto rgn_cnt=this->seq_rgn_cnt(id);
+//         vertex.s_edges.resize(rgn_cnt);
+//         while(rgn_cnt>0){
+//             rgn_cnt--;
+//             Pos pos=sequences__region_pos[sequences__region_idx[id]+rgn_cnt];
+//             StratumId stratum_id=sequences__region_stratum_id[sequences__region_idx[id]+rgn_cnt];
+//             vertex.s_edges[rgn_cnt].from=pos;
+//             vertex.s_edges[rgn_cnt].to=pos+stratums__size[stratum_id];
+//             vertex.s_edges[rgn_cnt].stratum_id=stratum_id;
+//             vertex.s_edges[rgn_cnt].is_stratified=true;
+//             vertex.s_edges[rgn_cnt].is_reflected=false;
+//         }
+//     }
+
+//     void get_sequence(SeqId id, Vertex &vertex){
+//         // memory efficient
+//         vertex.id=id;
+//         vertex.size= sequences__size[id];
+//         vertex.is_sequence=false;
+//         vertex.is_stratum=true;
+//         auto rgn_cnt=this->stra_rgn_cnt(id);
+//         vertex.s_edges.resize(rgn_cnt);
+//         while(rgn_cnt>0){
+//             rgn_cnt--;
+//             Pos pos=stratums__region_pos[stratums__region_idx[id]+rgn_cnt];
+//             StratumId stratum_id=stratums__region_stratum_id[stratums__region_idx[id]+rgn_cnt];
+//             vertex.s_edges[rgn_cnt].from=pos;
+//             vertex.s_edges[rgn_cnt].to=pos+stratums__size[stratum_id];
+//             vertex.s_edges[rgn_cnt].stratum_id=stratum_id;
+//             vertex.s_edges[rgn_cnt].is_stratified=true;
+//             vertex.s_edges[rgn_cnt].is_reflected=false;
+//         }
+//     }
+
+//     void get_spectrum(Vertex &v, int k,vector<Region> &output){
+//         output.clear();
+//         assert(v.size>=k);
+//         // cout << "---- spectrum of -----" << endl;
+//         // v.print();
+//         vector<StratifiedRegion> regions_least_k;
+//         for(auto &r:v.s_edges){
+//             if(r.size()>=k){
+//                 regions_least_k.push_back(r);
+//             }
+//         }
+//         int cnt=regions_least_k.size();
+//         // single reflected 
+//         if(cnt==0){
+//             // cout << "single reflected" << endl;
+//             auto rgn=ReflectedRegion(0, v.size);
+//             output.push_back(rgn);
+//             assert(rgn.is_reflected&&!rgn.is_stratified);
+//             return;
+//         }
+
+//         // regions are already sorted
+//         for(int i=0; i<cnt; i++){
+//             if(i==0 && regions_least_k[i].from>0){
+//                 output.push_back(ReflectedRegion(0, regions_least_k[i].from+(k-1)));  
+//             }
+
+//             output.push_back(regions_least_k[i]);
+
+//             if(i<cnt-1){
+//                 if(regions_least_k[i].to - regions_least_k[i+1].from >= k-1){
+//                 } else {
+//                     output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), regions_least_k[i+1].from+(k-1)));          
+//                 }
+//             }
+
+//             if(i==cnt-1 && regions_least_k[i].to<v.size){
+//                 output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), v.size));  
+//             }
+//         }
+//     }
+// };
 
 #endif
