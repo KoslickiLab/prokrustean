@@ -85,7 +85,8 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
         f.wait();
     }
     // workspace_step1.dispose();
-    cout << "finished1 " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    cout << "step1.5: ";
     futures.clear();
     for(int i=0; i<num_threads; i++){
         futures.push_back(std::async(std::launch::async, func__stage1_flip, ref(workspace_step1), ref(block_idx_gen)));
@@ -94,10 +95,10 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
         f.wait();
     }
     futures.clear();
-    cout << "finished2 " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
+    cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratum_count() << endl;
     
     // sleep for memory check
-    std::this_thread::sleep_for(std::chrono::seconds(1000));
+    // std::this_thread::sleep_for(std::chrono::seconds(1000));
 
     start = std::chrono::steady_clock::now();
     cout << "step2: ";

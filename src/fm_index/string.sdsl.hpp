@@ -92,6 +92,10 @@ public:
         return wt.rank(i, characters[c]);
     }
 
+    uint64_t rank(SuffixArrayIdx i, char c){
+        return wt.rank(i, c);
+    }
+
     void ranks(CharId c, vector<SuffixArrayIdx> &firsts, vector<uint64_t> &ext_ranks){
         /* check interval first, so that if empty, just skip it*/
         ext_ranks[0]=wt.rank(firsts[0], characters[c]);

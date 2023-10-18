@@ -47,7 +47,6 @@ struct SuccinctStratifiedData {
                 }
             }
             results.push_back(result);
-            assert(results.size()==extra);
             for(int i=0; i<extra; i++){
                 data[annot_cnt+i]=results[i];
             }
@@ -81,6 +80,7 @@ struct SuccinctStratifiedData {
 struct RawStratifiedRegionBlock{
     int block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
     // raw
+    int content_count=0;
     vector<SuffixArrayIdx_InBlock> raw_sa_indices;
     vector<StratumId> raw_stratum_ids;
     vector<bool> raw_is_primarys;
@@ -89,6 +89,7 @@ struct RawStratifiedRegionBlock{
         this->raw_stratum_ids.push_back(stratum_id);
         this->raw_sa_indices.push_back(local_sa_idx);
         this->raw_is_primarys.push_back(is_primary);
+        content_count++;
     }
 
     void dispose_block(){
@@ -112,16 +113,12 @@ struct SuffixArrayAnnotationBlock{
     int sa_idx_queriable_left;
 
     void set_contents(RawStratifiedRegionBlock &raw_block){
-        if(raw_block.raw_sa_indices.size()==0){
+        if(raw_block.content_count==0){
             return;
         }
-        auto &raw_sa_indices = raw_block.raw_sa_indices;
-        auto &raw_is_primarys = raw_block.raw_is_primarys;
-        auto &raw_stratum_ids = raw_block.raw_stratum_ids;
         // sa indices
-        // unordered_map<SuffixArrayIdx_InBlock, int> counts_of_idx;
         this->sa_bv.resize(block_size);
-        for(auto idx: raw_sa_indices){
+        for(auto idx: raw_block.raw_sa_indices){
             sa_bv[idx]=true;
         }
         this->sa_rb=rank_support_v<>(&this->sa_bv);
@@ -132,19 +129,20 @@ struct SuffixArrayAnnotationBlock{
         this->sa_idx_data.resize(sa_idx_cnt);
 
         vector<vector<int>> raw_indices_by_content_indices(sa_idx_cnt);
-        vector<StratumId> stratum_ids;
-        vector<bool> is_primaries;
-        for(int i=0; i< raw_sa_indices.size(); i++){
-            int content_idx = this->sa_rb.rank(raw_sa_indices[i]);
+        for(int i=0; i< raw_block.content_count; i++){
+            int content_idx = this->sa_rb.rank(raw_block.raw_sa_indices[i]);
             this->sa_idx_abundances[content_idx]++;
             raw_indices_by_content_indices[content_idx].push_back(i);
         }
+
+        vector<StratumId> stratum_ids;
+        vector<bool> is_primaries;
         for(int content_idx=0; content_idx<sa_idx_cnt; content_idx++){
             stratum_ids.clear();
             is_primaries.clear();
             for(auto i: raw_indices_by_content_indices[content_idx]){
-                stratum_ids.push_back(raw_stratum_ids[i]);
-                is_primaries.push_back(raw_is_primarys[i]);
+                stratum_ids.push_back(raw_block.raw_stratum_ids[i]);
+                is_primaries.push_back(raw_block.raw_is_primarys[i]);
             }
             this->sa_idx_data[content_idx].set_data(raw_indices_by_content_indices[content_idx].size(), stratum_ids, is_primaries);
         }
@@ -158,11 +156,10 @@ struct SuffixArrayAnnotationBlock{
         } 
         int sa_idx_rank=this->sa_rb.rank(local_sa_idx);
         annot_cnt=sa_idx_abundances[sa_idx_rank];
-        assert(sa_idx_rank< this->sa_idx_data.size());
-        this->sa_idx_data[sa_idx_rank].get_data(annot_cnt, stratum_ids, is_primaries);
         
+        this->sa_idx_data[sa_idx_rank].get_data(annot_cnt, stratum_ids, is_primaries);
         // will be fetched only once
-        delete this->sa_idx_data[sa_idx_rank].data;
+        this->sa_idx_data[sa_idx_rank].dispose();
         return true;
     }
 };
@@ -310,11 +307,6 @@ struct StratumProjectionWorkspace{
         // stratum size is already collected
         this->prokrustean.stratums__region.resize(this->prokrustean.stratums__size.size());
         this->prokrustean.stratums__region_cnt.resize(this->prokrustean.stratums__size.size(), 0);
-    }
-
-    void dispose(SuffixArrayIdx sa_idx){
-        auto block_idx=sa_idx/block_size;
-        auto local_sa_idx=sa_idx%block_size;
     }
 
     uint64_t get_cardinality() {
