@@ -58,66 +58,6 @@ void _explore(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequence
     }
 }
 
-void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
-    assert(unitigs[uni_id].is_start_of_maximal);
-    // implement string
-    unitigs[uni_id].content=unitigs[uni_id].get_string(sequences);
-    if(unitigs[uni_id].nexts.size()!=1){
-        return;
-    }
-    UnitigId curr_id=uni_id;
-    UnitigId next_id=unitigs[curr_id].nexts[0];
-    while(true){
-        Unitig &next_unitig=unitigs[next_id];
-        // normal case
-        if(next_unitig.is_void_k_minus_1_unitig==false){
-            if(next_unitig.is_convergence){
-                unitigs[uni_id].nexts.clear();
-                unitigs[uni_id].nexts.push_back(next_id);
-                break;
-            } else {
-                if(unitigs[curr_id].nexts.size()<=1){
-                    // merge
-                    unitigs[uni_id].content+=next_unitig.get_string(sequences).substr(k-1);
-                }
-
-                if(next_unitig.nexts.size()!=1){
-                    unitigs[uni_id].nexts=next_unitig.nexts;
-                    break;
-                } else {
-                    curr_id=next_id;
-                    next_id=next_unitig.nexts[0];
-                }
-            }
-        } else {
-            // void case
-            if(next_unitig.nexts.size()!=1){
-                unitigs[uni_id].nexts=next_unitig.nexts;
-                break;
-            } else if(next_unitig.nexts.size()==1){
-                curr_id=next_id;
-                next_id=next_unitig.nexts[0];
-            }
-        }
-    }
-}
-
-void construct_cdbg(vector<Unitig> &unitigs, vector<string> &sequences, int k){
-    for(UnitigId id=0; id<unitigs.size(); id++){
-        auto &unitig = unitigs[id];
-        if(unitig.is_start_of_maximal){
-            // if(id!=117 && id!=16129)
-            // continue;
-            // cout << "[max]," << id << " " << unitigs[id].get_string(sequences);
-            // if(unitigs[id].is_void_k_minus_1_unitig){
-            //     cout << "(void)" << endl;
-            // }
-            // _explore(id, unitigs, sequences, k);
-            // cout << endl;
-            build_strings(id, unitigs, sequences, k);
-        }
-    }
-}
 
 void print_cdbg(vector<Unitig> &unitigs){
     for(UnitigId id=0; id<unitigs.size(); id++){

@@ -12,29 +12,29 @@
 #include "src/construction/algorithms.hpp"
 #include "src/prokrustean.hpp"
 #include "src/prokrustean.support.hpp"
-#include "src/application/kmers.hpp"
+#include "src/application/kmers.count.hpp"
 
 using namespace std;
 using namespace sdsl;
 
-string input_bwt;
 string input_prokrustean;
 string output_file;
 int num_threads=12;
-int k=-1;
+int from=-1;
+int to=-1;
 char TERM = '$';
 
 void help(){
 
-	cout << "kmer [options]" << endl <<
-	"Input: Prokrustean Graph file." << endl <<
-	"Output: distinct kmers count." << endl <<
+	cout << "kmer counting [options]" << endl <<
+	"Input: prokrustean graph file." << endl <<
+	"Output: kmer counts of the given range." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-i <arg>    (REQUIRED) prokrustean file name" << endl <<
-	"-k <arg>    (REQUIRED) k - at least lmin." << endl <<
-	"-g <arg>    prokrustean file name. Default: input file name + .prokrustean" << endl <<
-	"-o <arg>    output kmer file name. Default: input file name + .kmer.txt" << endl <<
+	"-l <arg>    k range left. default: lmin." << endl <<
+	"-r <arg>    k range right. default: largest sequence size." << endl <<
+	"-o <arg>    output file name. Default: input file name + .unitig.count.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
 	exit(0);
 }
@@ -43,25 +43,25 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "h:i:k:o:g:t:k")) != -1){
+	while ((opt = getopt(argc, argv, "hi:l:r:o:t")) != -1){
 		switch (opt){
 			case 'h':
 				help();
 			break;
 			case 'i':
-				input_bwt = string(optarg);
-			break;
-			case 'g':
 				input_prokrustean = string(optarg);
 			break;
-			case 'k':
-				k = stoi(string(optarg));
+			case 'o':
+				output_file = string(optarg);
 			break;
-			case 'p':
-				num_threads = stoi(string(optarg));
+			case 'l':
+				from = stoi(string(optarg));
+			break;
+			case 'r':
+				to = stoi(string(optarg));
 			break;
 			case 't':
-				TERM = atoi(optarg);
+				num_threads = stoi(string(optarg));
 			break;
 			default:
 				help();
@@ -69,90 +69,53 @@ int main(int argc, char** argv){
 		}
 	}
 
-	if(input_bwt.size()==0){
+	if(input_prokrustean.size()==0){
 		cout << "input empty" << endl;
 		help();
 	}
-	if(input_prokrustean.size()==0) {
-		input_prokrustean=input_bwt+".prokrustean";
-	};
 	if(output_file.size()==0) {
-		output_file=input_bwt+".kmer." + "k"+to_string(k) + ".txt";
+		output_file=input_prokrustean+".kmer.count.txt";
 	};
-	if(k==-1){
-		cout << "k not set" << endl;
-		exit(0);
-	}
-
-	cout << "Input bwt file: " << input_bwt << endl;
-	cout << "Input prokrustean file: " << input_prokrustean << endl;
-	cout << "k: " << k << endl;
-	cout << "threads: " << num_threads << endl;
-
-	WaveletString str;
-
-	auto start = std::chrono::steady_clock::now();
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
-		cout << "loading failed. Prokrustean is built and saved at: " << input_prokrustean << endl;
-		start = std::chrono::steady_clock::now();
-		cout << "make wavelet tree ... ";
-		
-		str=WaveletString(input_bwt);
-		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
-
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-		FmIndex fm_idx(str);
-		construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, k);
-		store_prokrustean(prokrustean, input_prokrustean);
-	}
-	prokrustean.print_abstract();
-
-	if(k<prokrustean.lmin){
-		cout << "k has to be at least lmin. given k: " << k << ", lmin of prokrustean: " << prokrustean.lmin  << endl;
+		cout << "loading failed " << input_prokrustean << endl;
 		exit(0);
 	}
-
-	start = std::chrono::steady_clock::now();
-	cout << "annotate strata example occurrences (so that they can be printed) ... ";
-	
-	ProkrusteanExtension ext(prokrustean);
-	// setup_stratum_example_occ(ext);
-    setup_stratum_example_occ_parallel(ext, num_threads);
-	
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	if(!str.valid){
-		start = std::chrono::steady_clock::now();
-		cout << "make wavelet tree ... ";
-		
-		str=WaveletString(input_bwt);
-		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
-
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	if(from==-1){
+		from=prokrustean.lmin;
+	} else if(from<prokrustean.lmin){
+		cout << "from(l) value should be at least the lmin of prokrustean: " << prokrustean.lmin << endl;
+		exit(0);
+	}
+	if(to==-1){
+		for(auto &size: prokrustean.sequences__size){
+			if(to<size) to=size;
+		}
+	} else if(to<from){
+		cout << "to(r) value should be at least from(l) value: " << from << endl;
+		exit(0);
 	}
 	
-	FmIndex fm_idx(str);
+	cout << "k range " << from << ":" << to << endl;
+	cout << "threads: " << num_threads << endl;
 	
-	start = std::chrono::steady_clock::now();
-	cout << "recover sequences from bwt... ";
-
-    vector<string> seq_texts;
-    recover_sequences_parallel(fm_idx, seq_texts, num_threads);
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	start = std::chrono::steady_clock::now();
-	cout << "find distinct kmers... ";
-
-    vector<string> mers;
-    get_distinct_kmers_parallel(k, ext, seq_texts, mers);
-
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	start = std::chrono::steady_clock::now();
-	cout << "kmers total: " << mers.size() << endl;
-	cout << "save distinct kmers... ";
-
-	store_kmers(mers, output_file);
+	prokrustean.print_abstract();
 	
+	auto start = std::chrono::steady_clock::now();
+	vector<uint64_t> output;
+	count_distinct_kmers_of_range(from, to, prokrustean, output);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	
+	cout << "saving kmer counts... ";
+
+	std::ofstream outputFile(output_file);
+	for(int i=0; i<output.size(); i++){
+		if(from<=i && i<=to){
+			outputFile << std::left << std::setw(20) << i;
+			outputFile << output[i] << endl;
+		}
+	}
+		
+	outputFile.close();
 }
-

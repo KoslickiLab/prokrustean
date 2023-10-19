@@ -26,14 +26,14 @@ char TERM = '$';
 
 void help(){
 
-	cout << "kmer [options]" << endl <<
-	"Input: Prokrustean Graph file." << endl <<
+	cout << "unitig counting [options]" << endl <<
+	"Input: prokrustean graph file." << endl <<
 	"Output: maximal unitig counts count." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-i <arg>    (REQUIRED) prokrustean file name" << endl <<
-	"-l <arg>    unitig counting k range left. default: lmin." << endl <<
-	"-r <arg>    unitig counting k range right. default: largest sequence size." << endl <<
+	"-l <arg>    k range left. default: lmin." << endl <<
+	"-r <arg>    k range right. default: largest sequence size." << endl <<
 	"-o <arg>    output file name. Default: input file name + .unitig.count.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
 	exit(0);

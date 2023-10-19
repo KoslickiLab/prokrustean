@@ -6,6 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <unistd.h>
 #include "data_types.hpp"
 
 using namespace std;
@@ -134,8 +135,10 @@ struct SequenceVertex: Vertex{
     SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, k, stratum_sizes){}
 };
 
+// int CHECKSUM=stoi(string("I am a prokrustean file"));
 
 struct Prokrustean {
+    // int checksum=CHECKSUM;
     int lmin;
     int version=1; // for file loading compatibility 
     bool contains_stratum_extension_count;
