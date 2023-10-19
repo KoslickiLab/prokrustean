@@ -81,6 +81,34 @@ struct ProkrusteanExtension {
     bool stratum__refracted_at_back_of_cover(StratumId id, int k){
         return refracted_at_back_of_cover(k, prokrustean.stratums__size[id], prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
     }
+
+    optional<StratifiedEdge> first_stratified(StratifiedData* region, CoveringRegionCount rgn_cnt){
+        if(rgn_cnt==0){
+            return nullopt;
+        } else {
+            return StratifiedEdge(region[0].pos, region[0].pos + prokrustean.get_stratum_size(region[0].stratum_id), region[0].stratum_id);
+        }
+    }
+    optional<StratifiedEdge> seq__first_stratified(SeqId id){
+        return first_stratified(prokrustean.sequences__region[id], prokrustean.sequences__region_cnt[id]);
+    }
+    optional<StratifiedEdge> stratum__first_stratified(StratumId id){
+        return first_stratified(prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
+    }
+
+    optional<StratifiedEdge> last_stratified(StratifiedData* region, CoveringRegionCount rgn_cnt){
+        if(rgn_cnt==0){
+            return nullopt;
+        } else {
+            return StratifiedEdge(region[rgn_cnt-1].pos, region[rgn_cnt-1].pos + prokrustean.get_stratum_size(region[rgn_cnt-1].stratum_id), region[rgn_cnt-1].stratum_id);
+        }
+    }
+    optional<StratifiedEdge> seq__last_stratified(SeqId id){
+        return last_stratified(prokrustean.sequences__region[id], prokrustean.sequences__region_cnt[id]);
+    }
+    optional<StratifiedEdge> stratum__last_stratified(StratumId id){
+        return last_stratified(prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
+    }
 };
 
 bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanExtension &ext){

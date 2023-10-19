@@ -8,6 +8,7 @@
 // #include "test_ssa.cpp"
 #include "test_construction.cpp"
 // #include "test_application.cdbg.naive.cpp"
+#include "test_application.dbg.count.cpp"
 int main(void){
     // cout << "--- bitvector ---" << endl;
     // main_performance_bitvector();
@@ -23,8 +24,9 @@ int main(void){
     // cout << "--- step1 repr ---" << endl;
     // main_performance_step1_repr();
 
-    cout << "--- construction ---" << endl;
-    main_construction();
+
+    // cout << "--- construction ---" << endl;
+    // main_construction();
     // cout << "--- test ssa ---" << endl;
     // main_performance_ssa();
     // cout << "--- full process2 ---" << endl;
@@ -33,4 +35,7 @@ int main(void){
 
     // cout << "--- application naive cdbg ---" << endl;
     // main_application_naive_cdbg();
+
+    // cout << "--- application dbg unitig count ---" << endl;
+    main_application_unitig_count();
 }

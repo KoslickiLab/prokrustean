@@ -30,10 +30,11 @@ void test_unitig_counting_single(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     
-    vector<int> ks={2, 7, 30, 50};
-    for(auto k: ks){
+    for(int k=2; k< 50; k++){
+        if(k%8!=0){
+            continue;
+        }
         auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
-
         NaiveCompactedDeBruijnGraph cdbg;
         cdbg.construct_compacted(seq_texts, k);
         auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
@@ -42,23 +43,20 @@ void test_unitig_counting_single(){
     }
 }
 
+
 void test_unitig_counting_range(){
-    int Lmin = 1;
-    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    int Lmin = 15;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    ProkrusteanExtension enhancement(prokrustean);
-    enhancement.collect_left_right_extensions=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
-    
-    vector<int> ks={2, 7, 30, 50};
-    for(auto k: ks){
-        auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
-
-        vector<uint64_t> output;
-        count_maximal_unitigs_range_of_k(k, k, enhancement, output);
-
+    ProkrusteanExtension ext(prokrustean);
+    ext.collect_left_right_extensions=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &ext);
+    vector<uint64_t> output;
+    count_maximal_unitigs_range_of_k(30, 200, ext, output);
+    for(int k=30; k<200; k++){
+        auto unitig_cnt = count_maximal_unitigs_single_k(k, ext);
         assert(unitig_cnt==output[k]);
     }
 }

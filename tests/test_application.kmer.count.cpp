@@ -30,9 +30,9 @@ void test_counting_distinct_kmers(){
     fm_idx.recover_all_texts(seq_texts);
 
     vector<uint64_t> counts;
-    count_distinct_kmers_of_range(30, 180, prokrustean, counts);
+    count_distinct_kmers_of_range(1, 180, prokrustean, counts);
     vector<string> output;
-    for(int k=30; k<180; k++){
+    for(int k=1; k<180; k++){
         get_distinct_kmers(k, ext, seq_texts, output);
         cout << "counts[k]: " << counts[k] << " count_distinct_kmers(k, prokrustean) "<< count_distinct_kmers(k, prokrustean) << " output: " << output.size() << endl;
         assert(counts[k]==output.size());
