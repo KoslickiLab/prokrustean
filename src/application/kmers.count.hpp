@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int64_t _count_k_mers(uint64_t size, vector<StratifiedRegion> &regions, int k){
+int64_t _count_k_mers(uint64_t size, vector<StratifiedEdge> &regions, int k){
     if(size<k) return 0;
 
     int rgn_cnt=regions.size();
@@ -42,7 +42,7 @@ int64_t _count_k_mers(uint64_t size, vector<StratifiedRegion> &regions, int k){
 }
 
 
-void _viable_kmer_decreases(uint64_t size, int from, vector<StratifiedRegion> &regions, vector<int64_t> &partial_partial_C){
+void _viable_kmer_decreases(uint64_t size, int from, vector<StratifiedEdge> &regions, vector<int64_t> &partial_partial_C){
     if(size<from){
         return;
     }
@@ -57,7 +57,7 @@ void _viable_kmer_decreases(uint64_t size, int from, vector<StratifiedRegion> &r
     }
 }
 
-void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<StratifiedRegion> &regions, vector<int64_t> &partial_partial_C){
+void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<StratifiedEdge> &regions, vector<int64_t> &partial_partial_C){
     if(size<k){
         return;
     }

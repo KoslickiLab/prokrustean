@@ -11,7 +11,7 @@ void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, 
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
-    vector<Region> spectrum;
+    vector<Edge> spectrum;
     
     //prokrustean
     for(int i=0; i<prokrustean.sequence_count; i++){

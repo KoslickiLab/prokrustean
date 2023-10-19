@@ -10,7 +10,7 @@
 
 using namespace std;
 
-struct Region {
+struct Edge {
     Pos from;
     Pos to;
 
@@ -19,10 +19,10 @@ struct Region {
     // stratified only 
     StratumId stratum_id;
 
-    Region(){}
-    Region(Pos from, Pos to): Region(from, to, false, 0){}
-    Region(Pos from, Pos to, StratumId stratum_id): Region(from, to, true, stratum_id){}
-    Region(Pos from, Pos to, bool is_stratified, StratumId stratum_id): from(from), to(to), is_stratified(is_stratified), is_reflected(!is_stratified), stratum_id(stratum_id) {}
+    Edge(){}
+    Edge(Pos from, Pos to): Edge(from, to, false, 0){}
+    Edge(Pos from, Pos to, StratumId stratum_id): Edge(from, to, true, stratum_id){}
+    Edge(Pos from, Pos to, bool is_stratified, StratumId stratum_id): from(from), to(to), is_stratified(is_stratified), is_reflected(!is_stratified), stratum_id(stratum_id) {}
 
     uint64_t size(){
         assert(from<to);
@@ -39,14 +39,14 @@ struct Region {
     }
 };
 
-struct StratifiedRegion: Region{
-    StratifiedRegion(){}
-    StratifiedRegion(Pos from, Pos to, StratumId stratum_id): Region(from, to, stratum_id) {}
+struct StratifiedEdge: Edge{
+    StratifiedEdge(){}
+    StratifiedEdge(Pos from, Pos to, StratumId stratum_id): Edge(from, to, stratum_id) {}
 };
 
-struct ReflectedRegion: Region{
-    ReflectedRegion(){}
-    ReflectedRegion(Pos from, Pos to): Region(from, to) {}
+struct RefractedEdge: Edge{
+    RefractedEdge(){}
+    RefractedEdge(Pos from, Pos to): Edge(from, to) {}
 };
 
 
@@ -62,19 +62,19 @@ struct StratifiedData {
 struct Vertex {
     uint32_t id;
     uint32_t size;
-    vector<StratifiedRegion> s_edges;
+    vector<StratifiedEdge> s_edges;
 
     bool is_sequence;
     bool is_stratum;
 
     Vertex(){}
-    Vertex(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions, bool is_stratum) :id(id),size(size),s_edges(regions),is_stratum(is_stratum), is_sequence(!is_stratum){}
+    Vertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions, bool is_stratum) :id(id),size(size),s_edges(regions),is_stratum(is_stratum), is_sequence(!is_stratum){}
     Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
         s_edges.resize(rgn_cnt);
         while(rgn_cnt>0){
             rgn_cnt--;
             StratifiedData d=data[rgn_cnt];
-            auto rgn=StratifiedRegion(d.pos, d.pos+stratum_sizes[d.stratum_id], d.stratum_id);
+            auto rgn=StratifiedEdge(d.pos, d.pos+stratum_sizes[d.stratum_id], d.stratum_id);
             s_edges[rgn_cnt]=rgn;
             assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size);
         } 
@@ -96,36 +96,23 @@ struct Vertex {
     }
 };
 
-struct Stratum: Vertex{
-    Stratum(){}
-    Stratum(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions): Vertex(id, size, regions, true){}
-    Stratum(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
+struct StratumVertex: Vertex{
+    StratumVertex(){}
+    StratumVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, true){}
+    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
 };
 
-struct Sequence: Vertex{
-    Sequence(){}
-    Sequence(uint32_t id, uint32_t size, vector<StratifiedRegion> &regions): Vertex(id, size, regions, false){}
-    Sequence(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
-};
-
-
-class SpinLock {
-    std::atomic_flag flag = ATOMIC_FLAG_INIT;
-
-public:
-    SpinLock(){}
-    void lock() {
-        while (flag.test_and_set(std::memory_order_acquire)) {}
-    }
-
-    void unlock() {
-        flag.clear(std::memory_order_release);
-    }
+struct SequenceVertex: Vertex{
+    SequenceVertex(){}
+    SequenceVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, false){}
+    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
 };
 
 
 struct Prokrustean {
-    uint64_t lmin;
+    int lmin;
+    int version=1; // for file loading compatibility 
+
     uint64_t sequence_count;
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
@@ -137,14 +124,14 @@ struct Prokrustean {
     vector<uint8_t> stratums__region_cnt;
 
 
-    Sequence get_sequence(SeqId id){
-        auto sequence=Sequence(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], stratums__size);
+    SequenceVertex get_sequence(SeqId id){
+        auto sequence=SequenceVertex(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], stratums__size);
         assert(sequence.is_sequence);
         return sequence;
     }
 
-    Stratum get_stratum(StratumId id){
-        auto stratum=Stratum(id, stratums__size[id], stratums__region[id], stratums__region_cnt[id], stratums__size);
+    StratumVertex get_stratum(StratumId id){
+        auto stratum=StratumVertex(id, stratums__size[id], stratums__region[id], stratums__region_cnt[id], stratums__size);
         assert(stratum.is_stratum);
         return stratum;
     }
@@ -187,12 +174,12 @@ struct Prokrustean {
         }
     }
 
-    void get_spectrum(Vertex &v, int k,vector<Region> &output){
+    void get_spectrum(Vertex &v, int k,vector<Edge> &output){
         output.clear();
         assert(v.size>=k);
         // cout << "---- spectrum of -----" << endl;
         // v.print();
-        vector<StratifiedRegion> regions_least_k;
+        vector<StratifiedEdge> regions_least_k;
         for(auto &r:v.s_edges){
             if(r.size()>=k){
                 regions_least_k.push_back(r);
@@ -202,7 +189,7 @@ struct Prokrustean {
         // single reflected 
         if(cnt==0){
             // cout << "single reflected" << endl;
-            auto rgn=ReflectedRegion(0, v.size);
+            auto rgn=RefractedEdge(0, v.size);
             output.push_back(rgn);
             assert(rgn.is_reflected&&!rgn.is_stratified);
             return;
@@ -211,7 +198,7 @@ struct Prokrustean {
         // regions are already sorted
         for(int i=0; i<cnt; i++){
             if(i==0 && regions_least_k[i].from>0){
-                output.push_back(ReflectedRegion(0, regions_least_k[i].from+(k-1)));  
+                output.push_back(RefractedEdge(0, regions_least_k[i].from+(k-1)));  
             }
 
             output.push_back(regions_least_k[i]);
@@ -221,12 +208,12 @@ struct Prokrustean {
                 if(regions_least_k[i+1].from <= regions_least_k[i].to && regions_least_k[i].to - regions_least_k[i+1].from >= k-1){
                     // large intersection
                 } else {
-                    output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), regions_least_k[i+1].from+(k-1)));          
+                    output.push_back(RefractedEdge(regions_least_k[i].to-(k-1), regions_least_k[i+1].from+(k-1)));          
                 }
             }
 
             if(i==cnt-1 && regions_least_k[i].to<v.size){
-                output.push_back(ReflectedRegion(regions_least_k[i].to-(k-1), v.size));  
+                output.push_back(RefractedEdge(regions_least_k[i].to-(k-1), v.size));  
             }
         }
 

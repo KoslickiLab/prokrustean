@@ -94,7 +94,7 @@ struct StratumExt {
 
 struct CompactedDBGWorkspace {
     Vertex working_vertex;
-    vector<Region> working_bands;
+    vector<Edge> working_bands;
     Unitig working_unitig;
     vector<StratumId> working_stratum_ids;
 
@@ -209,7 +209,7 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
             // has large stratified at the front
             // optimize later
             auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
-            vector<Region> _bands;
+            vector<Edge> _bands;
             ext.prokrustean.get_spectrum(_stra, k-1, _bands);
             if(_bands[0].is_stratified){
                 work.working_stratum_ids.push_back(curr_stratum_id);
@@ -244,7 +244,7 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
             // has large stratified at the last
             //later optimize
             auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
-            vector<Region> _bands;
+            vector<Edge> _bands;
             ext.prokrustean.get_spectrum(_stra, k-1, _bands);
             if(_bands[_bands.size()-1].is_stratified){
                 work.working_stratum_ids.push_back(curr_stratum_id);

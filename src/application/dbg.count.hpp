@@ -13,9 +13,9 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext,
 
     int cnt=0;
     vector<int> stats(7);
-    vector<Region> spectrum;
+    vector<Edge> spectrum;
     for(int i=0; i<prokrustean.sequence_count; i++){
-        Sequence seq = prokrustean.get_sequence(i);
+        SequenceVertex seq = prokrustean.get_sequence(i);
         if(seq.size<k-1){
             continue;
         }
@@ -30,7 +30,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext,
         }
     }
     for(int i=0; i<prokrustean.stratum_count; i++){
-        Stratum stra = prokrustean.get_stratum(i);
+        StratumVertex stra = prokrustean.get_stratum(i);
         if(stra.size<k-1){
             continue;
         }

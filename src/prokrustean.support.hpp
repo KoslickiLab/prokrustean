@@ -360,7 +360,9 @@ void _deserializeStratifiedData(std::ifstream& file, StratifiedData* data) {
 void store_prokrustean(const Prokrustean& data, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
-        // Serialize the sizes
+        // Serialize meta
+        file.write(reinterpret_cast<const char*>(&data.version), sizeof(data.version));
+        file.write(reinterpret_cast<const char*>(&data.lmin), sizeof(data.lmin));
         file.write(reinterpret_cast<const char*>(&data.sequence_count), sizeof(data.sequence_count));
         file.write(reinterpret_cast<const char*>(&data.stratum_count), sizeof(data.stratum_count));
 
@@ -407,7 +409,9 @@ void load_prokrustean(const std::string& filename, Prokrustean& data) {
     if (file.is_open()) {
         size_t sequence_count, stratum_count;
         
-        // Deserialize the sizes
+        // Deserialize meta
+        file.read(reinterpret_cast<char*>(&data.version), sizeof(data.version));
+        file.read(reinterpret_cast<char*>(&data.lmin), sizeof(data.lmin));
         file.read(reinterpret_cast<char*>(&sequence_count), sizeof(sequence_count));
         file.read(reinterpret_cast<char*>(&stratum_count), sizeof(stratum_count));
         
