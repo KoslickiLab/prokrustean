@@ -19,20 +19,23 @@ using namespace sdsl;
 int lmin=-1;
 string input_bwt;
 string output_file;
+bool output_txt=false;
 int num_threads=12;
 char TERM = '$';
 
 void help(){
 
 	cout << "prokrustean [options]" << endl <<
-	"Input: ebwt of a collection of sequences. Output: A data structure representing Prokrustean Graph." << endl <<
+	"Input: ebwt of a collection of sequences." << endl <<
+	"Output: A data structure representing Prokrustean Graph." << endl <<
 	"Options:" << endl <<
 	"-h          Print this help" << endl <<
 	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
-	"-o <arg>    (REQUIRED) output file" << endl <<
 	"-l <arg>    (REQUIRED) lmin - minimum length of a stratum(maximal repeat)" << endl <<
-	"-p <arg>    thread no. Default:" << num_threads << endl <<
-	"-t <arg>    ASCII code of the terminator. Default:" << TERM << " ($). Cannot be the code for A,C,G,T,N." << endl;
+	"-o <arg>    output file. default: {input}.prokrustean" << endl <<
+	"-p <arg>    thread no. default: " << num_threads << endl <<
+	"-t <arg>    ASCII code of the terminator. default:" << TERM << "($) Cannot be the code for A,C,G,T,N." << endl <<
+	"-c          output is a readable txt file. Cannot be reused for applications. default: none" << endl;
 	exit(0);
 }
 
@@ -40,7 +43,7 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "h:i:o:l:p:t:")) != -1){
+	while ((opt = getopt(argc, argv, "h:i:o:l:p:t:c")) != -1){
 		switch (opt){
 			case 'h':
 				help();
@@ -60,6 +63,9 @@ int main(int argc, char** argv){
 			case 't':
 				TERM = atoi(optarg);
 			break;
+			case 'c':
+				output_txt=true;
+			break;
 			default:
 				help();
 			return -1;
@@ -71,8 +77,11 @@ int main(int argc, char** argv){
 		help();
 	}
 	if(output_file.size()==0) {
-		cout << "output empty" << endl;
-		help();
+		if(!output_txt){
+			output_file=input_bwt+".prokrustean";
+		} else {
+			output_file=input_bwt+".prokrustean.txt";
+		}
 	};
 
 	cout << "Input bwt file: " << input_bwt << endl;
@@ -91,7 +100,11 @@ int main(int argc, char** argv){
 
 	start = std::chrono::steady_clock::now();
 	cout << "storing prokrustean ... " ;
-    store_prokrustean(prokrustean, output_file);
+	if(!output_txt){
+		store_prokrustean(prokrustean, output_file);
+	} else {
+		store_prokrustean_text(prokrustean, output_file);
+	}
 	cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 
 }

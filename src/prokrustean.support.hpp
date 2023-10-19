@@ -476,5 +476,63 @@ void debug(ProkrusteanExtension &ext, StratumId target_stratum_id){
     }
 }
 
+void store_prokrustean_text(const Prokrustean& prokrustean, const std::string& filename) {
+    std::ofstream outputFile(filename);
+
+    // Set the width for each column and specify left alignment
+    const int columnWidth = 10; 
+    outputFile << "------------------------------------------------------------------------------------------------" << endl;
+    outputFile << "sequences: " << prokrustean.sequence_count << " strata: " << prokrustean.stratum_count << endl;
+    outputFile << "Lmin: " << prokrustean.lmin << endl;
+    outputFile << "** strata are listed after all sequences are listed " << endl;
+    outputFile << std::left << std::setw(columnWidth) << "sequence"
+               << std::left << std::setw(columnWidth) << "length"
+               << std::left << std::setw(columnWidth) << "stratified regions  [from:to (stratum id)]" << std::endl;
+    outputFile << "------------------------------------------------------------------------------------------------" << endl;
+    
+
+    for (size_t i = 0; i < prokrustean.sequences__size.size(); ++i) {
+        outputFile << std::left << std::setw(columnWidth) << i;
+        outputFile << std::left << std::setw(columnWidth) << prokrustean.sequences__size[i];
+        for (uint8_t j = 0; j < prokrustean.sequences__region_cnt[i]; ++j) {
+            string expr;
+            expr+=to_string(prokrustean.sequences__region[i][j].pos);
+            expr+=":";
+            expr+=to_string(prokrustean.sequences__region[i][j].pos+prokrustean.stratums__size[prokrustean.sequences__region[i][j].stratum_id]);
+            expr+=" (";
+            expr+=to_string(prokrustean.sequences__region[i][j].stratum_id);
+            expr+=")";
+            outputFile << std::left << std::setw(columnWidth) <<  expr;
+        }
+        outputFile<< std::endl;
+    }
+
+    outputFile << "------------------------------------------------------------------------------------------------" << endl;
+    outputFile << std::left << std::setw(columnWidth) << "stratum"
+               << std::left << std::setw(columnWidth) << "length"
+               << std::left << std::setw(columnWidth) << "stratified regions  [from:to (stratum id)]" << std::endl;
+    outputFile << "------------------------------------------------------------------------------------------------" << endl;
+    
+
+    for (size_t i = 0; i < prokrustean.stratums__size.size(); ++i) {
+        outputFile << std::left << std::setw(columnWidth) << i;
+        outputFile << std::left << std::setw(columnWidth) << prokrustean.stratums__size[i];
+        for (uint8_t j = 0; j < prokrustean.stratums__region_cnt[i]; ++j) {
+            string expr;
+            expr+=to_string(prokrustean.stratums__region[i][j].pos);
+            expr+=":";
+            expr+=to_string(prokrustean.stratums__region[i][j].pos+prokrustean.stratums__size[prokrustean.stratums__region[i][j].stratum_id]);
+            expr+=" (";
+            expr+=to_string(prokrustean.stratums__region[i][j].stratum_id);
+            expr+=")";
+            outputFile << std::left << std::setw(columnWidth) <<  expr;
+        }
+        outputFile<< std::endl;
+    }
+
+    outputFile.close();
+}
+
+
 
 #endif
