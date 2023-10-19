@@ -251,43 +251,6 @@ void navigate_strata(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, int
     }
 }
 
-// vector<SuffixArrayNode> collect_nodes(SuffixArrayNode root, FmIndex &fm_idx, int depth_max){
-//     // assert(fm_idx.locator!=nullptr);
-//     // cout << "warning: sample x" << endl;
-
-//     std::stack<SuffixArrayNode> stack;
-//     vector<SuffixArrayNode> nodes;
-
-//     TreeWorkspace ext(fm_idx.characters_cnt);
-//     ext.any_measure=vector<uint64_t>(10,0);
-
-//     auto start = std::chrono::steady_clock::now();
-
-//     stack.push(root);
-//     while(!stack.empty()){
-//         ext.node = stack.top();
-//         stack.pop();
-        
-//         if(ext.node.depth>=depth_max){
-//             nodes.push_back(ext.node);
-//         } else {
-//             extend_node(fm_idx, ext);
-
-//             for(int i=0; i<fm_idx.characters_cnt; i++){
-//                 // terminal
-//                 if(i==0) continue;
-
-//                 if(!ext.c_nodes_open[i]) continue;
-
-//                 if(ext.c_nodes[i].right_maximal){
-//                     stack.push(ext.c_nodes[i]);
-//                 }
-//             }
-//         }
-//     }
-//     return nodes;
-// }
-
 template<class T, NodeFunc_NEW<T> process_node>
 vector<SuffixArrayNode> collect_roots_while_navigate_strata(int Lmin, FmIndex &fm_idx, T &t, int depth_max){
     assert(Lmin>=1 && depth_max >=1);

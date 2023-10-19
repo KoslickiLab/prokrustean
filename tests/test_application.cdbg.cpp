@@ -25,7 +25,7 @@ void test_cdbg_with_verifier(){
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     enhancement.collect_left_right_extensions=true;
-    construct_prokrustean(fm_idx, prokrustean, Lmin, &enhancement);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -162,7 +162,7 @@ void test_cdbg_construction(){
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     enhancement.collect_left_right_extensions=true;
-    construct_prokrustean(fm_idx, prokrustean, Lmin, &enhancement);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);

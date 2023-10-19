@@ -22,7 +22,7 @@ void test_counting_distinct_kmers(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 

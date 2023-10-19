@@ -4,7 +4,7 @@
 #include <stack>
 #include <tuple>
 #include <unordered_set>
-#include "algorithms.stage1_projection.hpp"
+#include "algorithms.stage2_annotation.hpp"
 
 using namespace std;
 
@@ -87,7 +87,7 @@ struct StratificationWorkSpace {
     vector<bool> work_is_primaries;
     vector<StratumId> work_stratum_ids;
     
-    void update_contexts_for_seq(SeqId seq_id, FmIndex &fm_index, StratumProjectionWorkspace &output, Prokrustean &prokrustean){
+    void update_contexts_for_seq(SeqId seq_id, FmIndex &fm_index, SuffixAnnotationWorkspace &suffix_annot, Prokrustean &prokrustean){
         this->seq_annot.seq_id=seq_id;
         uint64_t pos_idx=0;
         
@@ -98,7 +98,7 @@ struct StratificationWorkSpace {
         Pos reverse_pos=0;
         int cnt;
         while(F >= seq_cnt){
-            if(output.fetch(F, cnt, work_stratum_ids, work_is_primaries)){
+            if(suffix_annot.fetch(F, cnt, work_stratum_ids, work_is_primaries)){
                 if(pos_idx>=this->seq_annot.position_annots.size()){
                     this->seq_annot.position_annots.push_back(PositionAnnotation());
                 }

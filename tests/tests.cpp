@@ -3,7 +3,7 @@
 #include "test_construction.cpp"
 #include "test_application.kmer.cpp"
 #include "test_application.kmer.count.cpp"
-#include "test_application.cdbg.count.cpp"
+#include "test_application.dbg.count.cpp"
 #include "test_application.cdbg.cpp"
 #include "test_storage.cpp"
 

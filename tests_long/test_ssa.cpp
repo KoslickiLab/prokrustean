@@ -10,7 +10,7 @@
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/ssa.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
-#include "../src/construction/algorithms.stage1_tree.hpp"
+#include "../src/construction/algorithms.stage1_tree_navigation.hpp"
 #include "../src/sdsl/int_vector.hpp"
 #include "../src/sdsl/rank_support_v.hpp"
 #include "../src/sdsl/rrr_vector.hpp"

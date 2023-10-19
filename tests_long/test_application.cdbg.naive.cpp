@@ -12,7 +12,7 @@
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.hpp"
 #include "../src/application/kmers.hpp"
-#include "../src/application/cdbg.count.hpp"
+#include "../src/application/dbg.count.hpp"
 
 using namespace std;
 using namespace sdsl;

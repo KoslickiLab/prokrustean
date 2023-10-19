@@ -12,7 +12,7 @@
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/construction/algorithms.hpp"
 #include "../src/application/kmers.hpp"
-#include "../src/application/cdbg.count.hpp"
+#include "../src/application/dbg.count.hpp"
 
 using namespace std;
 using namespace sdsl;
@@ -25,7 +25,7 @@ void test_unitig_counting_single(){
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     enhancement.collect_left_right_extensions=true;
-    construct_prokrustean(fm_idx, prokrustean, Lmin, &enhancement);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);

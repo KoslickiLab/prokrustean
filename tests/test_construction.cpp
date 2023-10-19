@@ -69,7 +69,7 @@ void test_basic_construction(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
 }
 
 // if prokrustean if correct, the kmers will be perfectly collected
@@ -80,7 +80,7 @@ void test_basic_construction_w_kmers(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
