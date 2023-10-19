@@ -9,33 +9,34 @@ int64_t _count_k_mers(uint64_t size, vector<StratifiedEdge> &regions, int k){
     if(size<k) return 0;
 
     int rgn_cnt=regions.size();
-    vector<int> indices;
-    indices.reserve(rgn_cnt);
-    for(int i=0; i<rgn_cnt; i++){
-        if(regions[i].size()>=k) indices.push_back(i);
-    }
+    // vector<int> indices;
+    // indices.reserve(rgn_cnt);
+    // for(int i=0; i<rgn_cnt; i++){
+    //     assert(regions[i].from<regions[i].to);
+    //     if(regions[i].size()>=k) indices.push_back(i);
+    // }
 
-    rgn_cnt=indices.size();
+    // rgn_cnt=indices.size();
     if(rgn_cnt==0){
         return size-k+1;
     }
 
     int64_t cnt=0;    
     for(int i=0; i<rgn_cnt; i++){
-        if(i==0 && regions[indices[i]].from>0){
-            cnt+=regions[indices[i]].from;
+        if(i==0 && regions[i].from>0){
+            cnt+=regions[i].from;
         }
 
         if(i<rgn_cnt-1){
-            if(regions[indices[i]].to - regions[indices[i+1]].from >= k-1){
+            if(regions[i].to - regions[i+1].from >= k-1){
             } else {
                 // regions[i+1].from-regions[i].to+2*(k-1)-k+1
-                cnt+=regions[indices[i+1]].from-regions[indices[i]].to+(k-1);
+                cnt+=regions[i+1].from-regions[i].to+(k-1);
             }
         }
 
-        if(i==rgn_cnt-1 && regions[indices[i]].to<size){
-            cnt+=size-regions[indices[i]].to;
+        if(i==rgn_cnt-1 && regions[i].to<size){
+            cnt+=size-regions[i].to;
         }
     }
     return cnt;
@@ -46,31 +47,21 @@ void _viable_kmer_decreases(uint64_t size, int from, vector<StratifiedEdge> &reg
     if(size<from){
         return;
     }
-    if(from+1 <partial_partial_C.size()){
+    if(from+1<partial_partial_C.size()){
         // cout << "decrease from " << from+1 << " for size " << size << " having " << regions.size() << endl;
         partial_partial_C[from+1]--;
     }
-
     if(size+2<partial_partial_C.size()){
         // cout << "no more decrease from " << size+2 << " for size " << size << endl;
         partial_partial_C[size+2]++;
     }
 }
 
-void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<StratifiedEdge> &regions, vector<int64_t> &partial_partial_C){
-    if(size<k){
+void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int from, vector<StratifiedEdge> &regions, vector<int64_t> &partial_partial_C){
+    if(size<from){
         return;
     }
     int rgn_cnt=regions.size();
-    vector<int> indices;
-    indices.reserve(rgn_cnt);
-    for(int i=0; i<rgn_cnt; i++){
-        if(regions[i].size()>=k){
-            indices.push_back(i);
-        }
-    }
-
-    rgn_cnt=indices.size();
     if(rgn_cnt==0){
         return;
     }
@@ -78,14 +69,14 @@ void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<S
     for(int i=0; i<rgn_cnt; i++){
         int increase_k_from;
         if(i<rgn_cnt-1){
-            increase_k_from=max<Pos>(2,regions[indices[i]].to-regions[indices[i+1]].from+2);
+            increase_k_from=max<Pos>(2,regions[i].to-regions[i+1].from+2);
         } else {
             increase_k_from=2;
         }
-        if(increase_k_from<k+1){
-           increase_k_from=k+1; 
+        if(increase_k_from<from+1){
+           increase_k_from=from+1; 
         }
-        int increase_k_to=regions[indices[i]].size()+2;
+        int increase_k_to=regions[i].size()+2;
 
         if(increase_k_from<partial_partial_C.size()){
             // cout << "increase k from " << increase_k_from << " for size " << size << " range i " << indices[i] << endl;
@@ -101,32 +92,32 @@ void _each_stra_rgn_range_decided_by_intersection(uint64_t size, int k, vector<S
 uint64_t count_distinct_kmers(uint64_t k, Prokrustean &prokrustean){
     uint64_t cnt=0;
     for(int i=0; i<prokrustean.sequence_count; i++){
-        auto sequence=prokrustean.get_sequence(i);
+        auto sequence=prokrustean.get_sequence(i, k);
         cnt+=_count_k_mers(sequence.size, sequence.s_edges, k);
     }
 
     for(int i=0; i<prokrustean.stratum_count; i++){
-        auto stratum=prokrustean.get_stratum(i);
+        auto stratum=prokrustean.get_stratum(i, k);
         cnt+=_count_k_mers(stratum.size, stratum.s_edges, k);
     }
     return cnt;
 }
 
 void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prokrustean, vector<uint64_t> &output){
-// Definitions:
-// - Def partial C(k): The contribution to the change of distinct k-mers count.
-// - Def partial partial C(k): The contribution to the change of the changing rate of distinct k-mers count.
+    // Definitions:
+    // - Def partial C(k): The contribution to the change of distinct k-mers count.
+    // - Def partial partial C(k): The contribution to the change of the changing rate of distinct k-mers count.
 
-// Iterate through all v in V such that size(v) >= k:
-//     - Let stratified regions in v have sizes n_1, n_2,...,n_t. Then, partial C(n_1+1)++, partial C(n_2+1)++, ..., partial C(n_t+1)++.
-//     - Let the maximum size m among stratified regions in v, and m = 0 if no stratified region exists. Then, partial partial C(m+1)-- and partial partial C(size(v)+1)++.
-//     - Let each overlapping stratified region pair with the intersection of length l and smaller side n, partial partial C(l+2)++ and partial partial C(n+1)--.
+    // Iterate through all v in V such that size(v) >= k:
+    //     - Let stratified regions in v have sizes n_1, n_2,...,n_t. Then, partial C(n_1+1)++, partial C(n_2+1)++, ..., partial C(n_t+1)++.
+    //     - Let the maximum size m among stratified regions in v, and m = 0 if no stratified region exists. Then, partial partial C(m+1)-- and partial partial C(size(v)+1)++.
+    //     - Let each overlapping stratified region pair with the intersection of length l and smaller side n, partial partial C(l+2)++ and partial partial C(n+1)--.
 
-// Def C(l) = distinct l-mers, dC(l) = 0
+    // Def C(l) = distinct l-mers, dC(l) = 0
 
-// Iterate k = l+1 to r:
-//     - dC(k) = dC(k-1) + partial partial C(k)
-//     - C(k) = C(k-1) + partial C(k) + dC(k)
+    // Iterate k = l+1 to r:
+    //     - dC(k) = dC(k-1) + partial partial C(k)
+    //     - C(k) = C(k-1) + partial C(k) + dC(k)
     assert(from>0 && from<=to);
     output.clear();
     output.resize(to+1, 0);
@@ -134,23 +125,17 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
     vector<int64_t> partial_C(to+1, 0);
     vector<int64_t> partial_partial_C(to+1, 0);
     vector<int64_t> dOutput(to+1, 0);
-
+    
     for(int i=0; i<prokrustean.sequence_count; i++){
-        auto sequence=prokrustean.get_sequence(i);
+        auto sequence=prokrustean.get_sequence(i, from);
         output[from]+=_count_k_mers(sequence.size, sequence.s_edges, from);
-        // _stratified_pop_event(sequence.size, sequence.regions, from, partial_C);
-        // _during_no_stratified_event(sequence.size, sequence.regions, from, partial_C, partial_partial_C);
-        // _during_intersection_exists_event(sequence.size, sequence.regions, from, partial_partial_C);
         _viable_kmer_decreases(sequence.size, from, sequence.s_edges, partial_partial_C);
         _each_stra_rgn_range_decided_by_intersection(sequence.size, from, sequence.s_edges, partial_partial_C);
     }
 
     for(int i=0; i<prokrustean.stratum_count; i++){
-        auto stratum=prokrustean.get_stratum(i);
+        auto stratum=prokrustean.get_stratum(i, from);
         output[from]+=_count_k_mers(stratum.size, stratum.s_edges, from);
-        // _stratified_pop_event(stratum.size, stratum.regions, from, partial_C);
-        // _during_no_stratified_event(stratum.size, stratum.regions, from, partial_C, partial_partial_C);
-        // _during_intersection_exists_event(stratum.size, stratum.regions, from, partial_partial_C);
         _viable_kmer_decreases(stratum.size, from, stratum.s_edges, partial_partial_C);
         _each_stra_rgn_range_decided_by_intersection(stratum.size, from, stratum.s_edges, partial_partial_C);
     }

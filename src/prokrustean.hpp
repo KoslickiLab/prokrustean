@@ -79,6 +79,26 @@ struct Vertex {
             assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size);
         } 
     }
+    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, uint8_t rgn_cnt, int k, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
+        int valid_rgn_cnt=0;
+        for(int i=0; i<rgn_cnt; i++){
+            if(stratum_sizes[data[i].stratum_id]>=k){
+                valid_rgn_cnt++;
+            }
+        }
+        s_edges.resize(valid_rgn_cnt);
+        while(valid_rgn_cnt>0){
+            rgn_cnt--;
+            if(stratum_sizes[data[rgn_cnt].stratum_id]<k){
+                continue;
+            }
+            valid_rgn_cnt--;
+            StratifiedData d=data[rgn_cnt];
+            auto rgn=StratifiedEdge(d.pos, d.pos+stratum_sizes[d.stratum_id], d.stratum_id);
+            s_edges[valid_rgn_cnt]=rgn;
+            // assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size && rgn.from < rgn.to);
+        } 
+    }
     void get_valid_indices(int k, vector<uint8_t>& indices){
         indices.clear();
         for(uint8_t i=0; i<s_edges.size(); i++){
@@ -100,12 +120,14 @@ struct StratumVertex: Vertex{
     StratumVertex(){}
     StratumVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, true){}
     StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
+    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, k, stratum_sizes){}
 };
 
 struct SequenceVertex: Vertex{
     SequenceVertex(){}
     SequenceVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, false){}
     SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
+    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, uint8_t rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, k, stratum_sizes){}
 };
 
 
@@ -135,6 +157,18 @@ struct Prokrustean {
 
     StratumVertex get_stratum(StratumId id){
         auto stratum=StratumVertex(id, stratums__size[id], stratums__region[id], stratums__region_cnt[id], stratums__size);
+        assert(stratum.is_stratum);
+        return stratum;
+    }
+
+    SequenceVertex get_sequence(SeqId id, int k){
+        auto sequence=SequenceVertex(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], k, stratums__size);
+        assert(sequence.is_sequence);
+        return sequence;
+    }
+
+    StratumVertex get_stratum(StratumId id, int k){
+        auto stratum=StratumVertex(id, stratums__size[id], stratums__region[id], stratums__region_cnt[id], k, stratums__size);
         assert(stratum.is_stratum);
         return stratum;
     }
