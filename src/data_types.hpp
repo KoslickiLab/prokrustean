@@ -22,6 +22,7 @@ typedef uint16_t StratumSize;
 /* Can covering region be over 255? meaning stratified regions are at least 122? */ 
 /*I doubt about it even if the dataset is very largein normal cases */
 typedef uint8_t CoveringRegionIdx; 
+typedef uint8_t CoveringRegionCount; 
 
 /* For prokrustean construction */
 typedef uint16_t SuffixArrayIdx_InBlock;

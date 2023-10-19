@@ -42,7 +42,29 @@ void test_unitig_counting_single(){
     }
 }
 
+void test_unitig_counting_range(){
+    int Lmin = 1;
+    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    ProkrusteanExtension enhancement(prokrustean);
+    enhancement.collect_left_right_extensions=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
+    
+    vector<int> ks={2, 7, 30, 50};
+    for(auto k: ks){
+        auto unitig_cnt = count_maximal_unitigs_single_k(k, enhancement);
+
+        vector<uint64_t> output;
+        count_maximal_unitigs_range_of_k(k, k, enhancement, output);
+
+        assert(unitig_cnt==output[k]);
+    }
+}
+
 
 void main_application_unitig_count() {
     test_unitig_counting_single();
+    test_unitig_counting_range();
 }
