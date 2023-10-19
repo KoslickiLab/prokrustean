@@ -90,7 +90,7 @@ void test_basic_construction_w_kmers(){
     vector<string> output;
     vector<int> testing_ks={1,5,10,20};
     for(auto k: testing_ks){
-        get_distinct_kmers(k, prokrustean, seq_texts, output);
+        get_distinct_kmers(k, ext, seq_texts, output);
         sort(output.begin(), output.end());
         assert(output==get_distinct_kmers_naive(seq_texts, k));
     }

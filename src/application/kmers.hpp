@@ -6,13 +6,10 @@
 using namespace std;
 
 
-void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
-    // prokrustean.setup_stratum_example_occ();
-    ProkrusteanExtension ext(prokrustean);
-    setup_stratum_example_occ(ext);
+void get_reflectums(int k, ProkrusteanExtension &ext, vector<string> &seq_texts, vector<string> &output){
+    auto &prokrustean=ext.prokrustean;
 
     vector<Edge> spectrum;
-    
     //prokrustean
     for(int i=0; i<prokrustean.sequence_count; i++){
         auto seq=prokrustean.get_sequence(i);
@@ -48,10 +45,10 @@ void get_reflectums(int k, Prokrustean &prokrustean, vector<string> &seq_texts, 
     }
 }
 
-void get_distinct_kmers(int k, Prokrustean &prokrustean, vector<string> &seq_texts, vector<string> &output){
+void get_distinct_kmers(int k, ProkrusteanExtension &ext, vector<string> &seq_texts, vector<string> &output){
     output.clear();
     // vector<string> unitigs;
-    get_reflectums(k, prokrustean, seq_texts, output);
+    get_reflectums(k, ext, seq_texts, output);
     int uniform_cnt=output.size();
     
     // output.reserve(unitigs.size());
@@ -80,7 +77,7 @@ void get_distinct_kmers(int k, Prokrustean &prokrustean, vector<string> &seq_tex
 void get_distinct_kmers_parallel(int k, ProkrusteanExtension &ext, vector<string> &seq_texts, vector<string> &output){
     output.clear();
     // vector<string> unitigs;
-    get_reflectums(k, ext.prokrustean, seq_texts, output);
+    get_reflectums(k, ext, seq_texts, output);
     int uniform_cnt=output.size();
     
     // output.reserve(unitigs.size());

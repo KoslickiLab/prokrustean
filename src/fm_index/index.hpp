@@ -37,6 +37,7 @@ public:
 	 * constructor path of a STRING file containing the STRING in ASCII format
 	 */
 	FmIndex(AbstractString &string, char TERM='$'){
+		assert(string.size()>0);
 		this->STRING = &string;
 		this->characters_cnt = STRING->get_characters().size();
 		this->TERM = TERM;
@@ -93,15 +94,34 @@ public:
 
 		string seq;
 		while(F >= this->seq_cnt()){
-			seq = (*this->STRING)[L] + seq;
+			seq += (*this->STRING)[L];
 			L = F;
 			F = this->LF(L);
 		}
+
+		std::reverse(seq.begin(), seq.end());
 		
 		if(include_term){
 			seq += (*this->STRING)[L]; 
 		}
 		return seq;
+	}
+
+	void recover_text(int seq_id, string &output, bool include_term=false){
+		uint64_t L = seq_id;
+		uint64_t F = this->LF(L);
+
+		while(F >= this->seq_cnt()){
+			output += (*this->STRING)[L];
+			L = F;
+			F = this->LF(L);
+		}
+
+		std::reverse(output.begin(), output.end());
+
+		if(include_term){
+			output += (*this->STRING)[L]; 
+		}
 	}
 
 	void recover_all_texts(vector<string> &seqs, bool include_term=false){
@@ -208,7 +228,7 @@ auto func__recover_texts = [](FmIndex &fm_index, vector<string> &output, atomic<
         if(idx>=fm_index.seq_cnt()){
             break;
         }
-        output[idx]=fm_index.recover_text(idx);
+        fm_index.recover_text(idx, output[idx]);
     }
 };
 

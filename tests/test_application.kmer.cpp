@@ -31,7 +31,7 @@ void test_distinct_kmers(){
 
     vector<string> output;
     for(int k=2; k<10; k++){
-        get_distinct_kmers(k, prokrustean, seq_texts, output);
+        get_distinct_kmers(k, ext, seq_texts, output);
         sort(output.begin(), output.end());
         auto output_naive = get_distinct_kmers_naive(seq_texts, k);
         if(output!=output_naive){

@@ -34,7 +34,7 @@ void test_counting_distinct_kmers(){
 
     vector<string> output;
     for(int k=1; k<40; k++){
-        get_distinct_kmers(k, prokrustean, seq_texts, output);
+        get_distinct_kmers(k, ext, seq_texts, output);
         assert(counts[k]==output.size());
     }
 }

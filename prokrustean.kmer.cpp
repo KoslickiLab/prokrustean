@@ -88,22 +88,22 @@ int main(int argc, char** argv){
 	cout << "Input prokrustean file: " << input_prokrustean << endl;
 	cout << "k: " << k << endl;
 	cout << "threads: " << num_threads << endl;
+
+	WaveletString str;
+
 	auto start = std::chrono::steady_clock::now();
-	cout << "make wavelet tree ... ";
-	WaveletString str(input_bwt);
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
-	if(str.size()==0){
-		cout << "wavelet tree is not built. invalid input_bwt path?";
-		exit(0);
-	}
-	FmIndex fm_idx(str);
-
-	start = std::chrono::steady_clock::now();
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
 		cout << "loading failed. Prokrustean is built and saved at: " << input_prokrustean << endl;
+		start = std::chrono::steady_clock::now();
+		cout << "make wavelet tree ... ";
+		
+		str=WaveletString(input_bwt);
+		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
+
+		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+		FmIndex fm_idx(str);
 		construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, k);
 		store_prokrustean(prokrustean, input_prokrustean);
 	}
@@ -115,24 +115,42 @@ int main(int argc, char** argv){
 	}
 
 	start = std::chrono::steady_clock::now();
-	cout << "annotate strata example occurrences (so that they can be printed) ... " << endl;
+	cout << "annotate strata example occurrences (so that they can be printed) ... ";
 	
 	ProkrusteanExtension ext(prokrustean);
-    setup_stratum_example_occ_parallel(ext);
+	// setup_stratum_example_occ(ext);
+    setup_stratum_example_occ_parallel(ext, num_threads);
 	
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	if(!str.valid){
+		start = std::chrono::steady_clock::now();
+		cout << "make wavelet tree ... ";
+		
+		str=WaveletString(input_bwt);
+		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
+
+		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	}
+	
+	FmIndex fm_idx(str);
+	
 	start = std::chrono::steady_clock::now();
-	cout << "recover texts from bwt... " << endl;
+	cout << "recover sequences from bwt... ";
 
     vector<string> seq_texts;
     recover_sequences_parallel(fm_idx, seq_texts, num_threads);
-
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();
-	cout << "find and save distinct kmers... " << endl;
+	cout << "find distinct kmers... ";
 
     vector<string> mers;
     get_distinct_kmers_parallel(k, ext, seq_texts, mers);
+
+	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	start = std::chrono::steady_clock::now();
+	cout << "kmers total: " << mers.size() << endl;
+	cout << "save distinct kmers... ";
+
 	store_kmers(mers, output_file);
 	
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

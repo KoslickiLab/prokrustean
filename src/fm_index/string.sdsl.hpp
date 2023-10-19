@@ -32,6 +32,7 @@ private:
     // wt_blcd<> wt;
 public:
     wt_blcd<> wt;
+    bool valid=false;
 	WaveletString(){}
 
 	/*
@@ -39,7 +40,10 @@ public:
 	 */
 	WaveletString(string path, char term='$'){
         construct(wt, path, std::is_rvalue_reference<string &&>::value);
-        
+        if(wt.size()>0){
+            this->valid=true;
+        }
+
         for(uint8_t c=0; c < std::numeric_limits<uint8_t>::max(); c++){
             if(wt.rank(wt.size(),c)>0) characters.push_back(c);
         }
