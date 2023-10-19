@@ -114,15 +114,18 @@ struct Prokrustean {
     int version=1; // for file loading compatibility 
 
     uint64_t sequence_count;
+    uint64_t total_sequence_region_count;
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
     vector<uint8_t> sequences__region_cnt;
     
     uint64_t stratum_count;
+    uint64_t total_strata_region_count;
     vector<StratumSize> stratums__size;
     vector<StratifiedData*> stratums__region;
     vector<uint8_t> stratums__region_cnt;
 
+    
 
     SequenceVertex get_sequence(SeqId id){
         auto sequence=SequenceVertex(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], stratums__size);
@@ -254,6 +257,18 @@ struct Prokrustean {
     void set_stratum_regions(StratumId id, StratifiedData* data, uint8_t rgn_cnt){
         this->stratums__region[id]=data;
         this->stratums__region_cnt[id]=rgn_cnt;
+    }
+
+    void print_abstract(){
+        cout << "------------------------------------------------------" << endl;
+        cout << "---------------    prokrustean    --------------------" << endl;
+        cout << "------------------------------------------------------" << endl;
+        cout << "-- " << "sequences: " << sequence_count << endl;
+        cout << "-- " << "stratified regions in sequences: " << total_sequence_region_count << endl;
+        cout << "-- " << "strata: " << stratum_count << endl;
+        cout << "-- " << "stratified regions in strata: " << total_strata_region_count << endl;
+        cout << "-- " << "lmin used: " << lmin << endl;
+        cout << "------------------------------------------------------" << endl;
     }
 };
 

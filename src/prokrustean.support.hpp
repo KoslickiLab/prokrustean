@@ -136,6 +136,38 @@ void setup_stratum_example_occ(ProkrusteanExtension &ext){
 
 }
 
+
+void setup_stratum_example_occ_parallel(ProkrusteanExtension &ext){
+    ext.stratum_sample_occ_seq_id.resize(ext.prokrustean.stratum_count);
+    ext.stratum_sample_occ_pos.resize(ext.prokrustean.stratum_count);
+    vector<bool> visits(ext.prokrustean.stratum_count);
+    std::stack<StratumId> stratum_stack;
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
+        for(auto &rgn: ext.prokrustean.get_sequence(i).s_edges){
+            ext.stratum_sample_occ_seq_id[rgn.stratum_id]=i;
+            ext.stratum_sample_occ_pos[rgn.stratum_id]=rgn.from;
+            visits[rgn.stratum_id]=true;
+
+            stratum_stack.push(rgn.stratum_id);
+            while(!stratum_stack.empty()){
+                auto stratum_id=stratum_stack.top();
+                stratum_stack.pop();
+                for(auto &c_rgn: ext.prokrustean.get_stratum(stratum_id).s_edges){
+                    if(visits[c_rgn.stratum_id]) 
+                    continue;
+                    SeqId seq_id=ext.stratum_sample_occ_seq_id[stratum_id];
+                    Pos rel_pos=ext.stratum_sample_occ_pos[stratum_id]+c_rgn.from;
+                    ext.stratum_sample_occ_seq_id[c_rgn.stratum_id]=seq_id;
+                    ext.stratum_sample_occ_pos[c_rgn.stratum_id]=rel_pos;
+                    visits[c_rgn.stratum_id]=true;
+                    stratum_stack.push(c_rgn.stratum_id);
+                }
+            }
+        }
+    }
+
+}
+
 // void fill_stratum_left_bound_single_right_extension(int k){
 //     // for(int i=0; i<prokrustean.sequence_count; i++){
 //     //     Sequence seq = prokrustean.get_sequence(i);
@@ -358,13 +390,17 @@ void _deserializeStratifiedData(std::ifstream& file, StratifiedData* data) {
 
 // Serialize the Prokrustean structure
 void store_prokrustean(const Prokrustean& data, const std::string& filename) {
+    auto start = std::chrono::steady_clock::now();
+	cout << "storing prokrustean (" << filename << ") ... " ;
     std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
         // Serialize meta
         file.write(reinterpret_cast<const char*>(&data.version), sizeof(data.version));
         file.write(reinterpret_cast<const char*>(&data.lmin), sizeof(data.lmin));
         file.write(reinterpret_cast<const char*>(&data.sequence_count), sizeof(data.sequence_count));
+        file.write(reinterpret_cast<const char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
         file.write(reinterpret_cast<const char*>(&data.stratum_count), sizeof(data.stratum_count));
+        file.write(reinterpret_cast<const char*>(&data.total_strata_region_count), sizeof(data.total_strata_region_count));
 
         // Serialize the SequenceSize vector
         for (const auto& size : data.sequences__size) {
@@ -397,13 +433,17 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
         }
         
         file.close();
+        cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     } else {
         std::cerr << "Unable to open the file for writing." << std::endl;
     }
 }
 
 // Deserialize the Prokrustean structure
-void load_prokrustean(const std::string& filename, Prokrustean& data) {
+bool load_prokrustean(const std::string& filename, Prokrustean& data) {
+    auto start = std::chrono::steady_clock::now();
+	cout << "loading prokrustean (" << filename << ") ... " ;
+
     std::ifstream file(filename, std::ios::binary);
     
     if (file.is_open()) {
@@ -413,7 +453,9 @@ void load_prokrustean(const std::string& filename, Prokrustean& data) {
         file.read(reinterpret_cast<char*>(&data.version), sizeof(data.version));
         file.read(reinterpret_cast<char*>(&data.lmin), sizeof(data.lmin));
         file.read(reinterpret_cast<char*>(&sequence_count), sizeof(sequence_count));
+        file.read(reinterpret_cast<char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
         file.read(reinterpret_cast<char*>(&stratum_count), sizeof(stratum_count));
+        file.read(reinterpret_cast<char*>(&data.total_strata_region_count), sizeof(data.total_strata_region_count));
         
         data.set_seq_count(sequence_count);
         data.set_stratum_count(stratum_count);
@@ -451,8 +493,11 @@ void load_prokrustean(const std::string& filename, Prokrustean& data) {
         }
         
         file.close();
+        cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+        return true;
     } else {
-        std::cerr << "Unable to open the file for reading." << std::endl;
+        cout << "failed" << endl;
+        return false;
     }
 }
 
@@ -477,14 +522,21 @@ void debug(ProkrusteanExtension &ext, StratumId target_stratum_id){
 }
 
 void store_prokrustean_text(const Prokrustean& prokrustean, const std::string& filename) {
+    auto start = std::chrono::steady_clock::now();
+	cout << "storing prokrustean (" << filename << ") ... " ;
+
     std::ofstream outputFile(filename);
 
     // Set the width for each column and specify left alignment
-    const int columnWidth = 10; 
+    const int columnWidth = 20; 
+
     outputFile << "------------------------------------------------------------------------------------------------" << endl;
-    outputFile << "sequences: " << prokrustean.sequence_count << " strata: " << prokrustean.stratum_count << endl;
+    outputFile << "sequences: " << prokrustean.sequence_count << endl; 
+    outputFile << "sequence regions: " << prokrustean.total_sequence_region_count << endl; 
+    outputFile << "strata: " << prokrustean.stratum_count << endl; 
+    outputFile << "strata regions: " << prokrustean.total_strata_region_count << endl; 
     outputFile << "Lmin: " << prokrustean.lmin << endl;
-    outputFile << "** strata are listed after all sequences are listed " << endl;
+    outputFile << "** strata are listed after all "<< prokrustean.sequence_count << " sequences are listed " << endl;
     outputFile << std::left << std::setw(columnWidth) << "sequence"
                << std::left << std::setw(columnWidth) << "length"
                << std::left << std::setw(columnWidth) << "stratified regions  [from:to (stratum id)]" << std::endl;
@@ -531,6 +583,7 @@ void store_prokrustean_text(const Prokrustean& prokrustean, const std::string& f
     }
 
     outputFile.close();
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
 

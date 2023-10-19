@@ -19,7 +19,7 @@ void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokruste
     StratificationWorkSpace workspace_stratification;
     
     auto start = std::chrono::steady_clock::now();
-    cout << "step1 collect strata ... ";
+    cout << "stage1 collect strata ... ";
     
     /* stage1 - strata are collected. stratified regions are projected as raw data */
     SuffixArrayNode root = get_root(fm_idx);
@@ -28,7 +28,7 @@ void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokruste
 
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
     start = std::chrono::steady_clock::now();
-    cout << "      setup suffix array annotations ... ";
+    cout << "stage2 setup suffix array annotations ... ";
     
     /* stage2 - raw data collected in stage1 are arrange to occupy less space and be queried in the next stage */
     for(int i=0; i< workspace_projection.block_count; i++){
@@ -44,6 +44,8 @@ void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokruste
         workspace_stratification.update_contexts_for_seq(i, fm_idx, workspace_annotation, prokrustean);
         build_prokrustean(workspace_stratification, prokrustean);
     }
+    prokrustean.total_sequence_region_count=workspace_stratification.total_seq_region_cnt;
+    prokrustean.total_strata_region_count=workspace_stratification.total_strata_region_cnt;
 
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
@@ -85,7 +87,8 @@ void _suffix_annotation_parallel(StratumProjectionWorkspace &workspace_projectio
 void _build_prokrustean_parallel(FmIndex &fm_index, Prokrustean &prokrustean, SuffixAnnotationWorkspace &workspace_annotation, int thread_cnt){
     vector<future<void>> futures;
     atomic<int> seq_idx_gen;
-    auto func_ = [](FmIndex &fm_index, Prokrustean &prokrustean, SuffixAnnotationWorkspace &workspace_annotation, atomic<int> &seq_idx_gen) {
+    SpinLock lock;
+    auto func_ = [](FmIndex &fm_index, Prokrustean &prokrustean, SuffixAnnotationWorkspace &workspace_annotation, atomic<int> &seq_idx_gen, SpinLock &lock) {
         StratificationWorkSpace workspace;
         while(true){
             auto idx = seq_idx_gen.fetch_add(1);
@@ -94,8 +97,12 @@ void _build_prokrustean_parallel(FmIndex &fm_index, Prokrustean &prokrustean, Su
             workspace.update_contexts_for_seq(idx, fm_index, workspace_annotation, prokrustean);
             build_prokrustean(workspace, prokrustean);
         }
+        lock.lock();
+        prokrustean.total_sequence_region_count=workspace.total_seq_region_cnt;
+        prokrustean.total_strata_region_count=workspace.total_strata_region_cnt;
+        lock.unlock();
     };  
-    for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(fm_index), ref(prokrustean), ref(workspace_annotation), ref(seq_idx_gen)));}
+    for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(fm_index), ref(prokrustean), ref(workspace_annotation), ref(seq_idx_gen), ref(lock)));}
     for (auto &f : futures) {f.wait();}
 }
 
@@ -110,15 +117,15 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
     SuffixAnnotationWorkspace workspace_annotation(fm_idx.size());
     StratificationWorkSpace workspace_stratification;
 
-    cout << "step1 collect strata ...";
+    cout << "stage1 collect strata ... ";
     auto start = std::chrono::steady_clock::now();
     
     /* stage1 - strata are collected. stratified regions are projected as raw data */
     _strata_projection_parallel(fm_idx, Lmin, thread_cnt, root_depth, *workspace_projection);
 
-    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();
-    cout << "   setup suffix array annotations ... ";
+    cout << "stage2 setup suffix array annotations ... ";
     
     /* stage2 - raw data collected in stage1 are arrange to occupy less space and be queried in the next stage */
     _suffix_annotation_parallel(*workspace_projection, workspace_annotation, thread_cnt);
@@ -126,7 +133,7 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
 
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();
-    cout << "step2 build prokrustean ... ";
+    cout << "stage3 build prokrustean ... ";
 
     /* stage3 - prokrustean is built from the projected regions */
     _build_prokrustean_parallel(fm_idx, prokrustean, workspace_annotation, thread_cnt);

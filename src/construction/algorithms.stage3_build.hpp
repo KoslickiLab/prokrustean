@@ -86,6 +86,9 @@ struct StratificationWorkSpace {
     // shared memory
     vector<bool> work_is_primaries;
     vector<StratumId> work_stratum_ids;
+
+    uint64_t total_seq_region_cnt;
+    uint64_t total_strata_region_cnt;
     
     void update_contexts_for_seq(SeqId seq_id, FmIndex &fm_index, SuffixAnnotationWorkspace &suffix_annot, Prokrustean &prokrustean){
         this->seq_annot.seq_id=seq_id;
@@ -243,6 +246,7 @@ struct StratificationWorkSpace {
             arr[i].stratum_id=get_stratum_id((*regions)[i]);
         }
         prokrustean.set_seq_regions(this->seq_annot.seq_id, this->seq_annot.seq_size, arr, regions->size());
+        total_seq_region_cnt+=regions->size();
     }
 
     void set_stratum_output(RegionIdx &primary, Prokrustean &prokrustean, vector<RegionIdx>* regions=nullptr){
@@ -258,6 +262,7 @@ struct StratificationWorkSpace {
         }
         auto stratum_id = get_stratum_id(primary);
         prokrustean.set_stratum_regions(stratum_id, arr, regions->size());
+        total_strata_region_cnt+=regions->size();
     }
 };
 

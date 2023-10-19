@@ -44,6 +44,14 @@ public:
         this->C = get_c_array(string);
 		this->char_abundances = get_abundances(this->C);
 		this->characters_ranked_by_abundance = get_char_ids_by_abundance_desc(this->char_abundances);
+
+		cout << "characters(" << this->characters_cnt << "): ";
+		auto characters=STRING->get_characters();
+        for(CharId c=0; c<characters.size(); c++){
+            cout << characters[c] << " ";
+			cout << "("<< this->STRING->rank(this->size(), c) <<") ";
+        }
+        cout <<" total " << this->size() << endl;
     }
 	char TERM='$'; //Lexicographically first
 	CharId term_id=0;
@@ -215,4 +223,5 @@ void recover_sequences_parallel(FmIndex &fm_idx, vector<string> &sequences, int 
         f.wait();
     }
 }
+    
 #endif /* FM_INDEX_INDEX_HPP_ */

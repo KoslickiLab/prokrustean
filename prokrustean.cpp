@@ -29,12 +29,12 @@ void help(){
 	"Input: ebwt of a collection of sequences." << endl <<
 	"Output: A data structure representing Prokrustean Graph." << endl <<
 	"Options:" << endl <<
-	"-h          Print this help" << endl <<
+	"-h          help" << endl <<
 	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
 	"-l <arg>    (REQUIRED) lmin - minimum length of a stratum(maximal repeat)" << endl <<
 	"-o <arg>    output file. default: {input}.prokrustean" << endl <<
-	"-p <arg>    thread no. default: " << num_threads << endl <<
-	"-t <arg>    ASCII code of the terminator. default:" << TERM << "($) Cannot be the code for A,C,G,T,N." << endl <<
+	"-t <arg>    thread count default: " << num_threads << endl <<
+	"-q <arg>    ASCII code of the terminator. default:" << TERM << "($) Cannot be the code for A,C,G,T,N." << endl <<
 	"-c          output is a readable txt file. Cannot be reused for applications. default: none" << endl;
 	exit(0);
 }
@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "h:i:o:l:p:t:c")) != -1){
+	while ((opt = getopt(argc, argv, "h:i:o:l:q:t:c")) != -1){
 		switch (opt){
 			case 'h':
 				help();
@@ -57,10 +57,10 @@ int main(int argc, char** argv){
 			case 'l':
 				lmin = stoi(string(optarg));
 			break;
-			case 'p':
+			case 't':
 				num_threads = stoi(string(optarg));
 			break;
-			case 't':
+			case 'q':
 				TERM = atoi(optarg);
 			break;
 			case 'c':
@@ -90,22 +90,20 @@ int main(int argc, char** argv){
 	cout << "threads: " << num_threads << endl;
 
 	auto start = std::chrono::steady_clock::now();
-    cout << "constructing sdsl wavelet tree ... " << endl;
-    auto str = WaveletString(input_bwt);
-    auto fm_idx = FmIndex(str);
-    cout << "finished wavelet tree construction " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    
+    cout << "stage0 wavelet tree ... ";
+    WaveletString str(input_bwt);
+    cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+
+	FmIndex fm_idx(str);
 	Prokrustean prokrustean;
     construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, lmin);
 
-	start = std::chrono::steady_clock::now();
-	cout << "storing prokrustean ... " ;
+	prokrustean.print_abstract();
+	
 	if(!output_txt){
 		store_prokrustean(prokrustean, output_file);
 	} else {
 		store_prokrustean_text(prokrustean, output_file);
 	}
-	cout << "finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
 }
 

@@ -63,17 +63,6 @@ public:
             cout << "the termination ("<< term <<") does not exist." << endl;
             assert(has_term);
         }
-
-        cout << "characters(" << characters.size() << "): ";
-        for(auto c: characters){
-            cout << c << " ";
-        }
-        cout << endl;
-        cout << "abundances("<< wt.size() << "): ";
-		for(auto c: characters){
-			cout << c << ":" << wt.rank(wt.size(),c) << " ";
-		}
-		cout << endl;
     }
 
     vector<char> get_characters(){
