@@ -25,9 +25,9 @@ void test_unitig_counting_range(){
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
-    ext.collect_left_right_extensions=true;
+    prokrustean.contains_stratum_extension_count=true;
     
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin, &ext);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
     
     auto start = std::chrono::steady_clock::now();
     

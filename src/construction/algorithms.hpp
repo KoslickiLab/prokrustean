@@ -12,9 +12,9 @@
 
 using namespace std;
 
-void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1, ProkrusteanExtension* opt=nullptr){
+void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1){
     prokrustean.lmin=Lmin;
-    StratumProjectionWorkspace workspace_projection(prokrustean, fm_idx.seq_cnt(), fm_idx.size(), opt);
+    StratumProjectionWorkspace workspace_projection(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     SuffixAnnotationWorkspace workspace_annotation(fm_idx.size());
     StratificationWorkSpace workspace_stratification;
     
@@ -107,12 +107,12 @@ void _build_prokrustean_parallel(FmIndex &fm_index, Prokrustean &prokrustean, Su
 }
 
 
-void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int thread_cnt, int Lmin=10, ProkrusteanExtension* opt=nullptr){
+void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int thread_cnt, int Lmin=10){
     assert(Lmin>=1);
     assert(thread_cnt>0);
     int root_depth = 5; // is there a clever way to decide the scale of parallelism?
     prokrustean.lmin=Lmin;
-    StratumProjectionWorkspace* workspace_projection = new StratumProjectionWorkspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size(), opt);
+    StratumProjectionWorkspace* workspace_projection = new StratumProjectionWorkspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     // StratumProjectionWorkspace workspace_projection(prokrustean, fm_idx.seq_cnt(), fm_idx.size(), opt);
     SuffixAnnotationWorkspace workspace_annotation(fm_idx.size());
     StratificationWorkSpace workspace_stratification;

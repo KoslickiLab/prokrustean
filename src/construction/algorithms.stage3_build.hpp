@@ -235,7 +235,8 @@ struct StratificationWorkSpace {
 
     void set_sequence_output(Prokrustean &prokrustean, vector<RegionIdx>* regions=nullptr){
         if(regions==nullptr || (*regions).size()==0){
-            prokrustean.set_seq_regions(this->seq_annot.seq_id, this->seq_annot.seq_size, nullptr, 0);
+            prokrustean.set_seq_size(this->seq_annot.seq_id, this->seq_annot.seq_size);
+            prokrustean.set_seq_regions(this->seq_annot.seq_id, nullptr, 0);
             return;
         }
         sort((*regions).begin(),(*regions).end(), [](const RegionIdx& lhs, const RegionIdx& rhs) { return lhs.pidx < rhs.pidx;});
@@ -245,7 +246,8 @@ struct StratificationWorkSpace {
             arr[i].pos=seq_annot.position_annots[(*regions)[i].pidx].pos;
             arr[i].stratum_id=get_stratum_id((*regions)[i]);
         }
-        prokrustean.set_seq_regions(this->seq_annot.seq_id, this->seq_annot.seq_size, arr, regions->size());
+        prokrustean.set_seq_size(this->seq_annot.seq_id, this->seq_annot.seq_size);
+        prokrustean.set_seq_regions(this->seq_annot.seq_id, arr, regions->size());
         total_seq_region_cnt+=regions->size();
     }
 

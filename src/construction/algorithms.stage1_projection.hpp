@@ -52,6 +52,8 @@ struct StratumProjectionWorkspace{
     //
     Prokrustean& prokrustean;
 
+    bool prokrustean_optional_required=false;
+
     int block_size=numeric_limits<SuffixArrayIdx_InBlock>::max();
 
     int block_count;
@@ -64,14 +66,12 @@ struct StratumProjectionWorkspace{
 
     uint64_t seq_total_length;
 
-    ProkrusteanExtension* prokrustean_optional;
-
-    StratumProjectionWorkspace(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length, ProkrusteanExtension* prokrustean_optional)
+    StratumProjectionWorkspace(Prokrustean &prokrustean, uint64_t seq_cnt, uint64_t seq_total_length)
     :prokrustean(prokrustean),seq_cnt(seq_cnt),seq_total_length(seq_total_length){
         this->block_count=seq_total_length/this->block_size+1;
         this->block_locks=vector<SpinLock>(this->block_count);
         this->raw_data_blocks=vector<RawStratifiedRegionBlock*>(this->block_count);
-        this->prokrustean_optional=prokrustean_optional;
+        this->prokrustean_optional_required=prokrustean.contains_stratum_extension_count||prokrustean.contains_stratum_frequency;
     }
 
     StratumId make_stratum(StratumSize size){
@@ -79,10 +79,12 @@ struct StratumProjectionWorkspace{
         /* critical region */
         StratumId new_id=this->new_stratum_id;
         this->new_stratum_id++;
-        this->prokrustean.set_stratum_size(size);
-        if(this->prokrustean_optional!=nullptr && this->prokrustean_optional->collect_left_right_extensions){
-            this->prokrustean_optional->stratum_left_ext_count.resize(this->new_stratum_id, 0);
-            this->prokrustean_optional->stratum_right_ext_count.resize(this->new_stratum_id, 0);
+        this->prokrustean.stratums__size.push_back(size);
+        if(this->prokrustean.contains_stratum_extension_count){
+            this->prokrustean.stratums__character_extensions_cnt.push_back(0);
+        }
+        if(this->prokrustean.contains_stratum_frequency){
+            this->prokrustean.stratums__frequency_cnt.push_back(0);
         }
         /* critical region */
         stratum_lock.unlock();
@@ -90,9 +92,13 @@ struct StratumProjectionWorkspace{
     }
 
 
-    void add_stratum_optional(StratumId stratum_id, uint8_t left_ext_cnt, uint8_t right_ext_cnt){
-        this->prokrustean_optional->stratum_left_ext_count[stratum_id]=left_ext_cnt;
-        this->prokrustean_optional->stratum_right_ext_count[stratum_id]=right_ext_cnt;
+    void add_stratum_optional(StratumId stratum_id, CharCount left_ext_cnt, CharCount right_ext_cnt, FrequencyCount frequency_cnt){
+        if(this->prokrustean.contains_stratum_extension_count){
+            this->prokrustean.set_stratum_left_right_extensions(stratum_id, left_ext_cnt, right_ext_cnt);
+        }
+        if(this->prokrustean.contains_stratum_frequency){
+            this->prokrustean.set_stratum_frequency(stratum_id, frequency_cnt);
+        }
     }
 
     void add_projected_region(SuffixArrayIdx sa_idx, StratumId stratum_id, bool is_primary){
@@ -232,21 +238,17 @@ void report_representative_locations(FmIndex &index, TreeWorkspace &workspace, S
         output.add_projected_region(workspace.repr_work.sa_indices[i], workspace.stratum_id, primary_idx==i);
     }
 
-    if(output.prokrustean_optional!=nullptr && output.prokrustean_optional->collect_left_right_extensions){
+    if(output.prokrustean_optional_required){
         uint8_t left_ext_cnt=0; 
         uint8_t right_ext_cnt=0;
+        FrequencyCount frequency=workspace.node.firsts[workspace.characters_cnt]-workspace.node.firsts[0];
         // for each letter
         for(int c=0; c < workspace.characters_cnt; c++){
             if(c==0) continue;
-
-            if(workspace.node.firsts[c]<workspace.node.firsts[c+1]){
-                right_ext_cnt++;
-            }
-            if(workspace.c_nodes_open[c]) {
-                left_ext_cnt++;;
-            }
+            if(workspace.node.firsts[c]<workspace.node.firsts[c+1]) right_ext_cnt++;
+            if(workspace.c_nodes_open[c]) left_ext_cnt++;;
         }
-        output.add_stratum_optional(workspace.stratum_id, left_ext_cnt, right_ext_cnt);
+        output.add_stratum_optional(workspace.stratum_id, left_ext_cnt, right_ext_cnt, frequency);
     }
 }
 

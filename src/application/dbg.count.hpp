@@ -37,14 +37,14 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext,
         prokrustean.get_spectrum(stra, k-1, spectrum);
         if(stra.size>k-1){
             if(spectrum[0].is_reflected){
-                if(prokrustean_ext.stratum_left_ext_count[i]==0){
+                if(prokrustean_ext.prokrustean.get_left_cnt(i)==0){
                     // tip
                     // maximal case 2
                     if(!turn_on.has_value() || turn_on.value()==2){
                         cnt++;
                     }
                     stats[1]++;
-                } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
+                } else if(prokrustean_ext.prokrustean.get_left_cnt(i)>1){
                     // convergence
                     // maximal case 3
                     if(!turn_on.has_value() || turn_on.value()==3){
@@ -54,27 +54,27 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext,
                 }
             } 
             if(spectrum[spectrum.size()-1].is_reflected){
-                    if(prokrustean_ext.stratum_right_ext_count[i]>1){
+                    if(prokrustean_ext.prokrustean.get_right_cnt(i)>1){
                     // divergence
                     // maximal case 4
                     if(!turn_on.has_value() || turn_on.value()==4){
-                        cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                        cnt+=prokrustean_ext.prokrustean.get_right_cnt(i);
                     }
-                    stats[3]+=prokrustean_ext.stratum_right_ext_count[i];
+                    stats[3]+=prokrustean_ext.prokrustean.get_right_cnt(i);
                 }
             }
         } else {
             // special case k-1
-            if(prokrustean_ext.stratum_right_ext_count[i]>1){
+            if(prokrustean_ext.prokrustean.get_right_cnt(i)>1){
                 // divergence multiple -> convergence does not matter
                 // maximal case 5
                 if(!turn_on.has_value() || turn_on.value()==5){
-                    cnt+=prokrustean_ext.stratum_right_ext_count[i];
+                    cnt+=prokrustean_ext.prokrustean.get_right_cnt(i);
                 }
-                stats[4]+=prokrustean_ext.stratum_right_ext_count[i];
-            } else if(prokrustean_ext.stratum_right_ext_count[i]==1){
+                stats[4]+=prokrustean_ext.prokrustean.get_right_cnt(i);
+            } else if(prokrustean_ext.prokrustean.get_right_cnt(i)==1){
                 
-                if(prokrustean_ext.stratum_left_ext_count[i]==0){
+                if(prokrustean_ext.prokrustean.get_left_cnt(i)==0){
                     // cout << "tip at stratum of k-1 " << i << endl; divergence single -> convergence can work
                     /*stratum tip at stratum of k-1 && right ext count 1 is impossible:
                     If right ext count is 1, that means at least one extension was terminal (to make stratum)
@@ -83,7 +83,7 @@ int count_maximal_unitigs_single_k(int k, ProkrusteanExtension &prokrustean_ext,
                     assert(false); // leave this as assert
                     // cnt++;
                     stats[5]++;
-                } else if(prokrustean_ext.stratum_left_ext_count[i]>1){
+                } else if(prokrustean_ext.prokrustean.get_left_cnt(i)>1){
                     // cout << "convergence at stratum of k-1 " << i << endl;  
                     // maximal case 6
                     if(!turn_on.has_value() || turn_on.value()==6){
@@ -126,17 +126,17 @@ int _count_max_unitig_start_at_stratum(int k, StratumId stratum_id, ProkrusteanE
     } else if(stratum_size>k-1){
         if(ext.stratum__refracted_at_front_of_cover(stratum_id, k-1)){
             // convergence or tip
-            cnt += ext.stratum_left_ext_count[stratum_id]!=1? 1 : 0;
+            cnt += ext.prokrustean.get_left_cnt(stratum_id)!=1? 1 : 0;
         }
         if(ext.stratum__refracted_at_back_of_cover(stratum_id, k-1)){
             // divergence
-            cnt += ext.stratum_right_ext_count[stratum_id]>1? ext.stratum_right_ext_count[stratum_id] : 0;
+            cnt += ext.prokrustean.get_right_cnt(stratum_id)>1? ext.prokrustean.get_right_cnt(stratum_id) : 0;
         }
     } else { // k-1 case
-        if(ext.stratum_right_ext_count[stratum_id]>1){
+        if(ext.prokrustean.get_right_cnt(stratum_id)>1){
             // divergence implication
-            cnt += ext.stratum_right_ext_count[stratum_id];    
-        } else if(ext.stratum_right_ext_count[stratum_id]==1 &&  ext.stratum_left_ext_count[stratum_id]>1){
+            cnt += ext.prokrustean.get_right_cnt(stratum_id);    
+        } else if(ext.prokrustean.get_right_cnt(stratum_id)==1 &&  ext.prokrustean.get_left_cnt(stratum_id)>1){
             // convergence implication
             cnt += 1;
         }
@@ -176,7 +176,7 @@ void _count_divergence_events_in_range_at_stratum(int k, StratumId stratum_id, P
     if(stratum_size<k-1){
         return;
     }
-    if(ext.stratum_right_ext_count[stratum_id]<=1){
+    if(ext.prokrustean.get_right_cnt(stratum_id)<=1){
         return;
     }
     // divergence
@@ -186,12 +186,12 @@ void _count_divergence_events_in_range_at_stratum(int k, StratumId stratum_id, P
         // from L refracted exists
         auto L=last_rgn.value().size()+2; // because last_region.value() is k-1 when L=last_region.value()+1
         if(L<partial_C.size()){
-            partial_C[L]+=ext.stratum_right_ext_count[stratum_id];
+            partial_C[L]+=ext.prokrustean.get_right_cnt(stratum_id);
         }
     }
     // until it becomes less than k-2
     if(stratum_size+2<partial_C.size()){
-        partial_C[stratum_size+2]-=ext.stratum_right_ext_count[stratum_id];
+        partial_C[stratum_size+2]-=ext.prokrustean.get_right_cnt(stratum_id);
     }
 }
 
@@ -200,7 +200,7 @@ void _count_tip_events_in_range_at_stratum(int k, StratumId stratum_id, Prokrust
     if(stratum_size<k-1){
         return;
     }
-    if(ext.stratum_left_ext_count[stratum_id]!=0){
+    if(ext.prokrustean.get_left_cnt(stratum_id)!=0){
         return;
     }
     // tip -> available until reaching sequence length,
@@ -224,7 +224,7 @@ void _count_convergence_events_in_range_at_stratum(int k, StratumId stratum_id, 
     if(stratum_size<k-1){
         return;
     }
-    if(ext.stratum_left_ext_count[stratum_id]<=1){
+    if(ext.prokrustean.get_left_cnt(stratum_id)<=1){
         return;
     }
     // convergence
@@ -239,7 +239,7 @@ void _count_convergence_events_in_range_at_stratum(int k, StratumId stratum_id, 
     }
     
     // special case considering k-1
-    if(ext.stratum_right_ext_count[stratum_id]==1){
+    if(ext.prokrustean.get_right_cnt(stratum_id)==1){
         // until it becomes less than k-1
         if(stratum_size+2<partial_C.size()){
             partial_C[stratum_size+2]--;

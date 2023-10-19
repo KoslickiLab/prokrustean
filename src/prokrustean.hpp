@@ -10,6 +10,10 @@
 
 using namespace std;
 
+// for succinct left/right counts
+int HALF_BITS_IN_CHAR = 4*sizeof(CharCount);
+CharCount MASK_HALF_BITS = (1 << HALF_BITS_IN_CHAR) - 1;
+
 struct Edge {
     Pos from;
     Pos to;
@@ -51,8 +55,8 @@ struct RefractedEdge: Edge{
 
 
 struct StratifiedData {
-    StratumId stratum_id;
-    Pos pos;
+    StratumId stratum_id=0;
+    Pos pos=0;
     
     StratifiedData(){}
     StratifiedData(Pos pos, StratumId stratum_id): pos(pos), stratum_id(stratum_id)
@@ -134,6 +138,8 @@ struct SequenceVertex: Vertex{
 struct Prokrustean {
     int lmin;
     int version=1; // for file loading compatibility 
+    bool contains_stratum_extension_count;
+    bool contains_stratum_frequency;
 
     uint64_t sequence_count;
     uint64_t total_sequence_region_count;
@@ -147,7 +153,9 @@ struct Prokrustean {
     vector<StratifiedData*> stratums__region;
     vector<CoveringRegionCount> stratums__region_cnt;
 
-    
+    // extension
+    vector<CharCount> stratums__character_extensions_cnt;
+    vector<FrequencyCount> stratums__frequency_cnt;
 
     SequenceVertex get_sequence(SeqId id){
         auto sequence=SequenceVertex(id, sequences__size[id], sequences__region[id], sequences__region_cnt[id], stratums__size);
@@ -262,6 +270,28 @@ struct Prokrustean {
     StratumSize get_stratum_size(StratumId id){
         return this->stratums__size[id];
     }
+    CharCount get_left_cnt(StratumId id) {
+        // Extract the first 'numBits' bits (leftmost)
+        return (this->stratums__character_extensions_cnt[id] >> HALF_BITS_IN_CHAR) & MASK_HALF_BITS;
+    }
+    CharCount get_right_cnt(StratumId id) {
+        // the next 'numBits' bits (rightmost)
+        return this->stratums__character_extensions_cnt[id] & MASK_HALF_BITS;
+    }
+
+    void set_stratum_left_right_extensions(StratumId id, CharCount left_cnt, CharCount right_cnt) {
+        // Ensure that both integers are within the valid range
+        if (left_cnt >= (1 << HALF_BITS_IN_CHAR) || right_cnt >= (1 << HALF_BITS_IN_CHAR)) {
+            // Handle invalid input
+            throw std::invalid_argument("left cnt, right cnt too large. The data space is designed to include both left and right extension counts in one byte");
+        }
+        // Shift the first integer to the left and combine it with the second integer using bitwise OR
+        this->stratums__character_extensions_cnt[id]=(left_cnt << HALF_BITS_IN_CHAR) | (right_cnt & MASK_HALF_BITS);
+    }
+
+    void set_stratum_frequency(StratumId id, FrequencyCount frequency) {
+        this->stratums__frequency_cnt[id]=frequency;
+    }
 
     void set_seq_count(uint64_t seq_cnt){
         this->sequences__size.resize(seq_cnt);
@@ -273,17 +303,25 @@ struct Prokrustean {
     void set_stratum_count(uint64_t stratum_cnt){
         this->stratums__region.resize(stratum_cnt);
         this->stratums__region_cnt.resize(stratum_cnt, 0);
-        // if in the middle of construction, stratum sizes are already set though
-        this->stratums__size.resize(stratum_cnt);
+        this->stratums__size.resize(stratum_cnt); 
         this->stratum_count=stratum_cnt;
+        if(contains_stratum_extension_count){
+            this->stratums__character_extensions_cnt.resize(stratum_cnt);
+        }
+        if(contains_stratum_frequency){
+            this->stratums__frequency_cnt.resize(stratum_cnt);
+        }
     }
 
-    void set_stratum_size(StratumSize stratum_size){
-        this->stratums__size.push_back(stratum_size);
+    void set_stratum_size(StratumId id, StratumSize stratum_size){
+        this->stratums__size[id]=stratum_size;
     }
 
-    void set_seq_regions(SeqId id, uint64_t seq_size, StratifiedData* data, uint8_t rgn_cnt){
+    void set_seq_size(SeqId id, uint64_t seq_size){
         this->sequences__size[id]=seq_size;
+    }
+
+    void set_seq_regions(SeqId id, StratifiedData* data, uint8_t rgn_cnt){
         this->sequences__region[id]=data;
         this->sequences__region_cnt[id]=rgn_cnt;
     }

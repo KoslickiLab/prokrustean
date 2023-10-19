@@ -34,6 +34,7 @@ void test_counting_distinct_kmers(){
     vector<string> output;
     for(int k=1; k<180; k++){
         get_distinct_kmers(k, ext, seq_texts, output);
+        if(k%20==0)
         cout << "counts[k]: " << counts[k] << " count_distinct_kmers(k, prokrustean) "<< count_distinct_kmers(k, prokrustean) << " output: " << output.size() << endl;
         assert(counts[k]==output.size());
         assert(counts[k]==count_distinct_kmers(k, prokrustean));

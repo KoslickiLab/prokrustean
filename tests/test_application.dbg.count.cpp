@@ -24,8 +24,8 @@ void test_unitig_counting_single(){
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
-    enhancement.collect_left_right_extensions=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -51,8 +51,8 @@ void test_unitig_counting_range(){
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
-    ext.collect_left_right_extensions=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &ext);
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
     vector<uint64_t> output;
     count_maximal_unitigs_range_of_k(30, 200, ext, output);
     for(int k=30; k<200; k++){

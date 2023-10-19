@@ -141,8 +141,8 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
     // if not reflected, no.
     // if not left count 1, no
     // but if bottom that bands is 1, yes 
-    bool is_first_tip=ext.stratum_left_ext_count[stratum_id]==0;
-    bool is_first_convergence=ext.stratum_left_ext_count[stratum_id]>1;
+    bool is_first_tip=ext.prokrustean.get_left_cnt(stratum_id)==0;
+    bool is_first_convergence=ext.prokrustean.get_left_cnt(stratum_id)>1;
     bool is_first_reflected=work.working_bands[0].is_reflected;
     bool make_first_unitig=(
         is_first_reflected && (is_first_tip || is_first_convergence) // maximal
@@ -164,7 +164,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
         } 
         // the other place covers it (the case 6)
         // else {
-        //     if(is_first_convergence && ext.stratum_right_ext_count[stratum_id]==1){
+        //     if(is_first_convergence && ext.prokrustean.get_right_cnt(stratum_id)==1){
         //         // cout << "convergence at stratum of k-1 " << i << endl;  
         //         cout << "hihi " << endl;
         //         work.unitigs[unitig_id].is_start_of_maximal=true;    
@@ -181,8 +181,8 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
     }
     // last if maximal
     auto last_band_idx=work.working_bands.size()-1;
-    bool is_last_diverge=ext.stratum_right_ext_count[stratum_id]>1;
-    bool is_last_tip=ext.stratum_right_ext_count[stratum_id]==0;
+    bool is_last_diverge=ext.prokrustean.get_right_cnt(stratum_id)>1;
+    bool is_last_tip=ext.prokrustean.get_right_cnt(stratum_id)==0;
     // not single element band, reflected, diverged. Bottom case is covered above(exceptional).
     bool make_last_unitig=last_band_idx>0 && work.working_bands[last_band_idx].is_reflected && (is_last_diverge || is_last_tip );
     if(make_last_unitig){
@@ -279,7 +279,7 @@ void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, 
     // cout << " _dig_leftmosts_and_extend" << endl; 
     auto left_descendent_id=work.stratum_exts[stratum_id].leftmost_reflectum_descendent;
     if(ext.prokrustean.stratums__size[left_descendent_id]>k-1){
-        if(ext.stratum_left_ext_count[left_descendent_id]>1){
+        if(ext.prokrustean.get_left_cnt(left_descendent_id)>1){
             assert(work.stratum_exts[left_descendent_id].first_unitig.has_value());
             unitig.extend_right(1);
             unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
@@ -320,13 +320,13 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
     // cout << "rightmost: " << right_descendent_id << endl;
     if(ext.prokrustean.stratums__size[right_descendent_id]>k-1){
         // set maximal if diverged
-        if(ext.stratum_right_ext_count[right_descendent_id]>1){
+        if(ext.prokrustean.get_right_cnt(right_descendent_id)>1){
             // maximal case 4
             unitig.is_start_of_maximal=true;
             assert(work.stratum_exts[right_descendent_id].last_unitig.has_value());
             unitig.extend_left(1);
             work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
-            assert(ext.stratum_right_ext_count[right_descendent_id]>=work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.size());
+            assert(ext.prokrustean.get_right_cnt(right_descendent_id)>=work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.size());
             
         } else if(no_stratified_region_in_stra(right_descendent_id, k-1, ext)){
             // bottom
@@ -352,20 +352,20 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
         unitig.extend_left(1);
         work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
         
-        if(ext.stratum_right_ext_count[right_descendent_id]>1){
+        if(ext.prokrustean.get_right_cnt(right_descendent_id)>1){
             // divergence multiple -> convergence does not matter
             // maximal case 5
             unitig.is_start_of_maximal=true;
-        } else if(ext.stratum_right_ext_count[right_descendent_id]==1){
+        } else if(ext.prokrustean.get_right_cnt(right_descendent_id)==1){
             // convergence
-            if(ext.stratum_left_ext_count[right_descendent_id]>1){
+            if(ext.prokrustean.get_left_cnt(right_descendent_id)>1){
                 // maximal case 6
                 unitig.is_start_of_maximal=true;
                 unitig.is_convergence=true;
                 // the others be literally void: 
                 // * if right cnt multiple -> then each branch gets maximal. 
                 // * if right cnt single/zero -> impossible
-            } else if(ext.stratum_left_ext_count[right_descendent_id]==0){
+            } else if(ext.prokrustean.get_left_cnt(right_descendent_id)==0){
                 assert(false); // tip stratum - theoretically seems impossible but let's check.
             }
         }
@@ -606,8 +606,8 @@ struct CdbgInvariants {
 
         for(int i=0; i<work.stratum_exts.size(); i++){
             if(work.stratum_exts[i].last_unitig.has_value()){
-                this->each_right_extension_count_of_stratum[i]=ext.stratum_right_ext_count[i];
-                this->total_right_count+=ext.stratum_right_ext_count[i];
+                this->each_right_extension_count_of_stratum[i]=ext.prokrustean.get_right_cnt(i);
+                this->total_right_count+=ext.prokrustean.get_right_cnt(i);
 
                 this->each_unitig_attached_on_last_of_stratum_next_count[i]=work.unitigs[work.stratum_exts[i].last_unitig.value()].nexts.size();
                 this->total_pointers_pointing_up+=work.unitigs[work.stratum_exts[i].last_unitig.value()].nexts.size();
@@ -615,8 +615,8 @@ struct CdbgInvariants {
 
             }
             if(work.stratum_exts[i].first_unitig.has_value()){
-                this->each_left_extension_count_of_stratum[i]=ext.stratum_left_ext_count[i];
-                this->total_left_count+=ext.stratum_left_ext_count[i];
+                this->each_left_extension_count_of_stratum[i]=ext.prokrustean.get_left_cnt(i);
+                this->total_left_count+=ext.prokrustean.get_left_cnt(i);
             }
         }
 

@@ -13,6 +13,7 @@
 #include "../src/construction/algorithms.hpp"
 #include "../src/application/kmers.hpp"
 #include "../src/application/cdbg.hpp"
+#include "../src/application/dbg.count.hpp"
 
 using namespace std;
 using namespace sdsl;
@@ -24,8 +25,8 @@ void test_cdbg_with_verifier(){
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
-    enhancement.collect_left_right_extensions=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -161,8 +162,8 @@ void test_cdbg_construction(){
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
-    enhancement.collect_left_right_extensions=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin, &enhancement);
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);

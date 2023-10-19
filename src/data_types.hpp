@@ -23,10 +23,14 @@ typedef uint16_t StratumSize;
 /*I doubt about it even if the dataset is very largein normal cases */
 typedef uint8_t CoveringRegionIdx; 
 typedef uint8_t CoveringRegionCount; 
+//Alphabet
+typedef uint8_t CharId; 
+typedef uint8_t CharCount; 
+// frequency
+typedef uint16_t FrequencyCount; 
 
 /* For prokrustean construction */
 typedef uint16_t SuffixArrayIdx_InBlock;
-typedef uint8_t CharId; //character ids -> lexicographical order of characters 
 typedef uint64_t SuffixArrayIdx;
 typedef std::vector<uint64_t> RankArray; 
 /* For application */

@@ -28,7 +28,8 @@ void test_store_and_retrieve() {
             arr[r].stratum_id=i;
             arr[r].pos=6;    
         }
-        originalData.set_seq_regions(i, 200, arr, region_per_stratum);
+        originalData.set_seq_size(i, 200);
+        originalData.set_seq_regions(i, arr, region_per_stratum);
     }
     for(int i=0; i<stratum_cnt; i++){
         StratifiedData* arr= new StratifiedData[region_per_stratum];
@@ -84,7 +85,8 @@ void test_store_and_retrieve_simple() {
             arr[r].stratum_id=i;
             arr[r].pos=6;    
         }
-        originalData.set_seq_regions(i, 200, arr, region_per_stratum);
+        originalData.set_seq_size(i, 200);
+        originalData.set_seq_regions(i, arr, region_per_stratum);
     }
     for(int i=0; i<stratum_cnt; i++){
         StratifiedData* arr= new StratifiedData[region_per_stratum];
@@ -153,7 +155,8 @@ void test_store_and_retrieve_random_data() {
             arr[r].stratum_id=generate_random_val<StratumId>();
             arr[r].pos=generate_random_val<Pos>();
         }
-        originalData.set_seq_regions(i, generate_random_val<SequenceSize>(), arr, rgn_count);
+        originalData.set_seq_size(i, generate_random_val<SequenceSize>());
+        originalData.set_seq_regions(i, arr, rgn_count);
     }
     for(int i=0; i<stratum_cnt; i++){
         auto rgn_count = generate_random_val<CoveringRegionIdx>();
@@ -195,9 +198,47 @@ void test_store_and_retrieve_random_data() {
     }
 }
 
+void test_store_and_retrieve_extensions() {
+    // Create an instance of the Prokrustean structure
+    int region_per_stratum= 2;
+    int sequence_cnt=5;
+    int stratum_cnt=10;
+    // extensions
+    Prokrustean originalData;
+    originalData.contains_stratum_extension_count=true;
+    originalData.set_seq_count(sequence_cnt);
+    originalData.set_stratum_count(stratum_cnt);
+    for(int i=0; i<stratum_cnt; i++){
+        originalData.set_stratum_left_right_extensions(i, 1, 3);
+    }
+    store_prokrustean(originalData, "data.bin");
+    Prokrustean loadedData;
+    load_prokrustean("data.bin", loadedData);
+    for(int i=0; i<stratum_cnt; i++){
+        assert(originalData.get_left_cnt(i)==loadedData.get_left_cnt(i));
+        assert(originalData.get_right_cnt(i)==loadedData.get_right_cnt(i));
+    }
+    // frequencies
+    originalData=Prokrustean();
+    // Populate the data as needed
+    originalData.contains_stratum_frequency=true;
+    originalData.set_seq_count(sequence_cnt);
+    originalData.set_stratum_count(stratum_cnt);
+    for(int i=0; i<stratum_cnt; i++){
+        originalData.set_stratum_frequency(i, 5);
+    }
+    store_prokrustean(originalData, "data.bin");
+    loadedData=Prokrustean();
+    load_prokrustean("data.bin", loadedData);
+    for(int i=0; i<stratum_cnt; i++){
+        assert(originalData.stratums__frequency_cnt[i]==loadedData.stratums__frequency_cnt[i]);
+    }
+}
+
 
 void main_test_storage(){
     test_store_and_retrieve_simple();
     test_store_and_retrieve_random_data();
+    test_store_and_retrieve_extensions();
 }
 #endif
