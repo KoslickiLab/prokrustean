@@ -31,9 +31,13 @@ void test_counting_distinct_kmers(){
 
     vector<uint64_t> counts;
     count_distinct_kmers_of_range(1, 180, prokrustean, counts);
-    vector<string> output;
+    MemorySequenceAccess sequence_access(seq_texts);
+    MemoryStringDataStore string_store;
+
+    auto &output= string_store.strings;
     for(int k=1; k<180; k++){
-        get_distinct_kmers(k, ext, seq_texts, output);
+        output.clear();
+        get_distinct_kmers(k, ext, sequence_access, string_store);
         if(k%20==0)
         cout << "counts[k]: " << counts[k] << " count_distinct_kmers(k, prokrustean) "<< count_distinct_kmers(k, prokrustean) << " output: " << output.size() << endl;
         assert(counts[k]==output.size());

@@ -10,6 +10,8 @@
 #include "../src/construction/algorithms.hpp"
 #include "../src/application/kmers.hpp"
 #include "../src/application/kmers.count.hpp"
+#include "../src/util/data.store.hpp"
+#include "../src/util/string.access.hpp"
 
 using namespace std;
 using namespace sdsl;
@@ -29,9 +31,14 @@ void test_distinct_kmers(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
 
-    vector<string> output;
+    MemorySequenceAccess sequence_access(seq_texts);
+    MemoryStringDataStore string_store;
+
+    auto &output= string_store.strings;
     for(int k=2; k<10; k++){
-        get_distinct_kmers(k, ext, seq_texts, output);
+        // get_distinct_kmers(k, ext, seq_texts, output);
+        output.clear();
+        get_distinct_kmers(k, ext, sequence_access, string_store);
         sort(output.begin(), output.end());
         auto output_naive = get_distinct_kmers_naive(seq_texts, k);
         if(output!=output_naive){
@@ -51,6 +58,31 @@ void test_distinct_kmers(){
     }
 }
 
+void test_distinct_kmers_ondisk(){
+    int Lmin = 1;
+    WaveletString str(PATH5_CDBG_SAMPLE, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    setup_stratum_example_occ(ext);
+
+    vector<string> seq_texts;
+    fm_idx.recover_all_texts(seq_texts);
+
+    DiskSequenceAccess sequence_access("seq_texts.dat");
+    sequence_access.save_strings(seq_texts);
+    DiskStringDataStore string_store("kmer.txt");
+    string_store.activate();
+
+    int k=3;
+    get_distinct_kmers(k, ext, sequence_access, string_store);
+
+    string_store.deactivate();
+}
+
 void main_application_kmer() {
     test_distinct_kmers(); 
+    test_distinct_kmers_ondisk(); 
 }

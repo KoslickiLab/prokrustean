@@ -7,6 +7,7 @@
 #include "test_application.cdbg.cpp"
 #include "test_storage.cpp"
 #include "test_construction.support.cpp"
+#include "test_text_indexing.cpp"
 
 int main(void){
     cout << "--- test bitvector ---" << endl;
@@ -36,4 +37,6 @@ int main(void){
     cout << "--- test support ---" << endl;
     main_prokrustean_support();
 
+    cout << "--- test text indexing ---" << endl;
+    main_text_indexing();
 }
