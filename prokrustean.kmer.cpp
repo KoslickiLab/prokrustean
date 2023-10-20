@@ -13,11 +13,13 @@
 #include "src/prokrustean.hpp"
 #include "src/prokrustean.support.hpp"
 #include "src/application/kmers.hpp"
+#include "src/util/string.access.hpp"
+#include "src/util/data.store.hpp"
 
 using namespace std;
 using namespace sdsl;
 
-string input_bwt;
+string input_sequences;
 string input_prokrustean;
 string output_file;
 int num_threads=12;
@@ -31,10 +33,10 @@ void help(){
 	"Output: distinct kmers in a text file." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
-	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
+	"-i <arg>    (REQUIRED) input prokrustean file name" << endl <<
 	"-k <arg>    (REQUIRED) k - at least lmin." << endl <<
-	"-g <arg>    prokrustean file name. Default: input file name + .prokrustean" << endl <<
-	"-o <arg>    output kmer file name. Default: input file name + .kmer.txt" << endl <<
+	"-s <arg>    sequence file name. (generated with prokrustean by -r) Default: {input}.sequences" << endl <<
+	"-o <arg>    output file name. Default: {input}.kmer.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
 	exit(0);
 }
@@ -49,10 +51,10 @@ int main(int argc, char** argv){
 				help();
 			break;
 			case 'i':
-				input_bwt = string(optarg);
-			break;
-			case 'g':
 				input_prokrustean = string(optarg);
+			break;
+			case 's':
+				input_sequences = string(optarg);
 			break;
 			case 'k':
 				k = stoi(string(optarg));
@@ -69,23 +71,23 @@ int main(int argc, char** argv){
 		}
 	}
 
-	if(input_bwt.size()==0){
-		cout << "input empty" << endl;
-		help();
-	}
 	if(input_prokrustean.size()==0) {
-		input_prokrustean=input_bwt+".prokrustean";
+		cout << "input file name not set" << endl;
+		exit(0);
+	};
+	if(input_sequences.size()==0) {
+		input_sequences=input_prokrustean+".sequences";
 	};
 	if(output_file.size()==0) {
-		output_file=input_bwt+".kmer." + "k"+to_string(k) + ".txt";
+		output_file=input_prokrustean+".kmer." + "k"+to_string(k) + ".txt";
 	};
 	if(k==-1){
 		cout << "k not set" << endl;
 		exit(0);
 	}
 
-	cout << "Input bwt file: " << input_bwt << endl;
 	cout << "Input prokrustean file: " << input_prokrustean << endl;
+	cout << "Input sequences file: " << input_sequences << endl;
 	cout << "k: " << k << endl;
 	cout << "threads: " << num_threads << endl;
 
@@ -95,17 +97,7 @@ int main(int argc, char** argv){
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
-		cout << "loading failed. Prokrustean is built and saved at: " << input_prokrustean << endl;
-		start = std::chrono::steady_clock::now();
-		cout << "make wavelet tree ... ";
-		
-		str=WaveletString(input_bwt);
-		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
-
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-		FmIndex fm_idx(str);
-		construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, k);
-		store_prokrustean(prokrustean, input_prokrustean);
+		exit(0);
 	}
 	prokrustean.print_abstract();
 
@@ -115,44 +107,24 @@ int main(int argc, char** argv){
 	}
 
 	start = std::chrono::steady_clock::now();
-	cout << "annotate strata example occurrences (so that they can be printed) ... ";
+	cout << "annotate strata example occurrences (so that they can be printed) ... " << endl;
 	
 	ProkrusteanExtension ext(prokrustean);
 	// setup_stratum_example_occ(ext);
     setup_stratum_example_occ_parallel(ext, num_threads);
 	
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	if(!str.valid){
-		start = std::chrono::steady_clock::now();
-		cout << "make wavelet tree ... ";
-		
-		str=WaveletString(input_bwt);
-		if(!str.valid){ cout << "wavelet tree is not built. invalid input_bwt path?"; exit(0);}
-
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	DiskSequenceAccess sequence_access(input_sequences);
+	if(!sequence_access.verify()){
+		cout << "the file does not exist or seems like not a recovered sequence generated with the prokrustean. ";	
 	}
-	
-	FmIndex fm_idx(str);
+	sequence_access.load_all_strings();
 	
 	start = std::chrono::steady_clock::now();
-	cout << "recover sequences from bwt... ";
-
-    vector<string> seq_texts;
-    recover_sequences_parallel(fm_idx, seq_texts, num_threads);
+	cout << "find and store distinct kmers... " << endl;
+	vector<string> output;
+    DiskStringDataStore string_store(output_file);
+	get_distinct_kmers_(k, ext, sequence_access, string_store);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	start = std::chrono::steady_clock::now();
-	cout << "find distinct kmers... ";
-
-    vector<string> mers;
-    get_distinct_kmers_parallel(k, ext, seq_texts, mers);
-
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	start = std::chrono::steady_clock::now();
-	cout << "kmers total: " << mers.size() << endl;
-	cout << "save distinct kmers... ";
-
-	store_kmers(mers, output_file);
-	
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	cout << "stored: " << output_file << endl;
 }
 

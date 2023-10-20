@@ -13,28 +13,50 @@ public:
 };
 
 class DiskStringDataStore: public  AbstractStringDataStore{
-    string filename;
-    std::ofstream* file;
-public:
-    DiskStringDataStore(string filename):filename(filename){}
-    void activate(){
-        this->file=new std::ofstream(this->filename);
+    std::ofstream outfile;
+    std::vector<std::string> buffer;
+    const uint64_t batchSize=10000000;
+    
+    void writeBuffer() {
+        for (const auto& str : buffer) {
+            outfile << str << '\n';
+        }
+        buffer.clear();
     }
-    void deactivate(){
-        this->file->close();
-        delete this->file;
+public:
+    DiskStringDataStore(string filename){
+        outfile.open(filename);
+        if (!outfile.is_open()) {
+            throw std::runtime_error("Failed to open file for writing.");
+        }
+        buffer.reserve(batchSize);
+    }
+
+     ~DiskStringDataStore() {
+        this->close();
+    }
+
+    void close(){
+        if (!buffer.empty()) {
+            writeBuffer();
+        }
+        outfile.close();
     }
     void store(std::string string){
-        assert(this->file!=nullptr);
-        (*this->file) << string << endl;
+        buffer.push_back(string);
+        if (buffer.size() >= batchSize) {
+            writeBuffer();
+        }
     }
 };
+
 
 class MemoryStringDataStore: public AbstractStringDataStore{
 public:
     vector<string> strings;
 
     void store(std::string string){
+        // cout << "string " << string <<endl;
         this->strings.push_back(string);
     }
     void reset(){

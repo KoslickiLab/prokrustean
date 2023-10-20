@@ -421,7 +421,7 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
 // Deserialize the Prokrustean structure
 bool load_prokrustean(const std::string& filename, Prokrustean& data) {
     auto start = std::chrono::steady_clock::now();
-	cout << "loading prokrustean (" << filename << ") ... " ;
+	cout << "loading prokrustean (" << filename << ") ... " << endl;
 
     std::ifstream file(filename, std::ios::binary);
     

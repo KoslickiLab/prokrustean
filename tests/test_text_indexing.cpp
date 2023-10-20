@@ -37,6 +37,12 @@ void test_bwt_indexing(){
         assert(seq_texts[idx]==sequnce_access.get_string(idx));
         assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
     }
+    //in memory
+    sequnce_access.load_all_strings();
+    for(auto [idx, from, to]: substring_locs){
+        assert(seq_texts[idx]==sequnce_access.get_string(idx));
+        assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
+    }
 }
 
 void test_verification(){

@@ -37,7 +37,7 @@ void test_counting_distinct_kmers(){
     auto &output= string_store.strings;
     for(int k=1; k<180; k++){
         output.clear();
-        get_distinct_kmers(k, ext, sequence_access, string_store);
+        get_distinct_kmers_(k, ext, sequence_access, string_store);
         if(k%20==0)
         cout << "counts[k]: " << counts[k] << " count_distinct_kmers(k, prokrustean) "<< count_distinct_kmers(k, prokrustean) << " output: " << output.size() << endl;
         assert(counts[k]==output.size());

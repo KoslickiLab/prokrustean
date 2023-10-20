@@ -18,10 +18,12 @@ std::string EVIDENCE = "I am Prokrustes. Do not confuse me with the greek creatu
 class DiskSequenceAccess: public AbstractSequenceAccess{
 public:
     std::string filename;
+    std::ofstream outfile;
+    bool loaded=false;
+    vector<string> strings;
     DiskSequenceAccess(std::string filename): filename(filename){}
 
     const uint64_t METADATA_SIZE = 256; // 256 bytes for metadata
-
 
     std::string get_metadata() {
         std::ifstream infile(filename, std::ios::binary);
@@ -36,20 +38,60 @@ public:
     }
 
     void save_strings(const std::vector<std::string>& strings) {
-        std::ofstream outfile(filename, std::ios::binary);
+        this->outfile=std::ofstream(filename, std::ios::binary);
 
         // Write metadata
-        outfile.write(EVIDENCE.c_str(), METADATA_SIZE);
+        this->outfile.write(EVIDENCE.c_str(), METADATA_SIZE);
 
         // Write the strings
         for (const std::string& str : strings) {
             int len = str.size();
-            outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
-            outfile.write(str.c_str(), len);
+            this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+            this->outfile.write(str.c_str(), len);
         }
+        this->outfile.close();
+    }
+
+    void save_activate() {
+        this->outfile=std::ofstream(filename, std::ios::binary);
+
+        // Write metadata
+        this->outfile.write(EVIDENCE.c_str(), METADATA_SIZE);
+    }
+
+    void save_single(const std::string& str){
+        int len = str.size();
+        this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+        this->outfile.write(str.c_str(), len);
+    }
+
+    void save_deactivate() {
+        this->outfile.close();
+    }
+
+    void load_all_strings() {
+        std::ifstream infile(filename, std::ios::binary);
+        infile.seekg(METADATA_SIZE);  // Skip the metadata
+        
+        while (!infile.eof()) {
+            int len = 0;
+            infile.read(reinterpret_cast<char*>(&len), sizeof(len));
+            if (infile.eof()) break;  // Exit loop if end of file reached
+
+            char* buffer = new char[len + 1];
+            infile.read(buffer, len);
+            buffer[len] = '\0';
+            
+            this->strings.push_back(std::string(buffer));
+            delete[] buffer;
+        }
+        this->loaded=true;
     }
 
     std::string get_string(int index) {
+        if(this->loaded){
+            return this->strings[index];
+        }
         std::ifstream infile(filename, std::ios::binary);
         infile.seekg(METADATA_SIZE); // Skip metadata
 
@@ -72,6 +114,9 @@ public:
     }
 
     std::string get_substring(int index, uint64_t pos, uint64_t size) {
+        if(this->loaded){
+            return this->strings[index].substr(pos, size);
+        }
         std::ifstream infile(filename, std::ios::binary);
         infile.seekg(METADATA_SIZE); // Skip metadata
 
@@ -92,99 +137,8 @@ public:
                 infile.seekg(len, std::ios_base::cur);
             }
         }
-
         return ""; // Invalid index
     }
-
-    // void save_strings(const std::vector<std::string>& strings) {
-    //     std::ofstream file(this->filename, std::ios::binary);
-
-    //     // Write metadata.
-        
-    //     EVIDENCE.resize(METADATA_SIZE, '\0'); // Resize to fixed size, padding with zeros.
-    //     file.write(EVIDENCE.c_str(), METADATA_SIZE);
-
-    //     // Write all strings consecutively.
-    //     for (const auto& str : strings) {
-    //         file.write(str.c_str(), str.size());
-    //     }
-
-    //     file << "\n";
-
-    //     // Record the start position of the index.
-    //     // Write the index.
-    //     uint64_t start = 0;
-    //     for (const auto& str : strings) {
-    //         uint64_t end = start + str.size() - 1;
-    //         file << start << " " << end << "\n";
-    //         start = end + 1;
-    //     }
-
-    //     file.close();
-    // }
-
-    // std::string read_metadata() {
-    //     std::ifstream file(this->filename, std::ios::binary);
-    //     std::string metadata(METADATA_SIZE, '\0');
-    //     file.read(&metadata[0], METADATA_SIZE);
-    //     return metadata;
-    // }
-
-    // std::string get_string(int index) {
-    //     std::ifstream file(filename);
-
-    //     // Skip metadata.
-    //     file.ignore(METADATA_SIZE + 1); // +1 for the newline character.
-
-    //     // Move to the indexed position.
-    //     for (int k = 0; k < index; k++) {
-    //         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    //     }
-
-    //     uint64_t start, end;
-    //     file >> start >> end;
-
-    //     uint64_t string_length = end - start + 1;
-    //     char buffer[string_length + 1];
-
-    //     file.seekg(METADATA_SIZE + 1 + start);
-    //     file.read(buffer, string_length);
-    //     buffer[string_length] = '\0';
-
-    //     return std::string(buffer);
-    // }
-
-
-    // std::string get_substring(int index, uint64_t i, uint64_t j) {
-    //     std::ifstream file(filename);
-
-    //     // Skip metadata.
-    //     file.ignore(METADATA_SIZE + 1); // +1 for the newline character.
-
-    //     // Jump to the correct index.
-    //     for (int k = 0; k < index; k++) {
-    //         file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    //     }
-
-    //     uint64_t start, end;
-    //     file >> start >> end;
-
-    //     // Adjust the start and end positions based on the requested substring.
-    //     if (i > j || (start + j) > end) {
-    //         return ""; // Invalid range
-    //     }
-
-    //     uint64_t substring_start = METADATA_SIZE + 1 + start + i;
-    //     uint64_t substring_length = j - i + 1;
-    //     char buffer[substring_length + 1];
-
-    //     file.seekg(substring_start);
-    //     file.read(buffer, substring_length);
-    //     buffer[substring_length] = '\0';
-
-    //     return std::string(buffer);
-    // }
-
 
 };
 

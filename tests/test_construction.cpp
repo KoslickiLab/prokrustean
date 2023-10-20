@@ -87,10 +87,14 @@ void test_basic_construction_w_kmers(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     
-    vector<string> output;
+    MemorySequenceAccess sequence_access(seq_texts);
+    MemoryStringDataStore string_store;
+
+    vector<string> &output=string_store.strings;
     vector<int> testing_ks={1,5,10,20};
     for(auto k: testing_ks){
-        get_distinct_kmers(k, ext, seq_texts, output);
+        string_store.reset();
+        get_distinct_kmers_(k, ext, sequence_access, string_store);
         sort(output.begin(), output.end());
         assert(output==get_distinct_kmers_naive(seq_texts, k));
     }
