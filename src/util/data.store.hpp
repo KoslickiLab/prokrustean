@@ -15,7 +15,7 @@ public:
 class DiskStringDataStore: public  AbstractStringDataStore{
     std::ofstream outfile;
     std::vector<std::string> buffer;
-    const uint64_t batchSize=10000000;
+    const uint64_t batchSize=10000;
     
     void writeBuffer() {
         for (const auto& str : buffer) {
@@ -56,8 +56,10 @@ public:
     vector<string> strings;
 
     void store(std::string string){
-        // cout << "string " << string <<endl;
         this->strings.push_back(string);
+        if(this->strings.size()%1000==0){
+            cout << "string " << this->strings.size() <<endl;
+        }
     }
     void reset(){
         this->strings.clear();

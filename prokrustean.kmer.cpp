@@ -114,15 +114,13 @@ int main(int argc, char** argv){
     setup_stratum_example_occ_parallel(ext, num_threads);
 	
 	DiskSequenceAccess sequence_access(input_sequences);
-	if(!sequence_access.verify()){
-		cout << "the file does not exist or seems like not a recovered sequence generated with the prokrustean. ";	
-	}
-	sequence_access.load_all_strings();
+	sequence_access.read_open();
+	// sequence_access.load_all_strings();
 	
 	start = std::chrono::steady_clock::now();
 	cout << "find and store distinct kmers... " << endl;
 	vector<string> output;
-    DiskStringDataStore string_store(output_file);
+	DiskStringDataStore string_store(output_file);
 	get_distinct_kmers_(k, ext, sequence_access, string_store);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "stored: " << output_file << endl;
