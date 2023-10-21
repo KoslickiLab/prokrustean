@@ -57,9 +57,6 @@ public:
 
     void store(std::string string){
         this->strings.push_back(string);
-        if(this->strings.size()%1000==0){
-            cout << "string " << this->strings.size() <<endl;
-        }
     }
     void reset(){
         this->strings.clear();

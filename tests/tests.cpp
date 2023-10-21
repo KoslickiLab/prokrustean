@@ -22,8 +22,8 @@ int main(void){
     // cout << "--- test kmer ---" << endl;
     // main_application_kmer();
 
-    // cout << "--- test kmer counting ---" << endl;
-    // main_application_kmer_count();
+    cout << "--- test kmer counting ---" << endl;
+    main_application_kmer_count();
     
     // cout << "--- test cdbg ---" << endl;
     // main_application_cdbg();
@@ -37,6 +37,6 @@ int main(void){
     // cout << "--- test support ---" << endl;
     // main_prokrustean_support();
 
-    cout << "--- test text indexing ---" << endl;
-    main_text_indexing();
+    // cout << "--- test text indexing ---" << endl;
+    // main_text_indexing();
 }

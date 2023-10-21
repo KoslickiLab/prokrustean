@@ -5,38 +5,36 @@
 
 using namespace std;
 
-int64_t _count_k_mers(uint64_t size, vector<StratifiedEdge> &regions, int k){
-    if(size<k) return 0;
+int64_t _count_k_mers(Vertex &vertex, int k){
+    /* _count_k_mers
+    count kmers directly from the vertex.
+    It would be straightforward to work with the cover, 
+    but for efficiency we compute in-line.
+    assumption - no s_edge of length under k is included, 
+    which should be cared in the construction of the vertex.
+    */
+    if(vertex.size<k) return 0;
 
-    int rgn_cnt=regions.size();
-    // vector<int> indices;
-    // indices.reserve(rgn_cnt);
-    // for(int i=0; i<rgn_cnt; i++){
-    //     assert(regions[i].from<regions[i].to);
-    //     if(regions[i].size()>=k) indices.push_back(i);
-    // }
-
-    // rgn_cnt=indices.size();
+    int rgn_cnt=vertex.s_edges.size();
     if(rgn_cnt==0){
-        return size-k+1;
+        return vertex.size-k+1;
     }
-
     int64_t cnt=0;    
     for(int i=0; i<rgn_cnt; i++){
-        if(i==0 && regions[i].from>0){
-            cnt+=regions[i].from;
+        // refracted at front
+        if(i==0 && vertex.s_edges[i].from>0){
+            cnt+=vertex.s_edges[i].from;
         }
-
+        // refracted at the middle (between stratifieds)
         if(i<rgn_cnt-1){
-            if(regions[i].to - regions[i+1].from >= k-1){
+            if(vertex.s_edges[i].to - vertex.s_edges[i+1].from >= k-1){
             } else {
-                // regions[i+1].from-regions[i].to+2*(k-1)-k+1
-                cnt+=regions[i+1].from-regions[i].to+(k-1);
+                cnt+=vertex.s_edges[i+1].from-vertex.s_edges[i].to+(k-1);
             }
         }
-
-        if(i==rgn_cnt-1 && regions[i].to<size){
-            cnt+=size-regions[i].to;
+        // refracted at back
+        if(i==rgn_cnt-1 && vertex.s_edges[i].to<vertex.size){
+            cnt+=vertex.size-vertex.s_edges[i].to;
         }
     }
     return cnt;
@@ -93,12 +91,12 @@ uint64_t count_distinct_kmers(uint64_t k, Prokrustean &prokrustean){
     uint64_t cnt=0;
     for(int i=0; i<prokrustean.sequence_count; i++){
         auto sequence=prokrustean.get_sequence(i, k);
-        cnt+=_count_k_mers(sequence.size, sequence.s_edges, k);
+        cnt+=_count_k_mers(sequence, k);
     }
 
     for(int i=0; i<prokrustean.stratum_count; i++){
         auto stratum=prokrustean.get_stratum(i, k);
-        cnt+=_count_k_mers(stratum.size, stratum.s_edges, k);
+        cnt+=_count_k_mers(stratum, k);
     }
     return cnt;
 }
@@ -128,14 +126,14 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
     
     for(int i=0; i<prokrustean.sequence_count; i++){
         auto sequence=prokrustean.get_sequence(i, from);
-        output[from]+=_count_k_mers(sequence.size, sequence.s_edges, from);
+        output[from]+=_count_k_mers(sequence, from);
         _viable_kmer_decreases(sequence.size, from, sequence.s_edges, partial_partial_C);
         _each_stra_rgn_range_decided_by_intersection(sequence.size, from, sequence.s_edges, partial_partial_C);
     }
 
     for(int i=0; i<prokrustean.stratum_count; i++){
         auto stratum=prokrustean.get_stratum(i, from);
-        output[from]+=_count_k_mers(stratum.size, stratum.s_edges, from);
+        output[from]+=_count_k_mers(stratum, from);
         _viable_kmer_decreases(stratum.size, from, stratum.s_edges, partial_partial_C);
         _each_stra_rgn_range_decided_by_intersection(stratum.size, from, stratum.s_edges, partial_partial_C);
     }
