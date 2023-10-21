@@ -54,13 +54,32 @@ void test_counting_distinct_kmers_k_range(){
     for(int k=30; k<180; k++){
         auto single_k_count=count_distinct_kmers(k, prokrustean);
         
-        cout << "counts[k]: " << counts[k] << " count by single k "<< single_k_count << endl;
-        
         assert(counts[k]==single_k_count);
     }
 }
 
+
+void test_counting_distinct_kmers_k_range_parallel(){
+    int Lmin = 5;
+    int thread_cnt=4;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+
+    vector<uint64_t> counts;
+    count_distinct_kmers_of_range(30, 180, prokrustean, counts);
+    vector<uint64_t> counts_parallel;
+    count_distinct_kmers_of_range_parallel(30, 180, thread_cnt, prokrustean, counts_parallel);
+
+    for(int k=30; k<180; k++){
+        assert(counts[k]==counts_parallel[k]);
+    }
+}
 void main_application_kmer_count() {
     // test_counting_distinct_kmers_single_k();
-    test_counting_distinct_kmers_k_range();
+    // test_counting_distinct_kmers_k_range();
+    test_counting_distinct_kmers_k_range_parallel();
 }

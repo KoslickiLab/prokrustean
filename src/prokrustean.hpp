@@ -184,6 +184,58 @@ struct Prokrustean {
         return stratum;
     }
 
+    void get_sequence(SeqId id, Vertex &vertex, int k){
+        // memory efficient
+        vertex.id=id;
+        vertex.size= sequences__size[id];
+        vertex.is_sequence=true;
+        vertex.is_stratum=false;
+        auto rgn_cnt=sequences__region_cnt[id];
+        vertex.s_edges.resize(rgn_cnt);
+        auto valid_rgn_idx=0;
+        for(int i=0; i<rgn_cnt; i++){
+            StratifiedData &d=sequences__region[id][i];
+            if(k<=stratums__size[d.stratum_id]){
+                StratifiedEdge &edge=vertex.s_edges[valid_rgn_idx];
+                edge.from=d.pos;
+                edge.to=d.pos+stratums__size[d.stratum_id];
+                edge.stratum_id=d.stratum_id;
+                edge.is_stratified=true;
+                edge.is_reflected=false;
+                valid_rgn_idx++;
+            }
+        }
+        if(valid_rgn_idx<rgn_cnt){
+            vertex.s_edges.resize(valid_rgn_idx);
+        }
+    }
+
+    void get_stratum(StratumId id, Vertex &vertex, int k){
+        // memory efficient
+        vertex.id=id;
+        vertex.size= stratums__size[id];
+        vertex.is_sequence=false;
+        vertex.is_stratum=true;
+        auto rgn_cnt=stratums__region_cnt[id];
+        vertex.s_edges.resize(rgn_cnt);
+        auto valid_rgn_idx=0;
+        for(int i=0; i<rgn_cnt; i++){
+            StratifiedData &d=stratums__region[id][i];
+            if(k<=stratums__size[d.stratum_id]){
+                StratifiedEdge &edge=vertex.s_edges[valid_rgn_idx];
+                edge.from=d.pos;
+                edge.to=d.pos+stratums__size[d.stratum_id];
+                edge.stratum_id=d.stratum_id;
+                edge.is_stratified=true;
+                edge.is_reflected=false;
+                valid_rgn_idx++;
+            }
+        }
+        if(valid_rgn_idx<rgn_cnt){
+            vertex.s_edges.resize(valid_rgn_idx);
+        }
+    }
+
     void get_sequence(SeqId id, Vertex &vertex){
         // memory efficient
         vertex.id=id;
@@ -203,7 +255,7 @@ struct Prokrustean {
         }
     }
 
-    void get_stratum(SeqId id, Vertex &vertex){
+    void get_stratum(StratumId id, Vertex &vertex){
         // memory efficient
         vertex.id=id;
         vertex.size= stratums__size[id];

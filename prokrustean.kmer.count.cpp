@@ -19,7 +19,7 @@ using namespace sdsl;
 
 string input_prokrustean;
 string output_file;
-int num_threads=12;
+int num_threads=4;
 int from=-1;
 int to=-1;
 char TERM = '$';
@@ -104,7 +104,7 @@ int main(int argc, char** argv){
 	
 	auto start = std::chrono::steady_clock::now();
 	vector<uint64_t> output;
-	count_distinct_kmers_of_range(from, to, prokrustean, output);
+	count_distinct_kmers_of_range_parallel(from, to, num_threads, prokrustean, output);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	
 	cout << "saving kmer counts... ";
