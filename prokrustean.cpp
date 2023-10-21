@@ -123,25 +123,24 @@ int main(int argc, char** argv){
 	} else {
 		store_prokrustean_text(prokrustean, output_file);
 	}
-	vector<int> sequences__size;
-	for(auto size: prokrustean.sequences__size){
-		sequences__size.push_back(size);
-	}
 	// dispose prokrustean
-	prokrustean=Prokrustean();
+	// prokrustean=Prokrustean();
 
 	if(recover_seuqneces){
 		auto start = std::chrono::steady_clock::now();
 		cout << "recovering sequences and indexing them (" << output_seq_file << ") ... " ;
 		DiskSequenceAccess sequence_access(output_seq_file);
-		sequence_access.write_open();
-		sequence_access.write_meta(sequences__size);
+		sequence_access.write_metadata(prokrustean);
 		string str;
-		for(uint64_t i=0; i<fm_idx.seq_cnt(); i++){
-			str=fm_idx.recover_text(i);
-			sequence_access.write_sequence(str);
-		}
-		sequence_access.write_close();
+		sequence_access.update_mode_open();
+		// for(uint64_t i=0; i<fm_idx.seq_cnt(); i++){
+		// 	fm_idx.recover_text(i, str);
+		// 	sequence_access.write_single_sequence(i, str);
+		// }
+		vector<string> strs;
+		fm_idx.recover_all_texts(strs);
+		sequence_access.write_strings(strs);
+		sequence_access.update_mode_close();
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	}
 }

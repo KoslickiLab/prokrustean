@@ -26,9 +26,7 @@ void test_metadata_store(){
     prokrustean.sequences__size[10]=999;
 
     DiskSequenceAccess sequnce_access("data.dat");
-    sequnce_access.write_open();
     sequnce_access.write_metadata(prokrustean);
-    sequnce_access.write_close();
     sequnce_access.load_metadata();
     
     // cout << std::string(sequnce_access.metadata.evidence) << endl;
@@ -61,13 +59,12 @@ void test_sequence_save_and_load(){
 
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_metadata(prokrustean);
-    sequnce_access.load_metadata();
 
-    sequnce_access.write_open();
+    sequnce_access.update_mode_open();
     for(int i=0; i< sequences.size(); i++){
-        sequnce_access.write_sequence(i, sequences[i]);
+        sequnce_access.write_single_sequence(i, sequences[i]);
     }
-    sequnce_access.write_close();
+    sequnce_access.update_mode_close();
     sequnce_access.read_open();
     string str;
     sequnce_access.read_seq(0, str);
@@ -100,7 +97,7 @@ void test_sequence_save_and_load(){
 // }
 
 void test_bwt_prokrustean_indexing(){
-    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     Prokrustean prokrustean;
     construct_prokrustean_single_thread(fm_idx, prokrustean);
@@ -112,24 +109,25 @@ void test_bwt_prokrustean_indexing(){
         make_tuple(9, 20, 42)
     };
 
-    DiskSequenceAccess sequnce_access("data1.dat");
+    DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
     sequnce_access.write_metadata(prokrustean);
-    sequnce_access.load_metadata();
-    sequnce_access.write_open();
+    sequnce_access.update_mode_open();
     for(int i=0; i<seq_texts.size(); i++){
-        sequnce_access.write_sequence(i, seq_texts[i]);
+        sequnce_access.write_single_sequence(i, seq_texts[i]);
     }
-    cout << "hi" << endl;
-    sequnce_access.write_close(); 
-    sequnce_access.read_open();
+    sequnce_access.update_mode_close();
+    
+    DiskSequenceAccess sequnce_access2("test_bwt_prokrustean_indexing.dat");
+    sequnce_access2.load_metadata();
+    sequnce_access2.read_open();
     string result;
     for(auto [idx, from, to]: substring_locs){
-        sequnce_access.read_seq(idx, result);
+        sequnce_access2.read_seq(idx, result);
         assert(seq_texts[idx]==result);
-        sequnce_access.read_seq_substr(idx, from, to-from+1, result);
+        sequnce_access2.read_seq_substr(idx, from, to-from+1, result);
         assert(seq_texts[idx].substr(from, to-from+1)==result);
     }
-    sequnce_access.read_close(); 
+    sequnce_access2.read_close(); 
     //in memory
     // sequnce_access.load_all_strings();
     // for(auto [idx, from, to]: substring_locs){

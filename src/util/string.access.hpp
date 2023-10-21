@@ -98,7 +98,6 @@ public:
             _outfile.write(reinterpret_cast<const char*>(&seq_position), sizeof(seq_position));
             seq_position += size + sizeof(SequenceSize);
         }
-        cout << "now at " << seq_position << endl;
         _outfile.close();
 
         this->load_metadata();
@@ -122,13 +121,18 @@ public:
         _infile.read(reinterpret_cast<char*>(&metadata.streampos_sequence_indices), sizeof(metadata.streampos_sequence_indices));
         _infile.read(reinterpret_cast<char*>(&metadata.streampos_sequence), sizeof(metadata.streampos_sequence));
         _infile.read(reinterpret_cast<char*>(&metadata.streampos_strata), sizeof(metadata.streampos_strata));
+        // cout << " metadata.sequence_count " << metadata.sequence_count << endl;
+        // cout << " metadata.lmin " << metadata.lmin << endl;
+        // cout << " metadata.strata_count " << metadata.strata_count << endl;
+        // cout << " metadata.streampos_sequence_indices " << metadata.streampos_sequence_indices << endl;
+        // cout << " metadata.streampos_sequence " << metadata.streampos_sequence << endl;
+        // cout << " metadata.streampos_strata " << metadata.streampos_strata << endl;
         // if later becomes a burden, do not load but fetch ondemand.
         this->sequence_start_positions.resize(metadata.sequence_count);
         for (int i = 0; i < metadata.sequence_count; i++) {
             _infile.read(reinterpret_cast<char*>(&this->sequence_start_positions[i]), sizeof(streampos));
         }
         _infile.close();
-        
         metadata.loaded=true;
     }
 
@@ -151,7 +155,6 @@ public:
     // }
 
     void write_strings(const std::vector<std::string>& strings) {
-        cout << "metadata.start_position_sequence " << metadata.streampos_sequence << " this->sequence_start_positions[0] " << this->sequence_start_positions[0] << endl;
         assert(metadata.streampos_sequence == this->sequence_start_positions[0]);
         this->outfile.seekp(metadata.streampos_sequence);
         // Write the strings
@@ -162,21 +165,21 @@ public:
         }
     }
 
-    void write_open() {
-        this->outfile=std::ofstream(filename, std::ios::binary);
+    void update_mode_open() {
+        this->outfile=std::ofstream(filename, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
     }
 
-    void write_sequence(SeqId id, const std::string& str){
+    void write_single_sequence(SeqId id, const std::string& str){
         assert(metadata.loaded);
+        assert(id<metadata.sequence_count);
+        assert(metadata.streampos_sequence<=this->sequence_start_positions[id]);
         //do I need to recheck with the metadata?
         SequenceSize len = str.size();
         this->outfile.seekp(this->sequence_start_positions[id]);
         this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
         this->outfile.write(str.c_str(), len);
     }
-
-
-    void write_close() {
+    void update_mode_close() {
         this->outfile.close();
     }
 
@@ -190,6 +193,7 @@ public:
 
     void read_seq(SeqId id, std::string &sequence){
         assert(metadata.loaded);
+        assert(id<metadata.sequence_count);
         // Seek to the position of the string
         infile.seekg(this->sequence_start_positions[id]);
         // Read the length of the string (assuming we stored lengths before the strings, as in the earlier code)
@@ -206,7 +210,7 @@ public:
 
     void read_seq_substr(SeqId id, Pos pos, Pos size, std::string &string){
         assert(metadata.loaded);
-
+        assert(id<metadata.sequence_count);
         // Seek to that position in the index table
         infile.seekg(this->sequence_start_positions[id]);
 

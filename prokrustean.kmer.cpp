@@ -114,6 +114,7 @@ int main(int argc, char** argv){
     setup_stratum_example_occ_parallel(ext, num_threads);
 	
 	DiskSequenceAccess sequence_access(input_sequences);
+	sequence_access.load_metadata();
 	sequence_access.read_open();
 	// sequence_access.load_all_strings();
 	
