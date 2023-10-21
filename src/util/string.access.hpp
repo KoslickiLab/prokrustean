@@ -137,6 +137,9 @@ public:
     }
 
     std::string get_string(int index) {
+        if(this->loaded){
+            return this->strings[index];
+        }
         // Open the file for reading
         std::ifstream infile(this->filename, std::ios::binary);
 
@@ -172,6 +175,7 @@ public:
     }
 
     std::vector<std::string> get_strings(int from, int to) {
+
         std::vector<std::string> results;
 
         // Open the file for reading
@@ -226,6 +230,9 @@ public:
     }
 
     std::string get_substring(int index, uint64_t pos, uint64_t size) {
+        if(this->loaded){
+            return this->strings[index].substr(pos, size);
+        }
         // Open the file for reading
         std::ifstream infile(this->filename, std::ios::binary);
 
