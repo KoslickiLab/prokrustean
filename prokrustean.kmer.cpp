@@ -121,7 +121,7 @@ int main(int argc, char** argv){
 	cout << "find and store distinct kmers... " << endl;
 	vector<string> output;
 	DiskStringDataStore string_store(output_file);
-	get_distinct_kmers_(k, ext, sequence_access, string_store);
+	get_distinct_kmers(k, ext, sequence_access, string_store);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "stored: " << output_file << endl;
 }

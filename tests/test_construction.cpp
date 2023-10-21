@@ -94,7 +94,7 @@ void test_basic_construction_w_kmers(){
     vector<int> testing_ks={1,5,10,20};
     for(auto k: testing_ks){
         string_store.reset();
-        get_distinct_kmers_(k, ext, sequence_access, string_store);
+        get_distinct_kmers(k, ext, sequence_access, string_store);
         sort(output.begin(), output.end());
         assert(output==get_distinct_kmers_naive(seq_texts, k));
     }

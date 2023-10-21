@@ -38,7 +38,7 @@ void test_distinct_kmers(){
     for(int k=2; k<10; k++){
         // get_distinct_kmers(k, ext, seq_texts, output);
         output.clear();
-        get_distinct_kmers_(k, ext, sequence_access, string_store);
+        get_distinct_kmers(k, ext, sequence_access, string_store);
         sort(output.begin(), output.end());
         auto output_naive = get_distinct_kmers_naive(seq_texts, k);
         if(output!=output_naive){
@@ -84,7 +84,7 @@ void test_distinct_kmers_ondisk(){
     sequence_access.read_open();
 
     int k=3;
-    get_distinct_kmers_(k, ext, sequence_access, string_store);
+    get_distinct_kmers(k, ext, sequence_access, string_store);
 }
 
 void main_application_kmer() {

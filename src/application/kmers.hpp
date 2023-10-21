@@ -9,7 +9,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
+void _get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
     ext.prokrustean.get_spectrum(vertex, k, edges);
     if(vertex.is_sequence){
         for(auto &rgn: edges){
@@ -38,7 +38,7 @@ void get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanExt
     }
 }
 
-void get_distinct_kmers_(int k, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
+void get_distinct_kmers(int k, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
     Vertex vertex; 
     vector<Edge> edges;
     // vector<string> unitigs;
@@ -47,7 +47,7 @@ void get_distinct_kmers_(int k, ProkrusteanExtension &ext, AbstractSequenceAcces
         if(vertex.size<k){
             continue;
         }
-        get_vertex_kmers(k, vertex, edges, ext, sequence_access, string_store);
+        _get_vertex_kmers(k, vertex, edges, ext, sequence_access, string_store);
     }
 
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
@@ -55,7 +55,7 @@ void get_distinct_kmers_(int k, ProkrusteanExtension &ext, AbstractSequenceAcces
         if(vertex.size<k){
             continue;
         }
-        get_vertex_kmers(k, vertex, edges, ext, sequence_access, string_store);
+        _get_vertex_kmers(k, vertex, edges, ext, sequence_access, string_store);
     }
 }
 
