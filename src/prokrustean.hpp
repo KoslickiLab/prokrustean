@@ -138,7 +138,7 @@ struct SequenceVertex: Vertex{
 // int CHECKSUM=stoi(string("I am a prokrustean file"));
 
 struct Prokrustean {
-    // int checksum=CHECKSUM;
+    string file_name;
     int lmin;
     int version=1; // for file loading compatibility 
     bool contains_stratum_extension_count;

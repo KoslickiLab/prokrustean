@@ -10,11 +10,12 @@ using namespace std;
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void _get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
+    string str;
     ext.prokrustean.get_spectrum(vertex, k, edges);
     if(vertex.is_sequence){
         for(auto &rgn: edges){
             if(rgn.is_reflected){
-                auto str=sequence_access.get_substring(vertex.id, rgn.from, rgn.size());
+               sequence_access.read_seq_substr(vertex.id, rgn.from, rgn.size(), str);
                 // auto str=seq_txts[vertex.id].substr(rgn.from, rgn.size());
                 for(int p=0; p<str.size()-(k-1); p++){
                     string mer = str.substr(p, k);
@@ -27,8 +28,8 @@ void _get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanEx
             if(rgn.is_reflected){
                 auto seq_id = ext.stratum_sample_occ_seq_id[vertex.id];
                 auto pos = ext.stratum_sample_occ_pos[vertex.id];
-                auto str=sequence_access.get_substring(seq_id, pos+rgn.from, rgn.size());
-                // auto str=seq_txts[seq_id].substr(pos+rgn.from, rgn.size());
+                sequence_access.read_seq_substr(seq_id, pos+rgn.from, rgn.size(), str);
+                // auto str=sequence_access.get_substring(seq_id, pos+rgn.from, rgn.size());
                 for(int p=0; p<str.size()-(k-1); p++){
                     string mer = str.substr(p, k);
                     string_store.store(mer);

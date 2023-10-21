@@ -139,7 +139,7 @@ int main(int argc, char** argv){
 		string str;
 		for(uint64_t i=0; i<fm_idx.seq_cnt(); i++){
 			str=fm_idx.recover_text(i);
-			sequence_access.write_single(str);
+			sequence_access.write_sequence(str);
 		}
 		sequence_access.write_close();
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

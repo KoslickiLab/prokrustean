@@ -9,245 +9,150 @@
 #include "../src/fm_index/index.hpp"
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/util/string.access.hpp"
+#include "../src/construction/algorithms.hpp"
 
 using namespace std;
 
-void test_indexing_simple(){
-    std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
-    vector<int> seq_sizes;
-    for(auto &str: strings){
-        seq_sizes.push_back(str.size());
-    }
+void test_metadata_store(){
+    Prokrustean prokrustean;
+    prokrustean.file_name="temp.something";
+    prokrustean.lmin=20;
+    prokrustean.sequence_count=123;
+    prokrustean.stratum_count=987;
+    prokrustean.sequences__size.resize(prokrustean.sequence_count);
+    prokrustean.sequences__size[0]=1000;
+    prokrustean.sequences__size[1]=2000;
+    prokrustean.sequences__size[2]=3000;
+    prokrustean.sequences__size[10]=999;
+
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_open();
-    sequnce_access.write_meta(seq_sizes);
-    sequnce_access.write_strings(strings);
+    sequnce_access.write_metadata(prokrustean);
     sequnce_access.write_close();
-    // sequnce_access.load_all_strings();
-    sequnce_access.read_open();
-
-    cout << sequnce_access.get_string(1) << endl;
-    assert("orange"==sequnce_access.get_string(1));
-    assert("rang"==sequnce_access.get_substring(1, 1, 4));
-    sequnce_access.read_close();
+    sequnce_access.load_metadata();
+    
+    // cout << std::string(sequnce_access.metadata.evidence) << endl;
+    assert(sequnce_access.metadata.evidence==PROKRUSTEAN_EVIDENCE);
+    prokrustean.file_name.resize(256);
+    assert(sequnce_access.metadata.prokrustean_file_name==prokrustean.file_name);
+    assert(sequnce_access.metadata.lmin==prokrustean.lmin);
+    // cout << "sequnce_access.metadata.sequence_count " << sequnce_access.metadata.sequence_count << endl;
+    assert(sequnce_access.metadata.sequence_count==prokrustean.sequence_count);
+    assert(sequnce_access.metadata.strata_count==prokrustean.stratum_count);
+    assert(sequnce_access.sequence_start_positions.size()==prokrustean.sequence_count);
+    for(int i=1; i<prokrustean.sequence_count; i++){
+        // sequence content = size + letters
+        assert(prokrustean.sequences__size[i-1]+sizeof(SequenceSize) == sequnce_access.sequence_start_positions[i]-sequnce_access.sequence_start_positions[i-1]);
+    }
 }
 
-void test_bwt_indexing(){
+void test_sequence_save_and_load(){
+    std::vector<std::string> sequences = {"apple", "orange", "banana", "grape"};
+    Prokrustean prokrustean;
+    prokrustean.file_name="temp.something";
+    prokrustean.lmin=20;
+    prokrustean.sequence_count=123;
+    prokrustean.stratum_count=987;
+    prokrustean.sequences__size.resize(prokrustean.sequence_count);
+    prokrustean.sequences__size[0]=sequences[0].size();
+    prokrustean.sequences__size[1]=sequences[1].size();
+    prokrustean.sequences__size[2]=sequences[2].size();
+    prokrustean.sequences__size[10]=sequences[3].size();
+
+    DiskSequenceAccess sequnce_access("data.dat");
+    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.load_metadata();
+
+    sequnce_access.write_open();
+    for(int i=0; i< sequences.size(); i++){
+        sequnce_access.write_sequence(i, sequences[i]);
+    }
+    sequnce_access.write_close();
+    sequnce_access.read_open();
+    string str;
+    sequnce_access.read_seq(0, str);
+    assert(str==sequences[0]);
+    sequnce_access.read_seq_substr(2, 1, 3, str);
+    assert(str==sequences[2].substr(1,3));
+    sequnce_access.read_seq_substr(3, 3, 2, str);
+    assert(str==sequences[3].substr(3,2));
+}
+
+// void test_indexing_simple(){
+//     std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
+//     vector<int> seq_sizes;
+//     for(auto &str: strings){
+//         seq_sizes.push_back(str.size());
+//     }
+//     DiskSequenceAccess sequnce_access("data.dat");
+//     sequnce_access.write_open();
+//     sequnce_access.write_meta(seq_sizes);
+//     sequnce_access.write_strings(strings);
+//     sequnce_access.write_close();
+//     sequnce_access.load_all_strings();
+//     // sequnce_access.read_open();
+//     cout << sequnce_access.get_metadata() << endl;
+
+//     cout << sequnce_access.get_string(1) << endl;
+//     assert("orange"==sequnce_access.get_string(1));
+//     assert("rang"==sequnce_access.get_substring(1, 1, 4));
+//     sequnce_access.read_close();
+// }
+
+void test_bwt_prokrustean_indexing(){
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
-    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean);
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
-    vector<tuple<int, int, int>> substring_locs={
+    vector<tuple<SeqId, int, int>> substring_locs={
         make_tuple(1, 3, 20),
         make_tuple(3, 8, 37),
         make_tuple(9, 20, 42)
     };
-    vector<int> seq_sizes;
-    for(auto &str: seq_texts){
-        seq_sizes.push_back(str.size());
-    }
+
     DiskSequenceAccess sequnce_access("data1.dat");
+    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.load_metadata();
     sequnce_access.write_open();
-    sequnce_access.write_meta(seq_sizes);
-    sequnce_access.write_strings(seq_texts);
-    for(auto &str: seq_texts){
-        sequnce_access.write_single(str);
+    for(int i=0; i<seq_texts.size(); i++){
+        sequnce_access.write_sequence(i, seq_texts[i]);
     }
+    cout << "hi" << endl;
     sequnce_access.write_close(); 
     sequnce_access.read_open();
+    string result;
     for(auto [idx, from, to]: substring_locs){
-        assert(seq_texts[idx]==sequnce_access.get_string(idx));
-        assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
+        sequnce_access.read_seq(idx, result);
+        assert(seq_texts[idx]==result);
+        sequnce_access.read_seq_substr(idx, from, to-from+1, result);
+        assert(seq_texts[idx].substr(from, to-from+1)==result);
     }
     sequnce_access.read_close(); 
     //in memory
-    sequnce_access.load_all_strings();
-    for(auto [idx, from, to]: substring_locs){
-        assert(seq_texts[idx]==sequnce_access.get_string(idx));
-        assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
-    }
+    // sequnce_access.load_all_strings();
+    // for(auto [idx, from, to]: substring_locs){
+    //     assert(seq_texts[idx]==sequnce_access.get_string(idx));
+    //     assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
+    // }
 }
 
-void test_verification(){
-    std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
-    DiskSequenceAccess sequnce_access("data.dat");
-    vector<int> seq_sizes;
-    for(auto &str: strings){
-        seq_sizes.push_back(str.size());
-    }
-    sequnce_access.write_open();
-    sequnce_access.write_meta(seq_sizes);
-    sequnce_access.write_strings(strings);
-    sequnce_access.write_close();
-    DiskSequenceAccess sequnce_access1("data.dat");
-    sequnce_access1.verify();
-}
-
-// class Access{
-// public:
-//     std::string filename;
-//     std::ofstream outfile;
-//     std::ifstream infile;
-//     int METADATA_SIZE=256;
-//     string EVIDENCE="aaa";
-//     void save_meta(const std::vector<int>& string_sizes) {
-//         // Ensure the metadata string is the expected length
-//         this->outfile.write(EVIDENCE.c_str(), METADATA_SIZE);
-
-//         // Compute and write the index table
-//         int position = METADATA_SIZE + sizeof(int) * string_sizes.size(); // meta + index table size + all strings size
-//         for (int size : string_sizes) {
-//             this->outfile.write(reinterpret_cast<char*>(&position), sizeof(position));
-//             position += size + sizeof(int); // move by string size + size of the integer that stores the length
-//         }
+// void test_verification(){
+//     std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
+//     DiskSequenceAccess sequnce_access("data.dat");
+//     vector<int> seq_sizes;
+//     for(auto &str: strings){
+//         seq_sizes.push_back(str.size());
 //     }
-//     void save_strings(const std::vector<std::string>& strings) {
-//         // Write the strings
-//         for (const std::string& str : strings) {
-//             int len = str.size();
-//             this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));  // this could be optional now, as we have sizes saved
-//             this->outfile.write(str.c_str(), len);
-//         }
-//         this->outfile.close();
-//     }
+//     sequnce_access.write_open();
+//     sequnce_access.write_meta(seq_sizes);
+//     sequnce_access.write_strings(strings);
+//     sequnce_access.write_close();
+//     DiskSequenceAccess sequnce_access1("data.dat");
+//     sequnce_access1.verify();
+// }
 
-
-//     std::string get_string(int index) {
-//         // Open the file for reading
-//         std::ifstream infile(this->filename, std::ios::binary);
-
-//         // Skip metadata
-//         infile.seekg(METADATA_SIZE);
-
-//         // Calculate the position in the index table for the given index
-//         int index_position = METADATA_SIZE + index * sizeof(int);
-
-//         // Seek to that position in the index table
-//         infile.seekg(index_position);
-
-//         // Read the position of the string
-//         int string_position;
-//         infile.read(reinterpret_cast<char*>(&string_position), sizeof(string_position));
-
-//         // Seek to the position of the string
-//         infile.seekg(string_position);
-
-//         // Read the length of the string (assuming we stored lengths before the strings, as in the earlier code)
-//         int len;
-//         infile.read(reinterpret_cast<char*>(&len), sizeof(len));
-
-//         // Read the string itself
-//         char* buffer = new char[len + 1];
-//         infile.read(buffer, len);
-//         buffer[len] = '\0';
-
-//         std::string result(buffer);
-//         delete[] buffer;
-
-//         return result;
-//     }
-
-//     std::vector<std::string> get_strings(int from, int to) {
-//         std::vector<std::string> results;
-
-//         // Open the file for reading
-//         std::ifstream infile(this->filename, std::ios::binary);
-        
-//         // Skip metadata
-//         infile.seekg(METADATA_SIZE);
-
-//         // Calculate the position in the index table for the 'from' index
-//         int from_index_position = METADATA_SIZE + from * sizeof(int);
-
-//         // Seek to that position in the index table
-//         infile.seekg(from_index_position);
-
-//         // Read the position of the 'from' string
-//         int from_string_position;
-//         infile.read(reinterpret_cast<char*>(&from_string_position), sizeof(from_string_position));
-
-//         // Calculate the position in the index table for the 'to' index
-//         int to_index_position = METADATA_SIZE + to * sizeof(int);
-
-//         // Seek to that position in the index table
-//         infile.seekg(to_index_position);
-
-//         // Read the position of the 'to' string
-//         int to_string_position;
-//         infile.read(reinterpret_cast<char*>(&to_string_position), sizeof(to_string_position));
-
-//         // Now, calculate the total length of the chunk of strings we need to read
-//         int chunk_length = to_string_position - from_string_position;
-
-//         // Read the entire chunk of strings
-//         char* buffer = new char[chunk_length];
-//         infile.seekg(from_string_position);
-//         infile.read(buffer, chunk_length);
-
-//         // Split the chunk into individual strings based on their lengths and store them in the results vector
-//         char* ptr = buffer;
-//         char* end = buffer + chunk_length;
-//         while (ptr < end) {
-//             int len;
-//             memcpy(&len, ptr, sizeof(len));
-//             ptr += sizeof(len);
-
-//             std::string str(ptr, ptr + len);
-//             results.push_back(str);
-//             ptr += len;
-//         }
-
-//         delete[] buffer;
-//         return results;
-//     }
-
-//     std::string get_substring(int index, int pos, int size) {
-//         // Open the file for reading
-//         std::ifstream infile(this->filename, std::ios::binary);
-
-//         // Skip metadata
-//         infile.seekg(METADATA_SIZE);
-
-//         // Calculate the position in the index table for the given index
-//         int index_position = METADATA_SIZE + index * sizeof(int);
-
-//         // Seek to that position in the index table
-//         infile.seekg(index_position);
-
-//         // Read the position of the string
-//         int string_position;
-//         infile.read(reinterpret_cast<char*>(&string_position), sizeof(string_position));
-
-//         // Seek to the position of the string's length
-//         infile.seekg(string_position);
-
-//         // Read the length of the string
-//         int len;
-//         infile.read(reinterpret_cast<char*>(&len), sizeof(len));
-        
-//         // Check if the requested substring is valid
-//         if (pos < 0 || pos + size > len) {
-//             throw std::out_of_range("Requested substring is out of range");
-//         }
-
-//         // Calculate the position of the substring within the string and seek to it
-//         int substring_position = string_position + sizeof(int) + pos; // +sizeof(int) to account for the string's length
-//         infile.seekg(substring_position);
-
-//         // Read the substring
-//         char* buffer = new char[size + 1];
-//         infile.read(buffer, size);
-//         buffer[size] = '\0';
-
-//         std::string result(buffer);
-//         delete[] buffer;
-
-//         return result;
-//     }
-
-
-// };
 
 // void test_bwt_indexing2(){
 //     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
@@ -283,10 +188,11 @@ void test_verification(){
 
 
 void main_text_indexing() {
-    // Call all tests. Using a test framework would simplify this.
-    test_indexing_simple();
-    test_bwt_indexing();
-    test_verification();
+    test_metadata_store();
+    test_sequence_save_and_load();
+    // test_indexing_simple();
+    test_bwt_prokrustean_indexing();
+    // test_verification();
 }
 
 #endif
