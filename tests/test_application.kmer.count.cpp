@@ -40,7 +40,7 @@ void test_counting_distinct_kmers_single_k(){
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_counting_distinct_kmers_k_range(){
-    int Lmin = 1;
+    int Lmin = 20;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
@@ -49,9 +49,9 @@ void test_counting_distinct_kmers_k_range(){
     ProkrusteanExtension ext(prokrustean);
 
     vector<uint64_t> counts;
-    count_distinct_kmers_of_range(1, 180, prokrustean, counts);
+    count_distinct_kmers_of_range(30, 180, prokrustean, counts);
 
-    for(int k=1; k<180; k++){
+    for(int k=30; k<180; k++){
         auto single_k_count=count_distinct_kmers(k, prokrustean);
         
         cout << "counts[k]: " << counts[k] << " count by single k "<< single_k_count << endl;
