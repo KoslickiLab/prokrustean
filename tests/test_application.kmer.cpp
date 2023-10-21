@@ -72,13 +72,13 @@ void test_distinct_kmers_ondisk(){
     fm_idx.recover_all_texts(seq_texts);
 
     DiskSequenceAccess sequence_access("seq_texts.dat");
+    sequence_access.write_open();
     sequence_access.write_metadata(prokrustean);
-    sequence_access.update_mode_open();
     // for(int i=0; i<seq_texts.size();i++){
     //     sequence_access.write_sequence(i, seq_texts[i]);
     // }
     sequence_access.write_strings(seq_texts);
-    sequence_access.update_mode_close();
+    sequence_access.write_close();
     DiskStringDataStore string_store("kmer.txt");
     sequence_access.read_open();
 

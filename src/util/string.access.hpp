@@ -62,7 +62,7 @@ public:
     }
 
     void write_metadata(Prokrustean prokrustean) {
-        std::ofstream _outfile(this->filename, std::ios::binary);
+        assert(this->outfile.is_open());
         ////////////////////////////////////////////////
         // std::string evidence;
         // std::string prokrustean_file_name;
@@ -70,37 +70,46 @@ public:
         // uint64_t sequence_count;
         // uint64_t strata_count;
         ////////////////////////////////////////////////
-        _outfile.write(PROKRUSTEAN_EVIDENCE.c_str(), 256);
-        prokrustean.file_name.resize(256);
-        _outfile.write(prokrustean.file_name.c_str(), 256);
-        _outfile.write(reinterpret_cast<const char*>(&prokrustean.sequence_count), sizeof(prokrustean.sequence_count));
-        _outfile.write(reinterpret_cast<const char*>(&prokrustean.lmin), sizeof(prokrustean.lmin));
-        _outfile.write(reinterpret_cast<const char*>(&prokrustean.stratum_count), sizeof(prokrustean.stratum_count));
-        ////////////////////////////////////////////////
-        // std::streampos start_position_of_sequence_positions;
-        // std::streampos start_position_sequence;
-        // std::streampos start_position_strata;
-        ////////////////////////////////////////////////
+        this->metadata.loaded=true;
+        this->metadata.evidence=PROKRUSTEAN_EVIDENCE;
+        this->metadata.prokrustean_file_name=prokrustean.file_name;
+        this->metadata.sequence_count=prokrustean.sequence_count;
+        this->metadata.lmin=prokrustean.lmin;
+        this->metadata.strata_count=prokrustean.stratum_count;
+
         int metadata_fixed_size = 256 + 256 + sizeof(metadata.sequence_count) + sizeof(metadata.lmin) + sizeof(metadata.strata_count) + sizeof(std::streampos) + sizeof(std::streampos) + sizeof(std::streampos);
         std::streampos start_position_of_sequence_positions = metadata_fixed_size; 
-        _outfile.write(reinterpret_cast<const char*>(&start_position_of_sequence_positions), sizeof(start_position_of_sequence_positions));
+        this->metadata.streampos_sequence_indices=start_position_of_sequence_positions;
+
         // sequence content
         int metadata_and_sequence_meta = metadata_fixed_size + /* seq_pos*/ + prokrustean.sequences__size.size()*sizeof(streampos);
         std::streampos start_position_sequence=metadata_and_sequence_meta;
-        _outfile.write(reinterpret_cast<const char*>(&start_position_sequence), sizeof(start_position_sequence));
+        this->metadata.streampos_sequence=start_position_sequence;
+
         // strata content
         uint64_t metadata_and_sequence_meta_and_content = metadata_and_sequence_meta + std::accumulate(prokrustean.sequences__size.begin(), prokrustean.sequences__size.end(), 0);
         std::streampos start_position_strata = metadata_and_sequence_meta_and_content;
-        _outfile.write(reinterpret_cast<const char*>(&start_position_strata), sizeof(start_position_strata));
-        
+        this->metadata.streampos_strata=start_position_strata;
+
+        // sequence positions
         std::streampos seq_position = start_position_sequence;
         for (auto size : prokrustean.sequences__size) {
-            _outfile.write(reinterpret_cast<const char*>(&seq_position), sizeof(seq_position));
+            this->sequence_start_positions.push_back(seq_position);
             seq_position += size + sizeof(SequenceSize);
         }
-        _outfile.close();
 
-        this->load_metadata();
+        outfile.write(PROKRUSTEAN_EVIDENCE.c_str(), 256);
+        prokrustean.file_name.resize(256);
+        outfile.write(prokrustean.file_name.c_str(), 256);
+        outfile.write(reinterpret_cast<const char*>(&prokrustean.sequence_count), sizeof(prokrustean.sequence_count));
+        outfile.write(reinterpret_cast<const char*>(&prokrustean.lmin), sizeof(prokrustean.lmin));
+        outfile.write(reinterpret_cast<const char*>(&prokrustean.stratum_count), sizeof(prokrustean.stratum_count));
+        outfile.write(reinterpret_cast<const char*>(&start_position_of_sequence_positions), sizeof(start_position_of_sequence_positions));
+        outfile.write(reinterpret_cast<const char*>(&start_position_sequence), sizeof(start_position_sequence));
+        outfile.write(reinterpret_cast<const char*>(&start_position_strata), sizeof(start_position_strata));
+        for(auto pos: this->sequence_start_positions){
+            outfile.write(reinterpret_cast<const char*>(&pos), sizeof(pos));
+        }
     }
 
     void load_metadata() {
@@ -156,7 +165,7 @@ public:
 
     void write_strings(const std::vector<std::string>& strings) {
         assert(metadata.streampos_sequence == this->sequence_start_positions[0]);
-        this->outfile.seekp(metadata.streampos_sequence);
+        // this->outfile.seekp(metadata.streampos_sequence);
         // Write the strings
         for (const std::string& str : strings) {
             SequenceSize len = str.size();
@@ -165,21 +174,21 @@ public:
         }
     }
 
-    void update_mode_open() {
-        this->outfile=std::ofstream(filename, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
+    void write_open() {
+        this->outfile=std::ofstream(filename, std::ios::binary);
     }
 
-    void write_single_sequence(SeqId id, const std::string& str){
-        assert(metadata.loaded);
-        assert(id<metadata.sequence_count);
-        assert(metadata.streampos_sequence<=this->sequence_start_positions[id]);
-        //do I need to recheck with the metadata?
-        SequenceSize len = str.size();
-        this->outfile.seekp(this->sequence_start_positions[id]);
-        this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
-        this->outfile.write(str.c_str(), len);
-    }
-    void update_mode_close() {
+    // void write_single_sequence(SeqId id, const std::string& str){
+    //     assert(metadata.loaded);
+    //     assert(id<metadata.sequence_count);
+    //     assert(metadata.streampos_sequence<=this->sequence_start_positions[id]);
+    //     //do I need to recheck with the metadata?
+    //     SequenceSize len = str.size();
+    //     // this->outfile.seekp(this->sequence_start_positions[id]);
+    //     this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+    //     this->outfile.write(str.c_str(), len);
+    // }
+    void write_close() {
         this->outfile.close();
     }
 

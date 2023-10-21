@@ -26,7 +26,9 @@ void test_metadata_store(){
     prokrustean.sequences__size[10]=999;
 
     DiskSequenceAccess sequnce_access("data.dat");
+    sequnce_access.write_open();
     sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_close();
     sequnce_access.load_metadata();
     
     // cout << std::string(sequnce_access.metadata.evidence) << endl;
@@ -58,13 +60,10 @@ void test_sequence_save_and_load(){
     prokrustean.sequences__size[10]=sequences[3].size();
 
     DiskSequenceAccess sequnce_access("data.dat");
+    sequnce_access.write_open();
     sequnce_access.write_metadata(prokrustean);
-
-    sequnce_access.update_mode_open();
-    for(int i=0; i< sequences.size(); i++){
-        sequnce_access.write_single_sequence(i, sequences[i]);
-    }
-    sequnce_access.update_mode_close();
+    sequnce_access.write_strings(sequences);
+    sequnce_access.write_close();
     sequnce_access.read_open();
     string str;
     sequnce_access.read_seq(0, str);
@@ -110,12 +109,10 @@ void test_bwt_prokrustean_indexing(){
     };
 
     DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
+    sequnce_access.write_open();
     sequnce_access.write_metadata(prokrustean);
-    sequnce_access.update_mode_open();
-    for(int i=0; i<seq_texts.size(); i++){
-        sequnce_access.write_single_sequence(i, seq_texts[i]);
-    }
-    sequnce_access.update_mode_close();
+    sequnce_access.write_strings(seq_texts);
+    sequnce_access.write_close();
     
     DiskSequenceAccess sequnce_access2("test_bwt_prokrustean_indexing.dat");
     sequnce_access2.load_metadata();
