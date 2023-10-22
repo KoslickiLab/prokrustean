@@ -52,9 +52,12 @@ struct Unitig {
     bool is_from_stratum=false;
     // bool is_from_void_intersection=false;
     bool is_void_k_minus_1_unitig=false;
-    vector<UnitigId> nexts; // optimize
-    // UnitigId* nexts;
-    // uint8_t next_cnt;
+    // vector<UnitigId> nexts; // optimize
+
+    UnitigId* nexts_new;
+    uint8_t next_cnt=0;
+    uint8_t next_cnt_capacity=0;
+
     string content;
 
     void extend_left(Pos size){
@@ -89,17 +92,35 @@ struct Unitig {
     char get_last_letter(vector<string> &sequences, int k){
         return sequences[loc_id][loc_to-(k-3)];
     }
-    // void set_nexts(vector<UnitigId> data){
-    //     this->next_cnt=data.size();
-    //     this->nexts = new UnitigId[data.size()];
-    //     for(int i=0; i<data.size(); i++){
-    //         this->nexts[i]=data[i];
-    //     }
-    // }
-    // UnitigId get_next(uint8_t i){
-    //     assert(i<this->next_cnt);
-    //     return this->nexts[i];
-    // }
+    
+    void set_next(UnitigId next_id){
+        assert(next_cnt<next_cnt_capacity);
+        if(this->nexts_new==nullptr){
+            this->nexts_new = new UnitigId[this->next_cnt_capacity];    
+        }
+        this->nexts_new[this->next_cnt]=next_id;
+        this->next_cnt++;
+    }
+    void set_next_capacity(uint8_t capacity){
+        this->next_cnt=0;
+        if(next_cnt_capacity==capacity){
+            return;
+        } else {
+            if(this->nexts_new!=nullptr){
+                delete this->nexts_new;
+            }
+        }
+        this->nexts_new = new UnitigId[capacity];
+        this->next_cnt_capacity=capacity;
+    }
+    void replace_nexts(Unitig &merged_unitig){
+        this->next_cnt=merged_unitig.next_cnt;
+        this->next_cnt_capacity=merged_unitig.next_cnt_capacity;
+        if(this->nexts_new!=nullptr){
+            delete this->nexts_new;
+        }
+        this->nexts_new=merged_unitig.nexts_new;
+    }
 };
 
 struct StratumExt {
@@ -171,6 +192,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
         work.unitigs[unitig_id].loc_to=work.working_bands[0].to;
         work.unitigs[unitig_id].is_from_stratum=true;
         work.unitigs[unitig_id].is_convergence=is_first_convergence;
+        work.unitigs[unitig_id].set_next_capacity(1); 
         //maximal-tips or convergence
         if(ext.prokrustean.stratums__size[stratum_id]>k-1){
             // maximal case 3
@@ -193,6 +215,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
         if(work.working_bands.size()==1){
             work.stratum_exts[stratum_id].last_unitig=unitig_id;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=ext.prokrustean.stratums__size[stratum_id]==k-1;
+            work.unitigs[unitig_id].set_next_capacity(ext.prokrustean.get_right_cnt(stratum_id));
         }
     }
     // last if maximal
@@ -210,6 +233,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
 
         work.unitigs[unitig_id].is_void_k_minus_1_unitig=ext.prokrustean.stratums__size[stratum_id]==k-1;
         work.stratum_exts[stratum_id].last_unitig=unitig_id;
+        work.unitigs[unitig_id].set_next_capacity(ext.prokrustean.get_right_cnt(stratum_id));
     }
 }
 
@@ -274,13 +298,15 @@ void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, 
         if(ext.prokrustean.get_left_cnt(left_descendent_id)>1){
             // assert(work.stratum_exts[left_descendent_id].first_unitig.has_value());
             unitig.extend_right(1);
-            unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+            // unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+            unitig.set_next(work.stratum_exts[left_descendent_id].first_unitig.value());
             // assert(work.unitigs[work.unitigs[unitig_id].nexts[work.unitigs[unitig_id].nexts.size()-1]].loc_from==0);
         } else if(no_stratified_region_in_stra(left_descendent_id, k-1, ext)){
             // bottom
             assert(work.stratum_exts[left_descendent_id].first_unitig.has_value());
             unitig.extend_right(1);
-            unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+            // unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+            unitig.set_next(work.stratum_exts[left_descendent_id].first_unitig.value());
             // assert(work.unitigs[work.unitigs[unitig_id].nexts[work.unitigs[unitig_id].nexts.size()-1]].loc_from==0);
         } else {
             //extend because left count = 1, not bottom. add reflectum.
@@ -298,7 +324,8 @@ void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, 
     } else {
         // descendent is k-1 case --> assume it node and resolve later.
         unitig.extend_right(1);
-        unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+        // unitig.nexts.push_back(work.stratum_exts[left_descendent_id].first_unitig.value());
+        unitig.set_next(work.stratum_exts[left_descendent_id].first_unitig.value());
     }
 }
 
@@ -317,14 +344,19 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
             unitig.is_start_of_maximal=true;
             assert(work.stratum_exts[right_descendent_id].last_unitig.has_value());
             unitig.extend_left(1);
-            work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
-            assert(ext.prokrustean.get_right_cnt(right_descendent_id)>=work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.size());
+            // work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
+            auto right_descendent_last_id=work.stratum_exts[right_descendent_id].last_unitig.value();
+            work.unitigs[right_descendent_last_id].set_next(unitig_id);
+            // assert(ext.prokrustean.get_right_cnt(right_descendent_id)>=work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.size());
             
         } else if(no_stratified_region_in_stra(right_descendent_id, k-1, ext)){
             // bottom
             assert(work.stratum_exts[right_descendent_id].last_unitig.has_value());
             unitig.extend_left(1);
-            work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
+            // work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
+            auto right_descendent_last_id=work.stratum_exts[right_descendent_id].last_unitig.value();
+            work.unitigs[right_descendent_last_id].set_next(unitig_id);
+            // work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].set_next(unitig_id);
         } else {
             //extend because right count = 1, not bottom. so add reflectum to left direction.
             // read reflectum inline for efficiency. no last unitig is there by design to reduce space usage.
@@ -333,7 +365,6 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
             auto last_stratified_to=last_stratified_data.pos+ext.prokrustean.stratums__size[last_stratified_data.stratum_id];
             // assert(last_stratum_pos>0);
             // push exactly 'gap'
-            assert(ext.prokrustean.stratums__size[right_descendent_id]-last_stratified_to>0);
             unitig.extend_left(ext.prokrustean.stratums__size[right_descendent_id]-last_stratified_to);
             // there must be a stratified region on left
             auto left_stratum_id_of_last=last_stratified_data.stratum_id;
@@ -342,7 +373,11 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
     } else {
         // k-1 case
         unitig.extend_left(1);
-        work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
+        // work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].nexts.push_back(unitig_id);
+        
+        auto right_descendent_last_id=work.stratum_exts[right_descendent_id].last_unitig.value();
+        work.unitigs[right_descendent_last_id].set_next(unitig_id);
+        // work.unitigs[work.stratum_exts[right_descendent_id].last_unitig.value()].set_next(unitig_id);
         
         if(ext.prokrustean.get_right_cnt(right_descendent_id)>1){
             // divergence multiple -> convergence does not matter
@@ -384,6 +419,7 @@ void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, Compact
         work.unitigs[unitig_id].loc_to=band.to;
         work.unitigs[unitig_id].is_from_stratum=false;    
         work.unitigs[unitig_id].is_void_k_minus_1_unitig=false; // cannot be true
+        work.unitigs[unitig_id].set_next_capacity(1);
         // tip
         if(i==0){
             // maximal case 1
@@ -421,6 +457,7 @@ void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, Compact
             work.unitigs[unitig_id].loc_to=work.working_bands[i].to;
             work.unitigs[unitig_id].is_from_stratum=false;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=false;
+            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(work.working_bands[i].stratum_id)));
             // work.unitigs[unitig_id].is_from_void_intersection=true;
 
             // work.unitigs[unitig_id].loc_from-=1;
@@ -475,7 +512,8 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
         work.unitigs[unitig_id].loc_to=band.to;
         work.unitigs[unitig_id].is_from_stratum=true;
         work.unitigs[unitig_id].is_void_k_minus_1_unitig=false; // cannot be true
-        
+        work.unitigs[unitig_id].set_next_capacity(1);
+
         auto &left_stratieid=work.working_bands[i-1];
         auto &right_stratieid=work.working_bands[i+1];
         assert(left_stratieid.is_stratified);
@@ -502,6 +540,7 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
             work.unitigs[unitig_id].is_from_stratum=true;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=false;
             // work.unitigs[unitig_id].is_from_void_intersection=true;
+            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(work.working_bands[i].stratum_id)));
 
             _dig_leftmosts_and_extend(unitig_id, work.working_bands[i+1].stratum_id, k, ext, work);
             _dig_rightmosts_and_extend(unitig_id, work.working_bands[i].stratum_id, k, ext, work);
@@ -594,8 +633,8 @@ struct CdbgInvariants {
                 this->each_right_extension_count_of_stratum[i]=ext.prokrustean.get_right_cnt(i);
                 this->total_right_count+=ext.prokrustean.get_right_cnt(i);
 
-                this->each_unitig_attached_on_last_of_stratum_next_count[i]=work.unitigs[work.stratum_exts[i].last_unitig.value()].nexts.size();
-                this->total_pointers_pointing_up+=work.unitigs[work.stratum_exts[i].last_unitig.value()].nexts.size();
+                this->each_unitig_attached_on_last_of_stratum_next_count[i]=work.unitigs[work.stratum_exts[i].last_unitig.value()].next_cnt;
+                this->total_pointers_pointing_up+=work.unitigs[work.stratum_exts[i].last_unitig.value()].next_cnt;
 
 
             }
@@ -606,7 +645,9 @@ struct CdbgInvariants {
         }
 
         for(auto &unitig: work.unitigs){
-            for(auto &next_id: unitig.nexts){
+            for(int i=0; i<unitig.next_cnt; i++){
+                // auto next_id=unitig.nexts[i];
+                auto next_id=unitig.nexts_new[i];
                 // what is this next?
                 if(work.unitigs[next_id].is_from_stratum){
                     auto &first_unitig=work.stratum_exts[work.unitigs[next_id].loc_id].first_unitig;
@@ -625,9 +666,12 @@ struct CdbgInvariants {
         int void_cnt=0;
         // int void_intersection_cnt=0;
         for(auto &unitig: work.unitigs){
-            if(unitig.nexts.size()>1){
-                for(auto next: unitig.nexts){
-                    if(work.unitigs[next].is_void_k_minus_1_unitig){
+            // if(unitig.nexts.size()>1){
+            if(unitig.next_cnt>1){
+                // for(auto next: unitig.nexts){
+                for(int i=0; i<unitig.next_cnt; i++){
+                    if(work.unitigs[unitig.nexts_new[i]].is_void_k_minus_1_unitig){
+                    // if(work.unitigs[unitig.nexts[i]].is_void_k_minus_1_unitig){
                         this->multiple_branches_include_a_void_branch++;
                     }
                 }
@@ -660,41 +704,52 @@ void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, AbstractSequenceAcc
     assert(unitigs[uni_id].is_start_of_maximal);
     // implement string
     unitigs[uni_id].content=unitigs[uni_id].get_string(seq_access);
-    if(unitigs[uni_id].nexts.size()!=1){
+    if(unitigs[uni_id].next_cnt!=1){
         return;
     }
     UnitigId curr_id=uni_id;
-    UnitigId next_id=unitigs[curr_id].nexts[0];
+    // UnitigId next_id=unitigs[curr_id].nexts[0];
+    UnitigId next_id=unitigs[curr_id].nexts_new[0];
     while(true){
         Unitig &next_unitig=unitigs[next_id];
         // normal case
         if(next_unitig.is_void_k_minus_1_unitig==false){
             if(next_unitig.is_convergence){
-                unitigs[uni_id].nexts.clear();
-                unitigs[uni_id].nexts.push_back(next_id);
+                // unitigs[uni_id].nexts.clear();
+                // unitigs[uni_id].nexts.push_back(next_id);
+                unitigs[uni_id].set_next_capacity(1);
+                unitigs[uni_id].set_next(next_id);
                 break;
             } else {
-                if(unitigs[curr_id].nexts.size()<=1){
+                // if(unitigs[curr_id].nexts.size()<=1){
+                if(unitigs[curr_id].next_cnt<=1){
                     // merge
                     unitigs[uni_id].content+=next_unitig.get_string(seq_access).substr(k-1);
                 }
 
-                if(next_unitig.nexts.size()!=1){
-                    unitigs[uni_id].nexts=next_unitig.nexts;
+                // if(next_unitig.nexts.size()!=1){
+                if(next_unitig.next_cnt!=1){
+                    // unitigs[uni_id].nexts=next_unitig.nexts;
+                    unitigs[uni_id].replace_nexts(next_unitig);
                     break;
                 } else {
                     curr_id=next_id;
-                    next_id=next_unitig.nexts[0];
+                    // next_id=next_unitig.nexts[0];
+                    next_id=next_unitig.nexts_new[0];
                 }
             }
         } else {
             // void case
-            if(next_unitig.nexts.size()!=1){
-                unitigs[uni_id].nexts=next_unitig.nexts;
+            // if(next_unitig.nexts.size()!=1){
+            if(next_unitig.next_cnt!=1){
+                // unitigs[uni_id].nexts=next_unitig.nexts;
+                unitigs[uni_id].replace_nexts(next_unitig);
                 break;
-            } else if(next_unitig.nexts.size()==1){
+            // } else if(next_unitig.nexts.size()==1){
+            } else if(next_unitig.next_cnt==1){
                 curr_id=next_id;
-                next_id=next_unitig.nexts[0];
+                // next_id=next_unitig.nexts[0];
+                next_id=next_unitig.nexts_new[0];
             }
         }
     }

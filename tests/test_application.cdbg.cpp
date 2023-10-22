@@ -86,8 +86,16 @@ void assert_by_naive_cdbg(vector<Unitig> &unitigs, std::unordered_map<std::strin
         auto &unitig=unitigs[id];
         if(unitig.is_start_of_maximal){
             assert(naive_graph.count(unitig.content)>0);
-            for(auto next: unitig.nexts){
-                auto &next_node=unitigs[next].content;
+            // for(auto next: unitig.nexts){
+            //     auto &next_node=unitigs[next].content;
+            for(int i=0; i< unitig.next_cnt; i++){
+                auto &next_node=unitigs[unitig.nexts_new[i]].content;
+            //     if(naive_graph[unitig.content].outgoing.count(next_node)==0){
+            //         cout << "next_node " << next_node << endl; 
+            //         for(auto &outgoing: naive_graph[unitig.content].outgoing){
+            //             cout << "outgoing " << outgoing << endl; 
+            //         }
+            //     }
                 assert(naive_graph[unitig.content].outgoing.count(next_node)>0);
             }
         }
@@ -122,19 +130,19 @@ void test_cdbg_construction(){
         auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, ext);
         assert(veritifer.maximal_starting_unitig_count==calculated_unitig_cnt);
 
-        // NaiveCompactedDeBruijnGraph cdbg;
-        // cdbg.construct_compacted(seq_texts, k);
-        // auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
-        // // cdbg.print();
-        // assert(veritifer.maximal_starting_unitig_count==naive_unitig_cnt);
-        // cout << "naive constructed" << endl;
+        NaiveCompactedDeBruijnGraph cdbg;
+        cdbg.construct_compacted(seq_texts, k);
+        auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
+        // cdbg.print();
+        assert(veritifer.maximal_starting_unitig_count==naive_unitig_cnt);
+        cout << "naive constructed" << endl;
 
         MemorySequenceAccess sequence_access(seq_texts);
         MemoryStringDataStore string_store;
         update_stratum_based_loc_to_seq_based_loc(ext, workspace);
         construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
         cout << "constructed" << endl;
-        // assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);
+        assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);
     }
 }
 
