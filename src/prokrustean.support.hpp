@@ -20,11 +20,12 @@ struct ProkrusteanExtension {
 
     vector<SpinLock> stratum_locks;
     int stratum_lock_scale;
+    bool stratum_lock_active=false;
     
     ProkrusteanExtension(Prokrustean& prokrustean):prokrustean(prokrustean) {}
 
     void set_stratum_locks(int thread_cnt){
-        this->stratum_lock_scale=thread_cnt*1000;
+        this->stratum_lock_scale=thread_cnt*10000;
         this->stratum_locks=vector<SpinLock>(this->stratum_lock_scale);
     }
     void lock_stratum(StratumId id){
@@ -99,6 +100,25 @@ struct ProkrusteanExtension {
     }
     optional<StratifiedEdge> stratum__last_stratified(StratumId id){
         return last_stratified(prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
+    }
+
+    void increment_left_ext(StratumId id){
+        if(stratum_lock_active){
+            lock_stratum(id);
+            stratum_left_ext_count[id]++;
+            unlock_stratum(id);
+        } else {
+            stratum_left_ext_count[id]++;
+        }
+    }
+    void increment_right_ext(StratumId id){
+        if(stratum_lock_active){
+            lock_stratum(id);
+            stratum_right_ext_count[id]++;
+            unlock_stratum(id);
+        } else {
+            stratum_right_ext_count[id]++;
+        }
     }
 };
 
@@ -273,6 +293,61 @@ void setup_stratum_example_occ_parallel(ProkrusteanExtension &ext, int thread_cn
 /*                              Calculating left/right extension characters 
                                  cannot work because actual characters are required - expensive          */
 /********************************************************************************************************/
+void _increment_leftright_extension_for_non_intersected_descendents(Vertex &vertex, ProkrusteanExtension &ext, stack<StratumId> &stratum_stack){
+    for(int e=0; e<vertex.s_edges.size(); e++){
+        auto &edge=vertex.s_edges[e];
+        if(edge.from>0){
+            auto limited_length=0;
+            if(0<e && edge.from<vertex.s_edges[e-1].to){
+                // intersection exists
+                limited_length=vertex.s_edges[e-1].to-edge.from;
+            }
+            stratum_stack.push(edge.stratum_id);
+            while(!stratum_stack.empty()){
+                auto stratum_id=stratum_stack.top();
+                stratum_stack.pop();
+                // ext.prokrustean.get_left_cnt(stratum_id)++;
+                ext.increment_left_ext(stratum_id);
+                // ext.stratum_left_ext_count[stratum_id]++;
+                if(0<ext.prokrustean.stratums__region_cnt[stratum_id]
+                && ext.prokrustean.stratums__region[stratum_id][0].pos==0) {
+                    auto c_stratum_id=ext.prokrustean.stratums__region[stratum_id][0].stratum_id;
+                    if(limited_length<ext.prokrustean.get_stratum_size(c_stratum_id)){
+                        stratum_stack.push(c_stratum_id);
+                    }
+                }
+            }
+        }
+        if(edge.to<vertex.size){
+            auto limited_length=0;
+            if(e+1<vertex.s_edges.size() && vertex.s_edges[e+1].from<edge.to){
+                // intersection exists
+                limited_length=edge.to-vertex.s_edges[e+1].from;
+            }
+            stratum_stack.push(edge.stratum_id);
+            while(!stratum_stack.empty()){
+                auto stratum_id=stratum_stack.top();
+                stratum_stack.pop();
+                // ext.stratum_right_ext_count[stratum_id]++;
+                ext.increment_right_ext(stratum_id);
+                // optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
+                // if(last_edge.has_value()
+                // &&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)
+                // &&limited_length<last_edge.value().size()
+                // ){
+                //     stratum_stack.push(last_edge.value().stratum_id);
+                // }
+                if(0<ext.prokrustean.stratums__region_cnt[stratum_id]){
+                    auto &rgn = ext.prokrustean.stratums__region[stratum_id][ext.prokrustean.stratums__region_cnt[stratum_id]-1];
+                    if(rgn.pos + ext.prokrustean.get_stratum_size(rgn.stratum_id)==ext.prokrustean.get_stratum_size(stratum_id)
+                    && limited_length < ext.prokrustean.get_stratum_size(rgn.stratum_id)){
+                        stratum_stack.push(rgn.stratum_id);
+                    }
+                }
+            }
+        }       
+    }
+}
 void count_left_right_character_extensions(ProkrusteanExtension &ext){
     ext.stratum_left_ext_count.resize(ext.prokrustean.stratum_count,0);
     ext.stratum_right_ext_count.resize(ext.prokrustean.stratum_count,0);
@@ -280,99 +355,34 @@ void count_left_right_character_extensions(ProkrusteanExtension &ext){
     Vertex vertex;
     for(int i=0; i<ext.prokrustean.sequence_count; i++){
         ext.prokrustean.get_sequence(i, vertex);
-        for(int e=0; e<vertex.s_edges.size(); e++){
-            auto &edge=vertex.s_edges[e];
-            if(edge.from>0){
-                auto limited_length=0;
-                if(0<e && edge.from<vertex.s_edges[e-1].to){
-                    // intersection exists
-                    limited_length=vertex.s_edges[e-1].to-edge.from;
-                }
-                stratum_stack.push(edge.stratum_id);
-                while(!stratum_stack.empty()){
-                    auto stratum_id=stratum_stack.top();
-                    stratum_stack.pop();
-                    // ext.prokrustean.get_left_cnt(stratum_id)++;
-                    ext.stratum_left_ext_count[stratum_id]++;
-                    optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
-                    if(first_edge.has_value()
-                    &&first_edge.value().from==0
-                    &&limited_length<first_edge.value().size()
-                    ){
-                        stratum_stack.push(first_edge.value().stratum_id);
-                    }
-                }
-            }
-            if(edge.to<vertex.size){
-                auto limited_length=0;
-                if(e+1<edge.size() && vertex.s_edges[e+1].from<edge.to){
-                    // intersection exists
-                    limited_length=edge.to-vertex.s_edges[e+1].from;
-                }
-                stratum_stack.push(edge.stratum_id);
-                while(!stratum_stack.empty()){
-                    auto stratum_id=stratum_stack.top();
-                    stratum_stack.pop();
-                    ext.stratum_right_ext_count[stratum_id]++;
-                    optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
-                    if(last_edge.has_value()
-                    &&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)
-                    &&limited_length<last_edge.value().size()
-                    ){
-                        stratum_stack.push(last_edge.value().stratum_id);
-                    }
-                }
-            }       
-        }
+        _increment_leftright_extension_for_non_intersected_descendents(vertex, ext, stratum_stack);
     }
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
         ext.prokrustean.get_stratum(i, vertex);
-        for(int e=0; e<vertex.s_edges.size(); e++){
-            auto &edge=vertex.s_edges[e];
-            if(edge.from>0){
-                auto limited_length=0;
-                if(0<e && edge.from<vertex.s_edges[e-1].to){
-                    // intersection exists
-                    limited_length=vertex.s_edges[e-1].to-edge.from;
-                }
-                stratum_stack.push(edge.stratum_id);
-                while(!stratum_stack.empty()){
-                    auto stratum_id=stratum_stack.top();
-                    stratum_stack.pop();
-                    ext.stratum_left_ext_count[stratum_id]++;
-                    optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
-                    if(first_edge.has_value()
-                    &&first_edge.value().from==0
-                    &&limited_length<first_edge.value().size()
-                    ){
-                        stratum_stack.push(first_edge.value().stratum_id);
-                    }
-                }
-            }
-            if(edge.to<vertex.size){
-                auto limited_length=0;
-                if(e+1<edge.size() && vertex.s_edges[e+1].from<edge.to){
-                    // intersection exists
-                    limited_length=edge.to-vertex.s_edges[e+1].from;
-                }
-                stratum_stack.push(edge.stratum_id);
-                while(!stratum_stack.empty()){
-                    auto stratum_id=stratum_stack.top();
-                    stratum_stack.pop();
-                    ext.stratum_right_ext_count[stratum_id]++;
-                    optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
-                    if(last_edge.has_value()
-                    &&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)
-                    &&limited_length<last_edge.value().size()
-                    ){
-                        stratum_stack.push(last_edge.value().stratum_id);
-                    }
-                }
-            }
-        }
+        _increment_leftright_extension_for_non_intersected_descendents(vertex, ext, stratum_stack);
     }
 }
-
+void count_left_right_character_extensions_parallel(ProkrusteanExtension &ext, int thread_cnt){
+    ext.set_stratum_locks(thread_cnt);
+    ext.stratum_lock_active=true;
+    ext.stratum_left_ext_count.resize(ext.prokrustean.stratum_count,0);
+    ext.stratum_right_ext_count.resize(ext.prokrustean.stratum_count,0);
+    vector<future<void>> futures;
+    auto func_ = [](ProkrusteanExtension &ext, int thread_idx, int thread_cnt) {
+        stack<StratumId> stratum_stack;
+        Vertex vertex;
+        for(int i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
+            ext.prokrustean.get_sequence(i, vertex);
+            _increment_leftright_extension_for_non_intersected_descendents(vertex, ext, stratum_stack);
+        }
+        for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+            ext.prokrustean.get_stratum(i, vertex);
+            _increment_leftright_extension_for_non_intersected_descendents(vertex, ext, stratum_stack);
+        }
+    };
+    for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(ext), i, thread_cnt));}
+    for (auto &f : futures) {f.wait();}
+}
 
 /********************************************************************************************************/
 /*                              save/load                                                                */

@@ -144,7 +144,7 @@ int _count_max_unitig_start_at_stratum(int k, StratumId stratum_id, ProkrusteanE
     return cnt;
 }
 
-void _count_tip_events_in_range_at_seq(int k, SeqId seq_id, ProkrusteanExtension &ext, vector<int64_t> &partial_C){
+void _count_tip_events_in_range_at_seq(int k, SeqId seq_id, ProkrusteanExtension &ext, vector<uint64_t> &partial_C){
     auto seq_size=ext.prokrustean.sequences__size[seq_id];
     if(seq_size<k){
         return;
@@ -171,7 +171,7 @@ void _count_tip_events_in_range_at_seq(int k, SeqId seq_id, ProkrusteanExtension
     }
 }
 
-void _count_divergence_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<int64_t> &partial_C){
+void _count_divergence_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<uint64_t> &partial_C){
     auto stratum_size=ext.prokrustean.stratums__size[stratum_id];
     if(stratum_size<k-1){
         return;
@@ -195,7 +195,7 @@ void _count_divergence_events_in_range_at_stratum(int k, StratumId stratum_id, P
     }
 }
 
-void _count_tip_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<int64_t> &partial_C){
+void _count_tip_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<uint64_t> &partial_C){
     auto stratum_size=ext.prokrustean.stratums__size[stratum_id];
     if(stratum_size<k-1){
         return;
@@ -219,7 +219,7 @@ void _count_tip_events_in_range_at_stratum(int k, StratumId stratum_id, Prokrust
     }
 }
 
-void _count_convergence_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<int64_t> &partial_C){
+void _count_convergence_events_in_range_at_stratum(int k, StratumId stratum_id, ProkrusteanExtension &ext, vector<uint64_t> &partial_C){
     auto stratum_size=ext.prokrustean.stratums__size[stratum_id];
     if(stratum_size<k-1){
         return;
@@ -259,7 +259,7 @@ void count_maximal_unitigs_range_of_k(uint64_t from, uint64_t to, ProkrusteanExt
     output.clear();
     output.resize(to+1, 0);
 
-    vector<int64_t> partial_C(to+1, 0);
+    vector<uint64_t> partial_C(to+1, 0);
     
     for(int i=0; i<ext.prokrustean.sequence_count; i++){
         output[from]+=_count_max_unitig_start_at_seq(from, i, ext);
@@ -278,5 +278,50 @@ void count_maximal_unitigs_range_of_k(uint64_t from, uint64_t to, ProkrusteanExt
     }
 }
 
+void count_maximal_unitigs_range_of_k_parallel(uint64_t from, uint64_t to, ProkrusteanExtension &ext, vector<uint64_t> &output, int thread_cnt){
+    // Definitions:
+    assert(from>1 && from<=to);
+    output.clear();
+    output.resize(to+1, 0);
+
+    vector<vector<uint64_t>> outputs(thread_cnt);
+    vector<vector<uint64_t>> partial_Cs(thread_cnt);
+    for(int i=0; i<thread_cnt; i++){
+        outputs[i].resize(to+1,0);
+        partial_Cs[i].resize(to+1,0);
+    }
+
+    vector<future<void>> futures;
+    auto func_ = [](ProkrusteanExtension &ext, uint64_t from, uint8_t thread_idx, uint8_t thread_cnt, vector<uint64_t> &output, vector<uint64_t> &partial_C) {
+        Vertex vertex;
+        for(int i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
+            output[from]+=_count_max_unitig_start_at_seq(from, i, ext);
+            _count_tip_events_in_range_at_seq(from, i, ext, partial_C);
+        }
+
+        for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+            output[from]+=_count_max_unitig_start_at_stratum(from, i, ext);
+            _count_tip_events_in_range_at_stratum(from, i, ext, partial_C);
+            _count_divergence_events_in_range_at_stratum(from, i, ext, partial_C);
+            _count_convergence_events_in_range_at_stratum(from, i, ext, partial_C);
+        }
+    };
+    for(int i=0; i<thread_cnt; i++){futures.push_back(
+        std::async(std::launch::async, func_, ref(ext), from, i, thread_cnt, ref(outputs[i]), ref(partial_Cs[i]))
+    );}
+    for (auto &f : futures) {f.wait();}
+    
+    vector<uint64_t> partial_C(to+1, 0);
+    for(int i=0; i<thread_cnt; i++){
+        for(int k=0; k<to+1; k++){
+            output[k]+=outputs[i][k];
+            partial_C[k]+=partial_Cs[i][k];
+        }
+    }
+    for(int k=from+1; k<to+1; k++){
+        output[k]=output[k-1] + partial_C[k];
+    }
+
+}
     
 #endif

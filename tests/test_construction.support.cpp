@@ -30,6 +30,27 @@ void test_left_right_extension_counting(){
     
     for(int i=0; i<prokrustean.stratum_count; i++){
         assert(ext.stratum_left_ext_count[i]==ext.prokrustean.get_left_cnt(i));
+        assert(ext.stratum_right_ext_count[i]==ext.prokrustean.get_right_cnt(i));
+    }
+}
+
+void test_left_right_extension_counting_parallel(){
+    int Lmin = 1;
+    int num_threads=4;
+    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    count_left_right_character_extensions(ext);
+    ProkrusteanExtension ext2(prokrustean);
+    count_left_right_character_extensions_parallel(ext2, num_threads);
+    
+    for(int i=0; i<prokrustean.stratum_count; i++){
+        assert(ext.stratum_left_ext_count[i]==ext2.stratum_left_ext_count[i]);
+        assert(ext.stratum_right_ext_count[i]==ext2.stratum_right_ext_count[i]);
     }
 }
 
@@ -62,5 +83,6 @@ void test_left_right_storage(){
 }
 void main_prokrustean_support(){
     test_left_right_extension_counting();
+    test_left_right_extension_counting_parallel();
     test_left_right_storage();
 }

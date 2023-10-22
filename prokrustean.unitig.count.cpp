@@ -103,11 +103,17 @@ int main(int argc, char** argv){
 	prokrustean.print_abstract();
 	
 	auto start = std::chrono::steady_clock::now();
-	ProkrusteanExtension ext(prokrustean);
-	vector<uint64_t> output;
-	count_maximal_unitigs_range_of_k(from, to, ext, output);
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	
+	ProkrusteanExtension ext(prokrustean);
+	count_left_right_character_extensions_parallel(ext, num_threads);
+	
+	cout << "count left right" << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	start = std::chrono::steady_clock::now();
+
+	vector<uint64_t> output;
+	count_maximal_unitigs_range_of_k_parallel(from, to, ext, output, num_threads);
+	
+	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "save unitig counts... ";
 
 	std::ofstream outputFile(output_file);

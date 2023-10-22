@@ -31,8 +31,8 @@ int main(void){
     // cout << "--- test cdbg ---" << endl;
     // main_application_cdbg();
 
-    // cout << "--- test unitig counting ---" << endl;
-    // main_application_unitig_count();
+    cout << "--- test unitig counting ---" << endl;
+    main_application_unitig_count();
 
     // cout << "--- test store ---" << endl;
     // main_test_storage();
