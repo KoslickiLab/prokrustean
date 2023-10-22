@@ -124,8 +124,8 @@ struct Unitig {
 };
 
 struct StratumExt {
-    StratumId leftmost_reflectum_descendent;
-    StratumId rightmost_reflectum_descendent;
+    StratumId descendent_of_leftmost_refracted=-1;
+    StratumId descendent_of_rightmost_refracted=-1;
     optional<UnitigId> first_unitig;
     optional<UnitigId> last_unitig;
 };
@@ -140,8 +140,8 @@ struct CompactedDBGWorkspace {
     // vector<bool> is_unitig_maximal; 
 
     vector<StratumExt> stratum_exts;
-    vector<bool> is_leftmost_descendent_set;
-    vector<bool> is_rightmost_descendent_set;
+    vector<uint8_t> is_leftmost_descendent_set;
+    vector<uint8_t> is_rightmost_descendent_set;
 
     SpinLock unitig_gen_lock;
     UnitigId new_unitig_id=0;
@@ -153,8 +153,8 @@ struct CompactedDBGWorkspace {
         this->is_leftmost_descendent_set.clear();
         this->is_rightmost_descendent_set.clear();
         this->stratum_exts.resize(stratum_count);
-        this->is_leftmost_descendent_set.resize(stratum_count);
-        this->is_rightmost_descendent_set.resize(stratum_count);
+        this->is_leftmost_descendent_set.resize(stratum_count, 0);
+        this->is_rightmost_descendent_set.resize(stratum_count, 0);
     }
 
     UnitigId make_unitig(){
@@ -240,50 +240,60 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
 void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     StratifiedEdge edge;
     auto &prokrustean=ext.prokrustean;
-    if(!work.is_leftmost_descendent_set[stratum_id]){
-        work.working_stratum_ids.clear();
-        // work.working_stratum_ids.push_back(stratum_id);
-        StratumId curr_stratum_id=stratum_id;
-        while(true){
-            // set visited.
-            work.is_leftmost_descendent_set[curr_stratum_id]=true;
-            // has large stratified at the front
-            if(ext.get_stratum_first_stratified(curr_stratum_id, edge)
-            && edge.from==0
-            && edge.size()>=k-1){
-                work.working_stratum_ids.push_back(curr_stratum_id);
-                curr_stratum_id=edge.stratum_id;
-                continue;
-            }
+    
+    work.working_stratum_ids.clear();
+    StratumId curr_stratum_id=stratum_id;
+    while(true){
+        if(work.is_rightmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
             for(auto id: work.working_stratum_ids){
-                work.stratum_exts[id].leftmost_reflectum_descendent=curr_stratum_id;
+                assert(work.stratum_exts[id].descendent_of_rightmost_refracted!=work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted);
+                work.stratum_exts[id].descendent_of_rightmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted;
             }
-            work.stratum_exts[curr_stratum_id].leftmost_reflectum_descendent=curr_stratum_id;
+            break;
+        }
+        // set visited.
+        work.is_rightmost_descendent_set[curr_stratum_id]=1;
+        // has large stratified at the last
+        if(ext.get_stratum_last_stratified(curr_stratum_id, edge)
+        && edge.to==ext.prokrustean.get_stratum_size(curr_stratum_id)
+        && edge.size()>=k-1){
+            work.working_stratum_ids.push_back(curr_stratum_id);
+            curr_stratum_id=edge.stratum_id;
+            continue;
+        } else {
+            for(auto id: work.working_stratum_ids){
+                work.stratum_exts[id].descendent_of_rightmost_refracted=curr_stratum_id;
+            }
+            work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted=curr_stratum_id;
             break;
         }
     }
-
-    if(!work.is_rightmost_descendent_set[stratum_id]){
-        work.working_stratum_ids.clear();
-        // work.working_stratum_ids.push_back(stratum_id);
-        StratumId curr_stratum_id=stratum_id;
-        while(true){
-            // set visited.
-            work.is_rightmost_descendent_set[curr_stratum_id]=true;
-            // has large stratified at the last
-            if(ext.get_stratum_last_stratified(curr_stratum_id, edge)
-            && edge.to==ext.prokrustean.get_stratum_size(curr_stratum_id)
-            && edge.size()>=k-1){
-                work.working_stratum_ids.push_back(curr_stratum_id);
-                curr_stratum_id=edge.stratum_id;
-                continue;
-            }
+    // set leftmost descendent
+    work.working_stratum_ids.clear();
+    curr_stratum_id=stratum_id;
+    while(true){
+        if(work.is_leftmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
             for(auto id: work.working_stratum_ids){
-                work.stratum_exts[id].rightmost_reflectum_descendent=curr_stratum_id;
+                work.stratum_exts[id].descendent_of_leftmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_leftmost_refracted;
             }
-            work.stratum_exts[curr_stratum_id].rightmost_reflectum_descendent=curr_stratum_id;
             break;
         }
+        // set visited.
+        work.is_leftmost_descendent_set[curr_stratum_id]=1;
+        // has large stratified at the front
+        if(ext.get_stratum_first_stratified(curr_stratum_id, edge)
+        && edge.from==0
+        && edge.size()>=k-1){
+            work.working_stratum_ids.push_back(curr_stratum_id);
+            curr_stratum_id=edge.stratum_id;
+            continue;
+        } else {
+            for(auto id: work.working_stratum_ids){
+                work.stratum_exts[id].descendent_of_leftmost_refracted=curr_stratum_id;
+            }
+            work.stratum_exts[curr_stratum_id].descendent_of_leftmost_refracted=curr_stratum_id;
+        }
+        break;
     }
 }
 
@@ -293,7 +303,7 @@ void _dig_leftmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k, 
     }
     Unitig &unitig=work.unitigs[unitig_id];
     // cout << " _dig_leftmosts_and_extend" << endl; 
-    auto left_descendent_id=work.stratum_exts[stratum_id].leftmost_reflectum_descendent;
+    auto left_descendent_id=work.stratum_exts[stratum_id].descendent_of_leftmost_refracted;
     if(ext.prokrustean.stratums__size[left_descendent_id]>k-1){
         if(ext.prokrustean.get_left_cnt(left_descendent_id)>1){
             // assert(work.stratum_exts[left_descendent_id].first_unitig.has_value());
@@ -335,7 +345,7 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
     }
     Unitig &unitig=work.unitigs[unitig_id];
     // cout << " _dig_rightmosts_and_extend" << endl;
-    auto right_descendent_id=work.stratum_exts[stratum_id].rightmost_reflectum_descendent;
+    auto right_descendent_id=work.stratum_exts[stratum_id].descendent_of_rightmost_refracted;
     // cout << "rightmost: " << right_descendent_id << endl;
     if(ext.prokrustean.stratums__size[right_descendent_id]>k-1){
         // set maximal if diverged
