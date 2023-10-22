@@ -31,7 +31,7 @@ void help(){
 	"Output: maximal unitig counts count." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
-	"-i <arg>    (REQUIRED) prokrustean file name" << endl <<
+	"-p <arg>    (REQUIRED) prokrustean file name" << endl <<
 	"-l <arg>    k range left. default: lmin." << endl <<
 	"-r <arg>    k range right. default: largest sequence size." << endl <<
 	"-o <arg>    output file name. Default: input file name + .unitig.count.txt" << endl <<
@@ -43,12 +43,12 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "hi:l:r:o:t")) != -1){
+	while ((opt = getopt(argc, argv, "hp:l:r:o:t")) != -1){
 		switch (opt){
 			case 'h':
 				help();
 			break;
-			case 'i':
+			case 'p':
 				input_prokrustean = string(optarg);
 			break;
 			case 'o':
@@ -76,6 +76,7 @@ int main(int argc, char** argv){
 	if(output_file.size()==0) {
 		output_file=input_prokrustean+".unitig.count.txt";
 	};
+	auto start_total = std::chrono::steady_clock::now();
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
@@ -105,10 +106,10 @@ int main(int argc, char** argv){
 	auto start = std::chrono::steady_clock::now();
 	
 	ProkrusteanExtension ext(prokrustean);
-	count_left_right_character_extensions_parallel(ext, num_threads);
+	// count_left_right_character_extensions_parallel(ext, num_threads);
 	
-	cout << "count left right" << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	start = std::chrono::steady_clock::now();
+	// cout << "count left right" << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	// start = std::chrono::steady_clock::now();
 
 	vector<uint64_t> output;
 	count_maximal_unitigs_range_of_k_parallel(from, to, ext, output, num_threads);
@@ -125,5 +126,6 @@ int main(int argc, char** argv){
 	}
 		
 	outputFile.close();
+	cout << "total " << (std::chrono::steady_clock::now()-start_total).count()/1000000 << "ms" << endl;
 }
 

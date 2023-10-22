@@ -91,6 +91,7 @@ int main(int argc, char** argv){
 	cout << "threads: " << num_threads << endl;
 
 	auto start = std::chrono::steady_clock::now();
+	auto start_total = std::chrono::steady_clock::now();
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
@@ -130,5 +131,6 @@ int main(int argc, char** argv){
 	// store_kmers(mers, output_file);
 	cout << "stored: " << output_file << endl;
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	cout << "total " << (std::chrono::steady_clock::now()-start_total).count()/1000000 << "ms" << endl;
 }
 

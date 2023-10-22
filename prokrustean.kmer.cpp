@@ -82,7 +82,7 @@ int main(int argc, char** argv){
 		cout << "k not set" << endl;
 		exit(0);
 	}
-
+	
 	cout << "Input prokrustean file: " << input_prokrustean << endl;
 	cout << "Input sequences file: " << input_sequences << endl;
 	cout << "k: " << k << endl;
@@ -91,6 +91,7 @@ int main(int argc, char** argv){
 	WaveletString str;
 
 	auto start = std::chrono::steady_clock::now();
+	auto start_total = std::chrono::steady_clock::now();
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
@@ -122,5 +123,7 @@ int main(int argc, char** argv){
 	get_distinct_kmers(k, ext, sequence_access, string_store);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "stored: " << output_file << endl;
+	
+	cout << "total " << (std::chrono::steady_clock::now()-start_total).count()/1000000 << "ms" << endl;
 }
 

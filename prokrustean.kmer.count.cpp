@@ -31,7 +31,7 @@ void help(){
 	"Output: kmer counts of the given range." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
-	"-i <arg>    (REQUIRED) prokrustean file name" << endl <<
+	"-p <arg>    (REQUIRED) prokrustean file name" << endl <<
 	"-l <arg>    k range left. default: lmin." << endl <<
 	"-r <arg>    k range right. default: largest sequence size." << endl <<
 	"-o <arg>    output file name. Default: input file name + .unitig.count.txt" << endl <<
@@ -43,12 +43,12 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "hi:l:r:o:t")) != -1){
+	while ((opt = getopt(argc, argv, "hi:l:r:o:p:t")) != -1){
 		switch (opt){
 			case 'h':
 				help();
 			break;
-			case 'i':
+			case 'p':
 				input_prokrustean = string(optarg);
 			break;
 			case 'o':
@@ -76,12 +76,16 @@ int main(int argc, char** argv){
 	if(output_file.size()==0) {
 		output_file=input_prokrustean+".kmer.count.txt";
 	};
+	auto start = std::chrono::steady_clock::now();
+	auto start_total = std::chrono::steady_clock::now();
+	cout << "loading prokrustean ... " << input_prokrustean << endl;
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
 		cout << "loading failed " << input_prokrustean << endl;
 		exit(0);
 	}
+	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	if(from==-1){
 		from=prokrustean.lmin;
 	} else if(from<prokrustean.lmin){
@@ -102,10 +106,12 @@ int main(int argc, char** argv){
 	
 	prokrustean.print_abstract();
 	
-	auto start = std::chrono::steady_clock::now();
+	start = std::chrono::steady_clock::now();
+	cout << "counting kmers .. " << endl;
+
 	vector<uint64_t> output;
 	count_distinct_kmers_of_range_parallel(from, to, num_threads, prokrustean, output);
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	cout << "counting kmers" << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	
 	cout << "saving kmer counts... ";
 
@@ -118,4 +124,5 @@ int main(int argc, char** argv){
 	}
 		
 	outputFile.close();
+	cout << "total " << (std::chrono::steady_clock::now()-start_total).count()/1000000 << "ms" << endl;
 }
