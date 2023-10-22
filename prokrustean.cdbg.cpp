@@ -23,7 +23,7 @@ using namespace sdsl;
 string input_access;
 string input_prokrustean;
 string output_file;
-int num_threads=12;
+int num_threads=8;
 int k=-1;
 char TERM = '$';
 
@@ -94,13 +94,13 @@ int main(int argc, char** argv){
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
-		cout << "prokrustean loading failed. " << input_prokrustean << endl;
+		cout << "[failed] prokrustean loading failed. " << input_prokrustean << endl;
 		exit(0);
 	}
 	prokrustean.print_abstract();
 	
-	if(k<prokrustean.lmin){
-		cout << "k has to be at least lmin. given k: " << k << ", lmin of prokrustean: " << prokrustean.lmin  << endl;
+	if(k<prokrustean.lmin+1){
+		cout << "[failed] k has to be at least lmin+1. given k: " << k << ", lmin of prokrustean: " << prokrustean.lmin  << endl;
 		exit(0);
 	}
 	
@@ -108,13 +108,11 @@ int main(int argc, char** argv){
 	cout << "annotate strata example occurrences (so that they can be printed) ... " << endl;
 	
 	ProkrusteanExtension ext(prokrustean);
-	// setup_stratum_example_occ(ext);
     setup_stratum_example_occ_parallel(ext, num_threads);
 	
 	DiskSequenceAccess sequence_access(input_access);
 	sequence_access.load_metadata();
 	sequence_access.read_open();
-	// sequence_access.load_all_strings();
 	
 	start = std::chrono::steady_clock::now();
 	cout << "compute unitigs... " << endl;

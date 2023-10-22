@@ -574,13 +574,12 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
     
     work.reset(stratum_count);
     
-    cout << "first/last " << endl;
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_first_last_unitigs(i, k, ext, work);
         }
     }
-    cout << "stratum " << ext.prokrustean.stratums__size.size() << endl;
+    
     int first_cnt=0;
     int last_cnt=0;
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
@@ -591,8 +590,7 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
             last_cnt++;
         }
     }
-    cout << "first_cnt " <<first_cnt << " last_cnt  " << last_cnt << endl;
-    cout << "deepest descendents " << endl;
+    
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_deepest_descendents(i, k, ext, work);            
@@ -603,7 +601,6 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
     work.is_rightmost_descendent_set.clear();
     work.is_rightmost_descendent_set.shrink_to_fit();
     
-    cout << "extend stra" << endl;
     for(int i=0; i<stratum_count; i++){
         // skip <k-2
         if(ext.prokrustean.stratums__size[i]>k-1){
@@ -611,7 +608,6 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
         }
     }
     
-    cout << "extend seq" << endl;
     for(int i=0; i<seq_count; i++){
         if(ext.prokrustean.sequences__size[i]>k-1){
             _extend_seq_unitigs(i, k, ext, work);
@@ -787,17 +783,24 @@ void construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access,
         if(unitig.is_start_of_maximal){
             build_strings(id, unitigs, seq_access, k);
             // cout << " unitig.content " << unitig.content << endl;
-            store.store(unitig.content);
+            // store.store(unitig.content);
         }
     }
-    // for(UnitigId id=0; id<unitigs.size(); id++){
-    //     string expr=unitigs[id].content;
-    //     for(int i=0; i<unitigs[id].next_cnt; i++){
-    //         expr+=" ";
-    //         expr+=unitigs[unitigs[id].nexts_new[i]].content;
-    //     }
-    //     store.store(expr);
-    // }
+    store.store("------------------------------------------------------------------------------------------------");
+    store.store("---------------         columns: unitig id, next unitig ids, unitig content     ----------------");
+    store.store("------------------------------------------------------------------------------------------------");
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        if(unitigs[id].is_start_of_maximal){
+            string expr=to_string((int)id);
+            for(int i=0; i<unitigs[id].next_cnt; i++){
+                expr+="  ";
+                expr+=to_string((int)unitigs[id].nexts_new[i]);
+            }
+            expr+="    ";
+            expr+=unitigs[id].content;
+            store.store(expr);
+        }
+    }
 }
 
 #endif

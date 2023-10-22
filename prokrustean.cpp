@@ -22,7 +22,7 @@ string input_bwt;
 string output_file;
 string output_seq_file;
 bool output_txt=false;
-int num_threads=12;
+int num_threads=8;
 bool contains_char_ext = false;
 bool contains_frequency = false;
 bool recover_seuqneces = false;

@@ -19,7 +19,7 @@ using namespace sdsl;
 
 string input_prokrustean;
 string output_file;
-int num_threads=4;
+int num_threads=8;
 int from=-1;
 int to=-1;
 char TERM = '$';
