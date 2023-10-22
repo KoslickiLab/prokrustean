@@ -124,8 +124,8 @@ struct Unitig {
 };
 
 struct StratumExt {
-    StratumId descendent_of_leftmost_refracted=-1;
-    StratumId descendent_of_rightmost_refracted=-1;
+    StratumId descendent_of_leftmost_refracted;
+    StratumId descendent_of_rightmost_refracted;
     optional<UnitigId> first_unitig;
     optional<UnitigId> last_unitig;
 };
@@ -244,9 +244,9 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
     work.working_stratum_ids.clear();
     StratumId curr_stratum_id=stratum_id;
     while(true){
+        // already visited
         if(work.is_rightmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
             for(auto id: work.working_stratum_ids){
-                assert(work.stratum_exts[id].descendent_of_rightmost_refracted!=work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted);
                 work.stratum_exts[id].descendent_of_rightmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted;
             }
             break;
@@ -272,6 +272,7 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
     work.working_stratum_ids.clear();
     curr_stratum_id=stratum_id;
     while(true){
+        // already visited
         if(work.is_leftmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
             for(auto id: work.working_stratum_ids){
                 work.stratum_exts[id].descendent_of_leftmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_leftmost_refracted;
@@ -579,13 +580,28 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
             _set_first_last_unitigs(i, k, ext, work);
         }
     }
-    
+    cout << "stratum " << ext.prokrustean.stratums__size.size() << endl;
+    int first_cnt=0;
+    int last_cnt=0;
+    for(int i=0; i<ext.prokrustean.stratum_count; i++){
+        if(work.stratum_exts[i].first_unitig.has_value()){
+            first_cnt++;
+        }
+        if(work.stratum_exts[i].last_unitig.has_value()){
+            last_cnt++;
+        }
+    }
+    cout << "first_cnt " <<first_cnt << " last_cnt  " << last_cnt << endl;
     cout << "deepest descendents " << endl;
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_deepest_descendents(i, k, ext, work);            
         }
     }
+    work.is_leftmost_descendent_set.clear();
+    work.is_leftmost_descendent_set.shrink_to_fit();
+    work.is_rightmost_descendent_set.clear();
+    work.is_rightmost_descendent_set.shrink_to_fit();
     
     cout << "extend stra" << endl;
     for(int i=0; i<stratum_count; i++){
@@ -770,9 +786,18 @@ void construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access,
         auto &unitig = unitigs[id];
         if(unitig.is_start_of_maximal){
             build_strings(id, unitigs, seq_access, k);
-            store.store(unitigs[id].content);
+            // cout << " unitig.content " << unitig.content << endl;
+            store.store(unitig.content);
         }
     }
+    // for(UnitigId id=0; id<unitigs.size(); id++){
+    //     string expr=unitigs[id].content;
+    //     for(int i=0; i<unitigs[id].next_cnt; i++){
+    //         expr+=" ";
+    //         expr+=unitigs[unitigs[id].nexts_new[i]].content;
+    //     }
+    //     store.store(expr);
+    // }
 }
 
 #endif

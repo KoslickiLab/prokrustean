@@ -62,7 +62,7 @@ public:
         // }
     }
 
-    void write_metadata(Prokrustean prokrustean) {
+    void write_metadata(vector<SequenceSize> &seq_sizes, optional<Prokrustean> prokrustean=nullopt) {
         assert(this->writefile.is_open());
         ////////////////////////////////////////////////
         // std::string evidence;
@@ -73,38 +73,38 @@ public:
         ////////////////////////////////////////////////
         this->metadata.loaded=true;
         this->metadata.evidence=PROKRUSTEAN_EVIDENCE;
-        this->metadata.prokrustean_file_name=prokrustean.file_name;
-        this->metadata.sequence_count=prokrustean.sequence_count;
-        this->metadata.lmin=prokrustean.lmin;
-        this->metadata.strata_count=prokrustean.stratum_count;
+        this->metadata.prokrustean_file_name=prokrustean.has_value()? prokrustean.value().file_name: "not set";
+        this->metadata.sequence_count=seq_sizes.size();
+        this->metadata.lmin=prokrustean.has_value()? prokrustean.value().lmin: 0;
+        this->metadata.strata_count=prokrustean.has_value()? prokrustean.value().stratum_count: 0;
 
         int metadata_fixed_size = 256 + 256 + sizeof(metadata.sequence_count) + sizeof(metadata.lmin) + sizeof(metadata.strata_count) + sizeof(std::streampos) + sizeof(std::streampos) + sizeof(std::streampos);
         std::streampos start_position_of_sequence_positions = metadata_fixed_size; 
         this->metadata.streampos_sequence_indices=start_position_of_sequence_positions;
 
         // sequence content
-        int metadata_and_sequence_meta = metadata_fixed_size + /* seq_pos*/ + prokrustean.sequences__size.size()*sizeof(streampos);
+        int metadata_and_sequence_meta = metadata_fixed_size + /* seq_pos*/ + seq_sizes.size()*sizeof(streampos);
         std::streampos start_position_sequence=metadata_and_sequence_meta;
         this->metadata.streampos_sequence=start_position_sequence;
 
         // strata content
-        uint64_t metadata_and_sequence_meta_and_content = metadata_and_sequence_meta + std::accumulate(prokrustean.sequences__size.begin(), prokrustean.sequences__size.end(), 0);
+        uint64_t metadata_and_sequence_meta_and_content = metadata_and_sequence_meta + std::accumulate(seq_sizes.begin(), seq_sizes.end(), 0);
         std::streampos start_position_strata = metadata_and_sequence_meta_and_content;
         this->metadata.streampos_strata=start_position_strata;
 
         // sequence positions
         std::streampos seq_position = start_position_sequence;
-        for (auto size : prokrustean.sequences__size) {
+        for (auto size : seq_sizes) {
             this->sequence_start_positions.push_back(seq_position);
             seq_position += size + sizeof(SequenceSize);
         }
 
         writefile.write(PROKRUSTEAN_EVIDENCE.c_str(), 256);
-        prokrustean.file_name.resize(256);
-        writefile.write(prokrustean.file_name.c_str(), 256);
-        writefile.write(reinterpret_cast<const char*>(&prokrustean.sequence_count), sizeof(prokrustean.sequence_count));
-        writefile.write(reinterpret_cast<const char*>(&prokrustean.lmin), sizeof(prokrustean.lmin));
-        writefile.write(reinterpret_cast<const char*>(&prokrustean.stratum_count), sizeof(prokrustean.stratum_count));
+        this->metadata.prokrustean_file_name.resize(256);
+        writefile.write(this->metadata.prokrustean_file_name.c_str(), 256);
+        writefile.write(reinterpret_cast<const char*>(&this->metadata.sequence_count), sizeof(this->metadata.sequence_count));
+        writefile.write(reinterpret_cast<const char*>(&this->metadata.lmin), sizeof(this->metadata.lmin));
+        writefile.write(reinterpret_cast<const char*>(&this->metadata.strata_count), sizeof(this->metadata.strata_count));
         writefile.write(reinterpret_cast<const char*>(&start_position_of_sequence_positions), sizeof(start_position_of_sequence_positions));
         writefile.write(reinterpret_cast<const char*>(&start_position_sequence), sizeof(start_position_sequence));
         writefile.write(reinterpret_cast<const char*>(&start_position_strata), sizeof(start_position_strata));

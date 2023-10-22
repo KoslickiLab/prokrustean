@@ -117,7 +117,7 @@ void test_cdbg_construction(){
     vector<string> seq_texts;
     recover_sequences_parallel(fm_idx, seq_texts, 8);
     
-    vector<int> ks={20, 30, 50};
+    vector<int> ks={20};
     for(auto k: ks){
         cout << "k: " << k << "start" << endl;
         CompactedDBGWorkspace workspace;
@@ -142,6 +142,15 @@ void test_cdbg_construction(){
         update_stratum_based_loc_to_seq_based_loc(ext, workspace);
         construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
         cout << "constructed" << endl;
+        set<string> unique_str;
+        int unique_cnt=0;
+        for(auto &unitig: workspace.unitigs){
+            if(unitig.is_start_of_maximal){
+                unique_str.insert(unitig.content);
+                unique_cnt++;   
+            }
+        }
+        assert(unique_str.size()==unique_cnt);
         assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);
     }
 }

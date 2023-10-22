@@ -81,8 +81,32 @@ void test_left_right_storage(){
     assert(left==prokrustean.get_left_cnt(0));
     assert(right==prokrustean.get_right_cnt(0));
 }
+
+void test_stratum_occ_sampling_parallel(){
+    int Lmin = 1;
+    int num_threads=4;
+    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    auto fm_idx = FmIndex(str);
+    vector<string> seq_txts;
+    fm_idx.recover_all_texts(seq_txts);
+
+    Prokrustean prokrustean;
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+	
+	ProkrusteanExtension ext(prokrustean);
+    ProkrusteanExtension ext2(prokrustean);
+	setup_stratum_example_occ(ext);
+    setup_stratum_example_occ_parallel(ext2, num_threads);
+    for(int i=0; i<prokrustean.stratum_count; i++){
+        assert(seq_txts[ext.stratum_sample_occ_seq_id[i]].substr(ext.stratum_sample_occ_pos[i], prokrustean.stratums__size[i])
+        == seq_txts[ext2.stratum_sample_occ_seq_id[i]].substr(ext2.stratum_sample_occ_pos[i], prokrustean.stratums__size[i]));
+    }
+}
+
 void main_prokrustean_support(){
     test_left_right_extension_counting();
     test_left_right_extension_counting_parallel();
     test_left_right_storage();
+    test_stratum_occ_sampling_parallel();
 }

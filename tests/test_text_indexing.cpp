@@ -27,7 +27,7 @@ void test_metadata_store(){
 
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_metadata(prokrustean.sequences__size, prokrustean);
     sequnce_access.write_close();
     sequnce_access.load_metadata();
     
@@ -53,15 +53,16 @@ void test_sequence_save_and_load(){
     prokrustean.lmin=20;
     prokrustean.sequence_count=123;
     prokrustean.stratum_count=987;
-    prokrustean.sequences__size.resize(prokrustean.sequence_count);
-    prokrustean.sequences__size[0]=sequences[0].size();
-    prokrustean.sequences__size[1]=sequences[1].size();
-    prokrustean.sequences__size[2]=sequences[2].size();
-    prokrustean.sequences__size[10]=sequences[3].size();
-
+    vector<SequenceSize> sequences__size(prokrustean.sequence_count);
+    sequences__size[0]=sequences[0].size();
+    sequences__size[1]=sequences[1].size();
+    sequences__size[2]=sequences[2].size();
+    sequences__size[10]=sequences[3].size();
+    
+    
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_metadata(sequences__size, prokrustean);
     sequnce_access.write_strings(sequences);
     sequnce_access.write_close();
     sequnce_access.read_open();
@@ -102,6 +103,10 @@ void test_bwt_prokrustean_indexing(){
     construct_prokrustean_single_thread(fm_idx, prokrustean);
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
+    vector<SequenceSize> seq_sizes;
+	for(auto &s: seq_texts){
+		seq_sizes.push_back(s.size());
+	}
     vector<tuple<SeqId, int, int>> substring_locs={
         make_tuple(1, 3, 20),
         make_tuple(3, 8, 37),
@@ -110,7 +115,7 @@ void test_bwt_prokrustean_indexing(){
 
     DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_metadata(seq_sizes, prokrustean);
     sequnce_access.write_strings(seq_texts);
     sequnce_access.write_close();
     
@@ -146,10 +151,13 @@ void test_bwt_prokrustean_indexing_update(){
         make_tuple(3, 8, 37),
         make_tuple(9, 20, 42)
     };
-
+    vector<SequenceSize> seq_sizes;
+	for(auto &s: seq_texts){
+		seq_sizes.push_back(s.size());
+	}
     DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_metadata(seq_sizes, prokrustean);
     sequnce_access.write_close();
     
     sequnce_access.update_open();

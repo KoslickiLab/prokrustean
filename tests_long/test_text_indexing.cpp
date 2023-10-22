@@ -10,14 +10,13 @@
 #include "../src/fm_index/string.sdsl.hpp"
 #include "../src/util/string.access.hpp"
 #include "../src/construction/algorithms.hpp"
+#include "../src/application/cdbg.hpp"
 
 using namespace std;
 
 void test_bwt_prokrustean_indexing_update(){
     WaveletString str(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     auto fm_idx = FmIndex(str);
-    Prokrustean prokrustean;
-    construct_prokrustean_parallel(fm_idx, prokrustean, 12);
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     vector<tuple<SeqId, int, int>> substring_locs={
@@ -25,10 +24,21 @@ void test_bwt_prokrustean_indexing_update(){
         make_tuple(3, 8, 37),
         make_tuple(9, 20, 42)
     };
+    Prokrustean prokrustean;
+    prokrustean.set_seq_count(seq_texts.size());
+    for(int i=0; i<seq_texts.size(); i++){
+        prokrustean.sequences__size[i]=seq_texts[i].size();
+    }
+
+    vector<SequenceSize> seq_sizes;
+	for(auto &s: seq_texts){
+		seq_sizes.push_back(s.size());
+	}
+    // construct_prokrustean_parallel(fm_idx, prokrustean, 12);
     auto start = std::chrono::steady_clock::now();
     DiskSequenceAccess sequence_access("test_bwt_prokrustean_indexing.dat");
     sequence_access.write_open();
-    sequence_access.write_metadata(prokrustean);
+    sequence_access.write_metadata(seq_sizes);
     sequence_access.write_close();
     start = std::chrono::steady_clock::now();
     cout << "save meta: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
@@ -43,6 +53,7 @@ void test_bwt_prokrustean_indexing_update(){
 
     DiskSequenceAccess sequence_access2("test_bwt_prokrustean_indexing.dat");
     sequence_access2.load_metadata();
+    cout << " load_metadata " << sequence_access2.metadata.sequence_count << endl;
     sequence_access2.read_open();
     string result;
     for(auto [idx, from, to]: substring_locs){
@@ -61,11 +72,9 @@ void test_bwt_prokrustean_indexing_update(){
 }
 
 void main_text_indexing() {
-    // test_metadata_store();
-    // test_sequence_save_and_load();
     test_bwt_prokrustean_indexing_update();
-    // test_bwt_prokrustean_indexing();
-    // test_verification();
+    // test_temp2();
+    // test_temp3();
 }
 
 #endif

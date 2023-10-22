@@ -71,9 +71,14 @@ void test_distinct_kmers_ondisk(){
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
 
+    vector<SequenceSize> seq_sizes;
+	for(auto &s: seq_texts){
+		seq_sizes.push_back(s.size());
+	}
+
     DiskSequenceAccess sequence_access("seq_texts.dat");
     sequence_access.write_open();
-    sequence_access.write_metadata(prokrustean);
+    sequence_access.write_metadata(seq_sizes);
     // for(int i=0; i<seq_texts.size();i++){
     //     sequence_access.write_sequence(i, seq_texts[i]);
     // }

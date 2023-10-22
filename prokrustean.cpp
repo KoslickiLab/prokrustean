@@ -130,13 +130,17 @@ int main(int argc, char** argv){
 		auto start = std::chrono::steady_clock::now();
 		cout << "recovering sequences (" << output_seq_file << ") ... " << endl;
 		vector<string> strs;
+		vector<SequenceSize> seq_sizes;
 		recover_sequences_parallel(fm_idx, strs, num_threads);
+		for(auto &s: strs){
+			seq_sizes.push_back(s.size());
+		}
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 		start = std::chrono::steady_clock::now();
 		cout << "indexing sequences (" << output_seq_file << ") ... " << endl;
 		DiskSequenceAccess sequence_access(output_seq_file);
 		sequence_access.write_open();
-		sequence_access.write_metadata(prokrustean);
+		sequence_access.write_metadata(seq_sizes);
 		// sequence_access.write_strings(strs);
 		sequence_access.write_close();
 		sequence_access.update_open();
