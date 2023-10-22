@@ -74,6 +74,33 @@ struct ProkrusteanExtension {
         return refracted_at_back_of_cover(k, prokrustean.stratums__size[id], prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
     }
 
+    // bool get_seq_first_stratified(SeqId id, StratifiedEdge &edge){
+    //     if(prokrustean.sequences__region_cnt[id]==0){
+    //         return false;
+    //     } else {
+    //         auto &region=prokrustean.sequences__region[id];
+    //         edge.update(region[0].pos, region[0].pos + prokrustean.get_stratum_size(region[0].stratum_id), true, region[0].stratum_id);
+    //         return true;
+    //     }
+    // }
+    bool get_stratum_first_stratified(StratumId id, StratifiedEdge &edge){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return false;
+        } else {
+            auto &region=prokrustean.stratums__region[id][0];
+            edge.update(region.pos, region.pos + prokrustean.get_stratum_size(region.stratum_id), true, region.stratum_id);
+            return true;
+        }
+    }
+    bool get_stratum_last_stratified(StratumId id, StratifiedEdge &edge){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return false;
+        } else {
+            auto &region=prokrustean.stratums__region[id][prokrustean.stratums__region_cnt[id]-1];
+            edge.update(region.pos, region.pos + prokrustean.get_stratum_size(region.stratum_id), true, region.stratum_id);
+            return true;
+        }
+    }
     optional<StratifiedEdge> first_stratified(StratifiedData* region, CoveringRegionCount rgn_cnt){
         if(rgn_cnt==0){
             return nullopt;

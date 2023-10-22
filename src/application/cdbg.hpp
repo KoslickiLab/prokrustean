@@ -202,6 +202,7 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
 }
 
 void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
+    StratifiedEdge edge;
     auto &prokrustean=ext.prokrustean;
     if(!work.is_leftmost_descendent_set[stratum_id]){
         work.working_stratum_ids.clear();
@@ -211,15 +212,21 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
             // set visited.
             work.is_leftmost_descendent_set[curr_stratum_id]=true;
             // has large stratified at the front
-            // optimize later
-            auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
-            vector<Edge> _bands;
-            ext.prokrustean.get_spectrum(_stra, k-1, _bands);
-            if(_bands[0].is_stratified){
+            if(ext.get_stratum_first_stratified(curr_stratum_id, edge)
+            && edge.from==0
+            && edge.size()>=k-1){
                 work.working_stratum_ids.push_back(curr_stratum_id);
-                curr_stratum_id=_bands[0].stratum_id;
+                curr_stratum_id=edge.stratum_id;
                 continue;
             }
+            // auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
+            // vector<Edge> _bands;
+            // ext.prokrustean.get_spectrum(_stra, k-1, _bands);
+            // if(_bands[0].is_stratified){
+            //     work.working_stratum_ids.push_back(curr_stratum_id);
+            //     curr_stratum_id=_bands[0].stratum_id;
+            //     continue;
+            // }
             // if(prokrustean.stratums__region_cnt[curr_stratum_id]>0
             // && prokrustean.stratums__region[curr_stratum_id][0].pos==0){
             //     auto rgn_stra_id= prokrustean.stratums__region[curr_stratum_id][0].stratum_id;
@@ -246,15 +253,22 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
             // set visited.
             work.is_rightmost_descendent_set[curr_stratum_id]=true;
             // has large stratified at the last
-            //later optimize
-            auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
-            vector<Edge> _bands;
-            ext.prokrustean.get_spectrum(_stra, k-1, _bands);
-            if(_bands[_bands.size()-1].is_stratified){
+            if(ext.get_stratum_last_stratified(curr_stratum_id, edge)
+            && edge.to==ext.prokrustean.get_stratum_size(curr_stratum_id)
+            && edge.size()>=k-1){
                 work.working_stratum_ids.push_back(curr_stratum_id);
-                curr_stratum_id=_bands[_bands.size()-1].stratum_id;
+                curr_stratum_id=edge.stratum_id;
                 continue;
             }
+
+            // auto _stra=ext.prokrustean.get_stratum(curr_stratum_id);
+            // vector<Edge> _bands;
+            // ext.prokrustean.get_spectrum(_stra, k-1, _bands);
+            // if(_bands[_bands.size()-1].is_stratified){
+            //     work.working_stratum_ids.push_back(curr_stratum_id);
+            //     curr_stratum_id=_bands[_bands.size()-1].stratum_id;
+            //     continue;
+            // }
             // if(prokrustean.stratums__region_cnt[curr_stratum_id]>0){
             //     auto rgn_idx=prokrustean.stratums__region_cnt[curr_stratum_id]-1;
             //     auto rgn_stra_id=prokrustean.stratums__region[curr_stratum_id][rgn_idx].stratum_id;
@@ -558,6 +572,11 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_first_last_unitigs(i, k, ext, work);
+        }
+    }
+    cout << "deepest descendents " << endl;
+    for(int i=0; i<stratum_count; i++){
+        if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_deepest_descendents(i, k, ext, work);            
         }
     }

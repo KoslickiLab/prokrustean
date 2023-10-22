@@ -34,6 +34,14 @@ struct Edge {
         return to-from;
     }
 
+    void update(Pos from, Pos to, bool is_stratified, StratumId stratum_id){
+        this->from=from;
+        this->to=to;
+        this->is_stratified=is_stratified;
+        this->is_reflected=!is_stratified;
+        this->stratum_id=stratum_id;
+    }
+
     void print(){
         if(is_stratified){
             cout<<"stratified("<< stratum_id <<")";
