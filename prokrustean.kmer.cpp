@@ -33,7 +33,7 @@ void help(){
 	"Output: distinct kmers in a text file." << endl <<
 	"Options:" << endl <<
 	"-h          help" << endl <<
-	"-i <arg>    (REQUIRED) input prokrustean file name" << endl <<
+	"-p <arg>    (REQUIRED) input prokrustean file name" << endl <<
 	"-k <arg>    (REQUIRED) k - at least lmin." << endl <<
 	"-s <arg>    sequence file name. (generated with prokrustean by -r) Default: {input}.sequences" << endl <<
 	"-o <arg>    output file name. Default: {input}.kmer.txt" << endl <<
@@ -45,12 +45,12 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "h:i:k:o:g:t:k")) != -1){
+	while ((opt = getopt(argc, argv, "h:p:k:o:g:t:k")) != -1){
 		switch (opt){
 			case 'h':
 				help();
 			break;
-			case 'i':
+			case 'p':
 				input_prokrustean = string(optarg);
 			break;
 			case 's':
@@ -59,11 +59,8 @@ int main(int argc, char** argv){
 			case 'k':
 				k = stoi(string(optarg));
 			break;
-			case 'p':
-				num_threads = stoi(string(optarg));
-			break;
 			case 't':
-				TERM = atoi(optarg);
+				num_threads = stoi(string(optarg));
 			break;
 			default:
 				help();
