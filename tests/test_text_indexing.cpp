@@ -133,6 +133,50 @@ void test_bwt_prokrustean_indexing(){
     // }
 }
 
+
+void test_bwt_prokrustean_indexing_update(){
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean);
+    vector<string> seq_texts;
+    fm_idx.recover_all_texts(seq_texts);
+    vector<tuple<SeqId, int, int>> substring_locs={
+        make_tuple(1, 3, 20),
+        make_tuple(3, 8, 37),
+        make_tuple(9, 20, 42)
+    };
+
+    DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
+    sequnce_access.write_open();
+    sequnce_access.write_metadata(prokrustean);
+    sequnce_access.write_close();
+    
+    sequnce_access.update_open();
+    for(int i=0; i< seq_texts.size(); i++){
+        sequnce_access.update_single_sequence(i, seq_texts[i]);
+    }
+    sequnce_access.update_open();
+
+    DiskSequenceAccess sequnce_access2("test_bwt_prokrustean_indexing.dat");
+    sequnce_access2.load_metadata();
+    sequnce_access2.read_open();
+    string result;
+    for(auto [idx, from, to]: substring_locs){
+        sequnce_access2.read_seq(idx, result);
+        assert(seq_texts[idx]==result);
+        sequnce_access2.read_seq_substr(idx, from, to-from+1, result);
+        assert(seq_texts[idx].substr(from, to-from+1)==result);
+    }
+    sequnce_access2.read_close(); 
+    //in memory
+    // sequnce_access.load_all_strings();
+    // for(auto [idx, from, to]: substring_locs){
+    //     assert(seq_texts[idx]==sequnce_access.get_string(idx));
+    //     assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
+    // }
+}
+
 // void test_verification(){
 //     std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
 //     DiskSequenceAccess sequnce_access("data.dat");
@@ -185,7 +229,7 @@ void test_bwt_prokrustean_indexing(){
 void main_text_indexing() {
     test_metadata_store();
     test_sequence_save_and_load();
-    // test_indexing_simple();
+    test_bwt_prokrustean_indexing_update();
     test_bwt_prokrustean_indexing();
     // test_verification();
 }

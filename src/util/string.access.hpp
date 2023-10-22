@@ -33,7 +33,8 @@ struct ProkrusteanSequenceMetadata {
 class DiskSequenceAccess: public AbstractSequenceAccess{
 public:
     std::string filename;
-    std::ofstream outfile;
+    std::ofstream writefile;
+    std::ofstream updatefile;
     std::ifstream infile;
     bool loaded=false;
     vector<string> strings;
@@ -62,7 +63,7 @@ public:
     }
 
     void write_metadata(Prokrustean prokrustean) {
-        assert(this->outfile.is_open());
+        assert(this->writefile.is_open());
         ////////////////////////////////////////////////
         // std::string evidence;
         // std::string prokrustean_file_name;
@@ -98,17 +99,17 @@ public:
             seq_position += size + sizeof(SequenceSize);
         }
 
-        outfile.write(PROKRUSTEAN_EVIDENCE.c_str(), 256);
+        writefile.write(PROKRUSTEAN_EVIDENCE.c_str(), 256);
         prokrustean.file_name.resize(256);
-        outfile.write(prokrustean.file_name.c_str(), 256);
-        outfile.write(reinterpret_cast<const char*>(&prokrustean.sequence_count), sizeof(prokrustean.sequence_count));
-        outfile.write(reinterpret_cast<const char*>(&prokrustean.lmin), sizeof(prokrustean.lmin));
-        outfile.write(reinterpret_cast<const char*>(&prokrustean.stratum_count), sizeof(prokrustean.stratum_count));
-        outfile.write(reinterpret_cast<const char*>(&start_position_of_sequence_positions), sizeof(start_position_of_sequence_positions));
-        outfile.write(reinterpret_cast<const char*>(&start_position_sequence), sizeof(start_position_sequence));
-        outfile.write(reinterpret_cast<const char*>(&start_position_strata), sizeof(start_position_strata));
+        writefile.write(prokrustean.file_name.c_str(), 256);
+        writefile.write(reinterpret_cast<const char*>(&prokrustean.sequence_count), sizeof(prokrustean.sequence_count));
+        writefile.write(reinterpret_cast<const char*>(&prokrustean.lmin), sizeof(prokrustean.lmin));
+        writefile.write(reinterpret_cast<const char*>(&prokrustean.stratum_count), sizeof(prokrustean.stratum_count));
+        writefile.write(reinterpret_cast<const char*>(&start_position_of_sequence_positions), sizeof(start_position_of_sequence_positions));
+        writefile.write(reinterpret_cast<const char*>(&start_position_sequence), sizeof(start_position_sequence));
+        writefile.write(reinterpret_cast<const char*>(&start_position_strata), sizeof(start_position_strata));
         for(auto pos: this->sequence_start_positions){
-            outfile.write(reinterpret_cast<const char*>(&pos), sizeof(pos));
+            writefile.write(reinterpret_cast<const char*>(&pos), sizeof(pos));
         }
     }
 
@@ -146,50 +147,42 @@ public:
     }
 
 
-    // void write_meta(const std::vector<int>& string_sizes) {
-    //     // Ensure the metadata string is the expected length
-    //     this->outfile.write(PROKRUSTEAN_EVIDENCE.c_str(), METADATA_SIZE);
-
-    //     // Compute and write the index table
-    //     int position = METADATA_SIZE + sizeof(int) * string_sizes.size(); // meta + index table size + all strings size
-    //     for (int size : string_sizes) {
-    //         this->outfile.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //         position += size + sizeof(int); // move by string size + size of the integer that stores the length
-    //     }
-        
-    //     // Pre-allocate space for all the strings
-    //     outfile.seekp(position - 1);  // Move to the end of the pre-allocated space
-    //     char dummy_byte = 0;
-    //     outfile.write(&dummy_byte, 1);  // Write a single byte to make the file system allocate space up to this position
-    // }
-
     void write_strings(const std::vector<std::string>& strings) {
         assert(metadata.streampos_sequence == this->sequence_start_positions[0]);
         // this->outfile.seekp(metadata.streampos_sequence);
         // Write the strings
         for (const std::string& str : strings) {
             SequenceSize len = str.size();
-            this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));  // this could be optional now, as we have sizes saved
-            this->outfile.write(str.c_str(), len);
+            this->writefile.write(reinterpret_cast<char*>(&len), sizeof(len));  // this could be optional now, as we have sizes saved
+            this->writefile.write(str.c_str(), len);
         }
     }
 
     void write_open() {
-        this->outfile=std::ofstream(filename, std::ios::binary);
+        this->writefile=std::ofstream(filename, std::ios::binary);
     }
 
-    // void write_single_sequence(SeqId id, const std::string& str){
-    //     assert(metadata.loaded);
-    //     assert(id<metadata.sequence_count);
-    //     assert(metadata.streampos_sequence<=this->sequence_start_positions[id]);
-    //     //do I need to recheck with the metadata?
-    //     SequenceSize len = str.size();
-    //     // this->outfile.seekp(this->sequence_start_positions[id]);
-    //     this->outfile.write(reinterpret_cast<char*>(&len), sizeof(len));
-    //     this->outfile.write(str.c_str(), len);
-    // }
     void write_close() {
-        this->outfile.close();
+        this->writefile.close();
+    }
+
+    void update_open() {
+        this->updatefile=std::ofstream(filename, std::ios::binary | std::ios::in | std::ios::out);
+    }
+
+    void update_single_sequence(SeqId id, const std::string& str){
+        assert(metadata.loaded);
+        assert(id<metadata.sequence_count);
+        assert(metadata.streampos_sequence<=this->sequence_start_positions[id]);
+        assert(updatefile.is_open());
+        //do I need to recheck with the metadata?
+        SequenceSize len = str.size();
+        this->updatefile.seekp(this->sequence_start_positions[id]);
+        this->updatefile.write(reinterpret_cast<char*>(&len), sizeof(len));
+        this->updatefile.write(str.c_str(), len);
+    }
+    void update_close() {
+        this->updatefile.close();
     }
 
     void read_open() {

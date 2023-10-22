@@ -6,9 +6,10 @@
 // #include "test_step3_build_prokrustean.cpp"
 // #include "test_full_process.cpp"
 // #include "test_ssa.cpp"
-#include "test_construction.cpp"
+// #include "test_construction.cpp"
 // #include "test_application.cdbg.naive.cpp"
-#include "test_application.dbg.count.cpp"
+// #include "test_application.dbg.count.cpp"
+#include "test_text_indexing.cpp"
 int main(void){
     // cout << "--- bitvector ---" << endl;
     // main_performance_bitvector();
@@ -37,5 +38,8 @@ int main(void){
     // main_application_naive_cdbg();
 
     // cout << "--- application dbg unitig count ---" << endl;
-    main_application_unitig_count();
+    // main_application_unitig_count();
+
+    // cout << "--- test text indexing ---" << endl;
+    main_text_indexing();
 }

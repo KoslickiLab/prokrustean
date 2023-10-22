@@ -128,15 +128,36 @@ int main(int argc, char** argv){
 
 	if(recover_seuqneces){
 		auto start = std::chrono::steady_clock::now();
-		cout << "recovering sequences and indexing them (" << output_seq_file << ") ... " ;
+		cout << "recovering sequences (" << output_seq_file << ") ... " << endl;
+		vector<string> strs;
+		recover_sequences_parallel(fm_idx, strs, num_threads);
+		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+		start = std::chrono::steady_clock::now();
+		cout << "indexing sequences (" << output_seq_file << ") ... " << endl;
 		DiskSequenceAccess sequence_access(output_seq_file);
 		sequence_access.write_open();
 		sequence_access.write_metadata(prokrustean);
-		vector<string> strs;
-		fm_idx.recover_all_texts(strs);
-		sequence_access.write_strings(strs);
+		// sequence_access.write_strings(strs);
 		sequence_access.write_close();
+		sequence_access.update_open();
+		for(int i=0; i< strs.size(); i++){
+		    sequence_access.update_single_sequence(i, strs[i]);
+		}
+		sequence_access.update_close();
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+
+	// 	sequnce_access.write_open();
+    // sequnce_access.write_metadata(prokrustean);
+    // sequnce_access.write_close();
+    
+    // sequnce_access.update_open();
+    // auto start = std::chrono::steady_clock::now();
+
+    // for(int i=0; i< seq_texts.size(); i++){
+    //     sequnce_access.update_single_sequence(i, seq_texts[i]);
+    // }
+    // cout << "save: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+    // sequnce_access.update_close();
 	}
 }
 
