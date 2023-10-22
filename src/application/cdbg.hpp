@@ -2,6 +2,8 @@
 #define APPLICATION_CDBG_HPP_
 #include <algorithm>
 #include "../prokrustean.support.hpp"
+#include "../util/string.access.hpp"
+#include "../util/data.store.hpp"
 
 /* 
 * (0) Data Structure
@@ -68,13 +70,15 @@ struct Unitig {
     void print(vector<string> &sequences){
         cout << "unitig: " << sequences[loc_id].substr(loc_from, loc_to-loc_from) << " seq id: " << loc_id << endl;
     }
-    string get_string(vector<string> &sequences){
-        bool valid=loc_id<sequences.size() && 0<=loc_from && loc_to<=sequences[loc_id].size();
+    string get_string(AbstractSequenceAccess &seq_access){
+        string seq;
+        seq_access.read_seq(loc_id, seq);
+        bool valid=0<=loc_from && loc_to<=seq.size();
         if(!valid){
-            cout << "sequence location invalid: " << loc_id << ": " << loc_from << ": " << loc_to << "(seq size " << sequences[loc_id].size() << ")" << endl;
+            cout << "sequence location invalid: " << loc_id << ": " << loc_from << ": " << loc_to << "(seq size " << seq.size() << ")" << endl;
             assert(false);
         }
-        auto str=sequences[loc_id].substr(loc_from, loc_to-loc_from);
+        auto str=seq.substr(loc_from, loc_to-loc_from);
         return str;
     }
     char get_front_letter(vector<string> &sequences, int k){
@@ -543,25 +547,28 @@ void _count_maximal_unitig_of_reflectum(vector<Unitig> &unitigs, UnitigId id, in
 
 }
 
-void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, vector<string> &sequences, CompactedDBGWorkspace &work, bool verbose=false){
+void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, bool verbose=false){
     assert(k>1);
+    assert(ext.prokrustean.contains_stratum_extension_count);
     int stratum_count=ext.prokrustean.stratum_count;
     int seq_count=ext.prokrustean.sequence_count;
     
     work.reset(stratum_count);
-
+    cout << "first/last " << endl;
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
             _set_first_last_unitigs(i, k, ext, work);
             _set_deepest_descendents(i, k, ext, work);            
         }
     }
+    cout << "extend stra" << endl;
     for(int i=0; i<stratum_count; i++){
         // skip <k-2
         if(ext.prokrustean.stratums__size[i]>k-1){
             _extend_stra_unitigs(i, k, ext, work);
         }
     }
+    cout << "extend seq" << endl;
     for(int i=0; i<seq_count; i++){
         if(ext.prokrustean.sequences__size[i]>k-1){
             _extend_seq_unitigs(i, k, ext, work);
@@ -671,10 +678,10 @@ struct CdbgInvariants {
 };
 
 
-void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
+void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, int k){
     assert(unitigs[uni_id].is_start_of_maximal);
     // implement string
-    unitigs[uni_id].content=unitigs[uni_id].get_string(sequences);
+    unitigs[uni_id].content=unitigs[uni_id].get_string(seq_access);
     if(unitigs[uni_id].nexts.size()!=1){
         return;
     }
@@ -691,7 +698,7 @@ void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &seq
             } else {
                 if(unitigs[curr_id].nexts.size()<=1){
                     // merge
-                    unitigs[uni_id].content+=next_unitig.get_string(sequences).substr(k-1);
+                    unitigs[uni_id].content+=next_unitig.get_string(seq_access).substr(k-1);
                 }
 
                 if(next_unitig.nexts.size()!=1){
@@ -715,11 +722,12 @@ void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &seq
     }
 }
 
-void construct_cdbg(vector<Unitig> &unitigs, vector<string> &sequences, int k){
+void construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, AbstractStringDataStore &store, int k){
     for(UnitigId id=0; id<unitigs.size(); id++){
         auto &unitig = unitigs[id];
         if(unitig.is_start_of_maximal){
-            build_strings(id, unitigs, sequences, k);
+            build_strings(id, unitigs, seq_access, k);
+            store.store(unitigs[id].content);
         }
     }
 }

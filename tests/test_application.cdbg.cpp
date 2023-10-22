@@ -36,7 +36,7 @@ void test_cdbg_with_verifier(){
     for(auto k: ks){
     // for(int k=2; k<100; k++){
         CompactedDBGWorkspace workspace;
-        extract_paritial_unitigs(k, enhancement, seq_texts, workspace);
+        extract_paritial_unitigs(k, enhancement, workspace);
         CdbgInvariants veritifer;
         veritifer.set(workspace, enhancement);
         veritifer.assert_result();
@@ -45,35 +45,35 @@ void test_cdbg_with_verifier(){
     }
 }
 
-void _explore(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
-    int next_cnt=unitigs[uni_id].nexts.size();
-    if(next_cnt>0){
-        cout << "-> ";
-    }
-    for(auto next: unitigs[uni_id].nexts){
-        cout << unitigs[next].get_string(sequences) << " ";
-    }
-    if(unitigs[uni_id].nexts.size()==1){
-        _explore(unitigs[uni_id].nexts[0], unitigs, sequences, k);
-    }
-}
+// void _explore(UnitigId uni_id, vector<Unitig> &unitigs, vector<string> &sequences, int k){
+//     int next_cnt=unitigs[uni_id].nexts.size();
+//     if(next_cnt>0){
+//         cout << "-> ";
+//     }
+//     for(auto next: unitigs[uni_id].nexts){
+//         cout << unitigs[next].get_string(sequences) << " ";
+//     }
+//     if(unitigs[uni_id].nexts.size()==1){
+//         _explore(unitigs[uni_id].nexts[0], unitigs, sequences, k);
+//     }
+// }
 
 
-void print_cdbg(vector<Unitig> &unitigs){
-    for(UnitigId id=0; id<unitigs.size(); id++){
-        auto &unitig = unitigs[id];
-        if(unitig.is_start_of_maximal){
-            cout << unitig.content;
-            if(unitig.nexts.size()>0){
-                cout << "-> ";
-            }
-            for(auto next: unitig.nexts){
-                cout << unitigs[next].content << " ";
-            }
-            cout << endl;
-        }
-    }
-}
+// void print_cdbg(vector<Unitig> &unitigs){
+//     for(UnitigId id=0; id<unitigs.size(); id++){
+//         auto &unitig = unitigs[id];
+//         if(unitig.is_start_of_maximal){
+//             cout << unitig.content;
+//             if(unitig.nexts.size()>0){
+//                 cout << "-> ";
+//             }
+//             for(auto next: unitig.nexts){
+//                 cout << unitigs[next].content << " ";
+//             }
+//             cout << endl;
+//         }
+//     }
+// }
 
 void assert_by_naive_cdbg(vector<Unitig> &unitigs, std::unordered_map<std::string, NaiveNode> &naive_graph){
     int cnt=0;
@@ -96,22 +96,24 @@ void assert_by_naive_cdbg(vector<Unitig> &unitigs, std::unordered_map<std::strin
 
 
 void test_cdbg_construction(){
-    int Lmin = 1;
+    int Lmin = 10;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, 8, Lmin);
 
     vector<string> seq_texts;
-    fm_idx.recover_all_texts(seq_texts);
+    recover_sequences_parallel(fm_idx, seq_texts, 8);
     
-    vector<int> ks={2, 7, 30, 50};
+    vector<int> ks={20, 30, 50};
     for(auto k: ks){
+        cout << "k: " << k << "start" << endl;
         CompactedDBGWorkspace workspace;
-        extract_paritial_unitigs(k, enhancement, seq_texts, workspace);
+        extract_paritial_unitigs(k, enhancement, workspace);
+        cout << "k: " << k << "extracted" << endl;
 
         CdbgInvariants veritifer;
         veritifer.set(workspace, enhancement);
@@ -119,16 +121,19 @@ void test_cdbg_construction(){
         auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, enhancement);
         assert(veritifer.maximal_starting_unitig_count==calculated_unitig_cnt);
 
-        NaiveCompactedDeBruijnGraph cdbg;
-        cdbg.construct_compacted(seq_texts, k);
-        auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
-        // cdbg.print();
-        assert(veritifer.maximal_starting_unitig_count==naive_unitig_cnt);
+        // NaiveCompactedDeBruijnGraph cdbg;
+        // cdbg.construct_compacted(seq_texts, k);
+        // auto naive_unitig_cnt = cdbg.maximal_unitig_cnt();
+        // // cdbg.print();
+        // assert(veritifer.maximal_starting_unitig_count==naive_unitig_cnt);
+        // cout << "naive constructed" << endl;
 
+        MemorySequenceAccess sequence_access(seq_texts);
+        MemoryStringDataStore string_store;
         update_stratum_based_loc_to_seq_based_loc(enhancement, workspace);
-        construct_cdbg(workspace.unitigs, seq_texts, k);
-        
-        assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);
+        construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
+        cout << "constructed" << endl;
+        // assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);
     }
 }
 

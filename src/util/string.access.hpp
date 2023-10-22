@@ -404,8 +404,6 @@ class MemorySequenceAccess: public AbstractSequenceAccess{
 public:
     MemorySequenceAccess(std::vector<std::string>& strings): strings(strings){}
 
-    const uint64_t METADATA_SIZE = 256; // 256 bytes for metadata
-
     void read_seq(SeqId index, std::string &string){
         string=this->strings[index];
     }
