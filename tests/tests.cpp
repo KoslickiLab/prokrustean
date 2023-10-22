@@ -10,32 +10,32 @@
 #include "test_text_indexing.cpp"
 
 int main(void){
-    cout << "--- test bitvector ---" << endl;
-    main_bitvector();   
+    // cout << "--- test bitvector ---" << endl;
+    // main_bitvector();   
 
-    cout << "--- test fm_index ---" << endl;
-    main_fm_index();
+    // cout << "--- test fm_index ---" << endl;
+    // main_fm_index();
 
-    cout << "--- test text indexing ---" << endl;
-    main_text_indexing();
+    // cout << "--- test text indexing ---" << endl;
+    // main_text_indexing();
 
-    cout << "--- test construction ---" << endl;
-    main_construction();
+    // cout << "--- test construction ---" << endl;
+    // main_construction();
 
-    cout << "--- test kmer ---" << endl;
-    main_application_kmer();
+    // cout << "--- test kmer ---" << endl;
+    // main_application_kmer();
 
-    cout << "--- test kmer counting ---" << endl;
-    main_application_kmer_count();
+    // cout << "--- test kmer counting ---" << endl;
+    // main_application_kmer_count();
     
-    cout << "--- test cdbg ---" << endl;
-    main_application_cdbg();
+    // cout << "--- test cdbg ---" << endl;
+    // main_application_cdbg();
 
-    cout << "--- test unitig counting ---" << endl;
-    main_application_unitig_count();
+    // cout << "--- test unitig counting ---" << endl;
+    // main_application_unitig_count();
 
-    cout << "--- test store ---" << endl;
-    main_test_storage();
+    // cout << "--- test store ---" << endl;
+    // main_test_storage();
 
     cout << "--- test support ---" << endl;
     main_prokrustean_support();

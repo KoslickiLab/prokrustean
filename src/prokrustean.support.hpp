@@ -15,6 +15,9 @@ struct ProkrusteanExtension {
     vector<SeqId> stratum_sample_occ_seq_id;
     vector<Pos> stratum_sample_occ_pos;
 
+    vector<CharCount> stratum_left_ext_count;
+    vector<CharCount> stratum_right_ext_count;
+
     vector<SpinLock> stratum_locks;
     int stratum_lock_scale;
     
@@ -266,74 +269,109 @@ void setup_stratum_example_occ_parallel(ProkrusteanExtension &ext, int thread_cn
     for (auto &f : futures) {f.wait();}
 }
 
-// /********************************************************************************************************/
-// /*                              Calculating left/right extension characters 
-//                                  cannot work because actual characters are required - expensive          */
-// /********************************************************************************************************/
-// void count_left_right_character_extensions(ProkrusteanExtension &ext){
-//     ext.stratum_left_ext_count.resize(ext.prokrustean.stratum_count,0);
-//     ext.stratum_right_ext_count.resize(ext.prokrustean.stratum_count,0);
-//     std::stack<StratumId> stratum_stack;
-//     Vertex vertex;
-//     for(int i=0; i<ext.prokrustean.sequence_count; i++){
-//         ext.prokrustean.get_sequence(i, vertex);
-//         for(auto edge: vertex.s_edges){
-//             if(edge.from!=0){
-//                 stratum_stack.push(edge.stratum_id);
-//                 while(!stratum_stack.empty()){
-//                     auto stratum_id=stratum_stack.top();
-//                     stratum_stack.pop();
-//                     ext.prokrustean.get_left_cnt(stratum_id)++;
-//                     optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
-//                     if(first_edge.has_value()&&first_edge.value().from==0){
-//                         stratum_stack.push(first_edge.value().stratum_id);
-//                     }
-//                 }
-//             }
-//             if(edge.to!=vertex.size){
-//                 stratum_stack.push(edge.stratum_id);
-//                 while(!stratum_stack.empty()){
-//                     auto stratum_id=stratum_stack.top();
-//                     stratum_stack.pop();
-//                     ext.prokrustean.get_right_cnt(stratum_id)++;
-//                     optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
-//                     if(last_edge.has_value()&&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)){
-//                         stratum_stack.push(last_edge.value().stratum_id);
-//                     }
-//                 }
-//             }       
-//         }
-//     }
-//     for(int i=0; i<ext.prokrustean.stratum_count; i++){
-//         ext.prokrustean.get_stratum(i, vertex);
-//         for(auto edge: vertex.s_edges){
-//             if(edge.from!=0){
-//                 stratum_stack.push(edge.stratum_id);
-//                 while(!stratum_stack.empty()){
-//                     auto stratum_id=stratum_stack.top();
-//                     stratum_stack.pop();
-//                     ext.prokrustean.get_left_cnt(stratum_id)++;
-//                     optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
-//                     if(first_edge.has_value()&&first_edge.value().from==0){
-//                         stratum_stack.push(first_edge.value().stratum_id);
-//                     }
-//                 }
-//             }
-//             if(edge.to!=vertex.size){
-//                 stratum_stack.push(edge.stratum_id);
-//                 while(!stratum_stack.empty()){
-//                     auto stratum_id=stratum_stack.top();
-//                     stratum_stack.pop();
-//                     ext.prokrustean.get_right_cnt(stratum_id)++;
-//                     optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
-//                     if(last_edge.has_value()&&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)){
-//                         stratum_stack.push(last_edge.value().stratum_id);
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+/********************************************************************************************************/
+/*                              Calculating left/right extension characters 
+                                 cannot work because actual characters are required - expensive          */
+/********************************************************************************************************/
+void count_left_right_character_extensions(ProkrusteanExtension &ext){
+    ext.stratum_left_ext_count.resize(ext.prokrustean.stratum_count,0);
+    ext.stratum_right_ext_count.resize(ext.prokrustean.stratum_count,0);
+    std::stack<StratumId> stratum_stack;
+    Vertex vertex;
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
+        ext.prokrustean.get_sequence(i, vertex);
+        for(int e=0; e<vertex.s_edges.size(); e++){
+            auto &edge=vertex.s_edges[e];
+            if(edge.from>0){
+                auto limited_length=0;
+                if(0<e && edge.from<vertex.s_edges[e-1].to){
+                    // intersection exists
+                    limited_length=vertex.s_edges[e-1].to-edge.from;
+                }
+                stratum_stack.push(edge.stratum_id);
+                while(!stratum_stack.empty()){
+                    auto stratum_id=stratum_stack.top();
+                    stratum_stack.pop();
+                    // ext.prokrustean.get_left_cnt(stratum_id)++;
+                    ext.stratum_left_ext_count[stratum_id]++;
+                    optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
+                    if(first_edge.has_value()
+                    &&first_edge.value().from==0
+                    &&limited_length<first_edge.value().size()
+                    ){
+                        stratum_stack.push(first_edge.value().stratum_id);
+                    }
+                }
+            }
+            if(edge.to<vertex.size){
+                auto limited_length=0;
+                if(e+1<edge.size() && vertex.s_edges[e+1].from<edge.to){
+                    // intersection exists
+                    limited_length=edge.to-vertex.s_edges[e+1].from;
+                }
+                stratum_stack.push(edge.stratum_id);
+                while(!stratum_stack.empty()){
+                    auto stratum_id=stratum_stack.top();
+                    stratum_stack.pop();
+                    ext.stratum_right_ext_count[stratum_id]++;
+                    optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
+                    if(last_edge.has_value()
+                    &&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)
+                    &&limited_length<last_edge.value().size()
+                    ){
+                        stratum_stack.push(last_edge.value().stratum_id);
+                    }
+                }
+            }       
+        }
+    }
+    for(int i=0; i<ext.prokrustean.stratum_count; i++){
+        ext.prokrustean.get_stratum(i, vertex);
+        for(int e=0; e<vertex.s_edges.size(); e++){
+            auto &edge=vertex.s_edges[e];
+            if(edge.from>0){
+                auto limited_length=0;
+                if(0<e && edge.from<vertex.s_edges[e-1].to){
+                    // intersection exists
+                    limited_length=vertex.s_edges[e-1].to-edge.from;
+                }
+                stratum_stack.push(edge.stratum_id);
+                while(!stratum_stack.empty()){
+                    auto stratum_id=stratum_stack.top();
+                    stratum_stack.pop();
+                    ext.stratum_left_ext_count[stratum_id]++;
+                    optional<StratifiedEdge> first_edge= ext.stratum__first_stratified(stratum_id);
+                    if(first_edge.has_value()
+                    &&first_edge.value().from==0
+                    &&limited_length<first_edge.value().size()
+                    ){
+                        stratum_stack.push(first_edge.value().stratum_id);
+                    }
+                }
+            }
+            if(edge.to<vertex.size){
+                auto limited_length=0;
+                if(e+1<edge.size() && vertex.s_edges[e+1].from<edge.to){
+                    // intersection exists
+                    limited_length=edge.to-vertex.s_edges[e+1].from;
+                }
+                stratum_stack.push(edge.stratum_id);
+                while(!stratum_stack.empty()){
+                    auto stratum_id=stratum_stack.top();
+                    stratum_stack.pop();
+                    ext.stratum_right_ext_count[stratum_id]++;
+                    optional<StratifiedEdge> last_edge= ext.stratum__last_stratified(stratum_id);
+                    if(last_edge.has_value()
+                    &&last_edge.value().to==ext.prokrustean.get_stratum_size(stratum_id)
+                    &&limited_length<last_edge.value().size()
+                    ){
+                        stratum_stack.push(last_edge.value().stratum_id);
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 /********************************************************************************************************/
