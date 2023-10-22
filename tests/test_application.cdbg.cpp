@@ -101,9 +101,10 @@ void test_cdbg_construction(){
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    ProkrusteanExtension enhancement(prokrustean);
+    ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
     construct_prokrustean_parallel(fm_idx, prokrustean, 8, Lmin);
+    setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
     recover_sequences_parallel(fm_idx, seq_texts, 8);
@@ -112,13 +113,13 @@ void test_cdbg_construction(){
     for(auto k: ks){
         cout << "k: " << k << "start" << endl;
         CompactedDBGWorkspace workspace;
-        extract_paritial_unitigs(k, enhancement, workspace);
+        extract_paritial_unitigs(k, ext, workspace);
         cout << "k: " << k << "extracted" << endl;
 
         CdbgInvariants veritifer;
-        veritifer.set(workspace, enhancement);
+        veritifer.set(workspace, ext);
         veritifer.assert_result();
-        auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, enhancement);
+        auto calculated_unitig_cnt=count_maximal_unitigs_single_k(k, ext);
         assert(veritifer.maximal_starting_unitig_count==calculated_unitig_cnt);
 
         // NaiveCompactedDeBruijnGraph cdbg;
@@ -130,7 +131,7 @@ void test_cdbg_construction(){
 
         MemorySequenceAccess sequence_access(seq_texts);
         MemoryStringDataStore string_store;
-        update_stratum_based_loc_to_seq_based_loc(enhancement, workspace);
+        update_stratum_based_loc_to_seq_based_loc(ext, workspace);
         construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
         cout << "constructed" << endl;
         // assert_by_naive_cdbg(workspace.unitigs, cdbg.graph);

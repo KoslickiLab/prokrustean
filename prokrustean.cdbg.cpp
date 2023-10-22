@@ -99,12 +99,12 @@ int main(int argc, char** argv){
 		exit(0);
 	}
 	prokrustean.print_abstract();
-
+	
 	if(k<prokrustean.lmin){
 		cout << "k has to be at least lmin. given k: " << k << ", lmin of prokrustean: " << prokrustean.lmin  << endl;
 		exit(0);
 	}
-
+	
 	start = std::chrono::steady_clock::now();
 	cout << "annotate strata example occurrences (so that they can be printed) ... " << endl;
 	
@@ -122,13 +122,16 @@ int main(int argc, char** argv){
 	
     CompactedDBGWorkspace workspace;
     extract_paritial_unitigs(k, ext, workspace);
+	
 	cout << "hihi" << endl;
 	update_stratum_based_loc_to_seq_based_loc(ext, workspace);
+	
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();
 	cout << "complete and save cdbg... " << endl;
 	DiskStringDataStore string_store(output_file);
 	construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
+	
 	// store_kmers(mers, output_file);
 	cout << "stored: " << output_file << endl;
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

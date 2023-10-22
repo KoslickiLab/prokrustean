@@ -12,6 +12,7 @@ using namespace std;
 struct ProkrusteanExtension {
     Prokrustean& prokrustean;
 
+    bool is_sample_occ_available;
     vector<SeqId> stratum_sample_occ_seq_id;
     vector<Pos> stratum_sample_occ_pos;
 
@@ -255,6 +256,7 @@ void setup_stratum_example_occ(ProkrusteanExtension &ext){
             }
         }
     }
+    ext.is_sample_occ_available=true;
 }
 
 void _set_stratum_example_occ_for_seq(SeqId id, ProkrusteanExtension &ext, vector<uint8_t> &visits){
@@ -314,6 +316,7 @@ void setup_stratum_example_occ_parallel(ProkrusteanExtension &ext, int thread_cn
     };
     // for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(visits), ref(ext), ref(seq_idx_gen)));}
     for (auto &f : futures) {f.wait();}
+    ext.is_sample_occ_available=true;
 }
 
 /********************************************************************************************************/
