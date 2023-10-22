@@ -30,6 +30,7 @@ void test_store_and_retrieve() {
         }
         originalData.set_seq_size(i, 200);
         originalData.set_seq_regions(i, arr, region_per_stratum);
+        originalData.total_sequence_region_count+=region_per_stratum;
     }
     for(int i=0; i<stratum_cnt; i++){
         StratifiedData* arr= new StratifiedData[region_per_stratum];
@@ -38,6 +39,7 @@ void test_store_and_retrieve() {
             arr[r].pos=5;    
         }
         originalData.set_stratum_regions(i, arr, region_per_stratum);
+        originalData.total_strata_region_count+=region_per_stratum;
     }
     auto start = std::chrono::steady_clock::now();
 
@@ -87,7 +89,9 @@ void test_store_and_retrieve_simple() {
         }
         originalData.set_seq_size(i, 200);
         originalData.set_seq_regions(i, arr, region_per_stratum);
+        originalData.total_sequence_region_count+=region_per_stratum;
     }
+    
     for(int i=0; i<stratum_cnt; i++){
         StratifiedData* arr= new StratifiedData[region_per_stratum];
         for(int r=0; r<region_per_stratum; r++){
@@ -95,7 +99,9 @@ void test_store_and_retrieve_simple() {
             arr[r].pos=5;    
         }
         originalData.set_stratum_regions(i, arr, region_per_stratum);
+        originalData.total_strata_region_count+=region_per_stratum;
     }
+    
     auto start = std::chrono::steady_clock::now();
 
     // Serialize the data to a file
@@ -157,6 +163,7 @@ void test_store_and_retrieve_random_data() {
         }
         originalData.set_seq_size(i, generate_random_val<SequenceSize>());
         originalData.set_seq_regions(i, arr, rgn_count);
+        originalData.total_sequence_region_count+=rgn_count;
     }
     for(int i=0; i<stratum_cnt; i++){
         auto rgn_count = generate_random_val<CoveringRegionIdx>();
@@ -167,6 +174,7 @@ void test_store_and_retrieve_random_data() {
         }
         originalData.set_stratum_regions(i, arr, rgn_count);
         originalData.stratums__size[i]=generate_random_val<StratumSize>();
+        originalData.total_strata_region_count+=rgn_count;
     }
     auto start = std::chrono::steady_clock::now();
 
@@ -236,9 +244,47 @@ void test_store_and_retrieve_extensions() {
 }
 
 
+void test_store_and_retrieve_bwt() {
+    int Lmin = 1;
+    auto str = WaveletString(PATH4_SREAD_PARTITIONED);
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean originalData;
+    construct_prokrustean_parallel(fm_idx, originalData, Lmin);
+    
+    // Serialize the data to a file
+    store_prokrustean(originalData, "data.bin");
+
+    auto start = std::chrono::steady_clock::now();
+
+    // Deserialize the data from the file
+    Prokrustean loadedData;  
+    load_prokrustean("data.bin", loadedData);
+
+    // Now, loadedData contains the deserialized data
+    for(int i=0; i<originalData.sequence_count; i++){
+        assert(originalData.sequences__size[i]==loadedData.sequences__size[i]);
+        assert(originalData.sequences__region_cnt[i]==loadedData.sequences__region_cnt[i]);
+        for(int r=0; r<loadedData.sequences__region_cnt[i]; r++){
+            assert(originalData.sequences__region[i]->stratum_id==loadedData.sequences__region[i]->stratum_id);
+            assert(originalData.sequences__region[i]->pos==loadedData.sequences__region[i]->pos);
+        }
+    }
+    for(int i=0; i<originalData.stratum_count; i++){
+        assert(originalData.stratums__size[i]==loadedData.stratums__size[i]);
+        assert(originalData.stratums__region_cnt[i]==loadedData.stratums__region_cnt[i]);
+        for(int r=0; r<loadedData.stratums__region_cnt[i]; r++){
+            assert(originalData.stratums__region[i]->stratum_id==loadedData.stratums__region[i]->stratum_id);
+            assert(originalData.stratums__region[i]->pos==loadedData.stratums__region[i]->pos);
+        }
+    }
+}
+
+
 void main_test_storage(){
     test_store_and_retrieve_simple();
     test_store_and_retrieve_random_data();
     test_store_and_retrieve_extensions();
+    test_store_and_retrieve_bwt();
 }
 #endif

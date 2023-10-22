@@ -522,32 +522,53 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         }
         
         // Deserialize sequences__region_cnt and StratifiedData vectors
+        StratifiedData* total_seq_rgn;
+        if(data.total_sequence_region_count>0){
+            cout << "total! " <<  data.total_sequence_region_count << endl;
+            total_seq_rgn=new StratifiedData[data.total_sequence_region_count];
+        }
+        uint64_t acc_seq_rgn_count=0;
         for (int i = 0; i < data.sequence_count; ++i) {
-            uint8_t count;
+            uint8_t count=0;
             file.read(reinterpret_cast<char*>(&count), sizeof(uint8_t));
             data.sequences__region_cnt[i]=count;
-            data.sequences__region[i]=new StratifiedData[count];
-            
+            // data.sequences__region[i]=new StratifiedData[count];
+            if(count>0){
+                data.sequences__region[i]=&total_seq_rgn[acc_seq_rgn_count];
+            }
+            acc_seq_rgn_count+=count;
             for (int j = 0; j < count; ++j) {
                 _deserializeStratifiedData(file, &data.sequences__region[i][j]);
             }
         }
+        assert(acc_seq_rgn_count==data.total_sequence_region_count);
         
         // Deserialize the StratumSize vector
         for (int i = 0; i < stratum_count; ++i) {
             file.read(reinterpret_cast<char*>(&data.stratums__size[i]), sizeof(StratumSize));
         }
 
-        // Deserialize sequences__region_cnt and StratifiedData vectors
+        // Deserialize stratum__region_cnt and StratifiedData vectors
+        StratifiedData* total_stra_rgn;
+        if(data.total_strata_region_count>0){
+            total_stra_rgn=new StratifiedData[data.total_strata_region_count];
+        }
+        uint64_t acc_stra_rgn_count=0;
         for (int i = 0; i < data.stratum_count; ++i) {
-            uint8_t count;
+            uint8_t count=0;
             file.read(reinterpret_cast<char*>(&count), sizeof(uint8_t));
             data.stratums__region_cnt[i]=count;
-            data.stratums__region[i]=new StratifiedData[count];
+            if(count>0){
+                data.stratums__region[i]=&total_stra_rgn[acc_stra_rgn_count];
+            }
+            acc_stra_rgn_count+=count;
+            // data.stratums__region[i]=new StratifiedData[count];
             for (int j = 0; j < count; ++j) {
                 _deserializeStratifiedData(file, &data.stratums__region[i][j]);
             }
         }
+        assert(acc_stra_rgn_count==data.total_strata_region_count);
+        
 
         if(data.contains_stratum_extension_count){
             for (int i = 0; i < stratum_count; ++i) {

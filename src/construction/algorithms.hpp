@@ -98,8 +98,8 @@ void _build_prokrustean_parallel(FmIndex &fm_index, Prokrustean &prokrustean, Su
             build_prokrustean(workspace, prokrustean);
         }
         lock.lock();
-        prokrustean.total_sequence_region_count=workspace.total_seq_region_cnt;
-        prokrustean.total_strata_region_count=workspace.total_strata_region_cnt;
+        prokrustean.total_sequence_region_count+=workspace.total_seq_region_cnt;
+        prokrustean.total_strata_region_count+=workspace.total_strata_region_cnt;
         lock.unlock();
     };  
     for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(fm_index), ref(prokrustean), ref(workspace_annotation), ref(seq_idx_gen), ref(lock)));}

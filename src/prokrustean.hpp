@@ -153,13 +153,13 @@ struct Prokrustean {
     bool contains_stratum_frequency;
 
     uint64_t sequence_count;
-    uint64_t total_sequence_region_count;
+    uint64_t total_sequence_region_count=0;
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
     vector<CoveringRegionCount> sequences__region_cnt;
     
     uint64_t stratum_count;
-    uint64_t total_strata_region_count;
+    uint64_t total_strata_region_count=0;
     vector<StratumSize> stratums__size;
     vector<StratifiedData*> stratums__region;
     vector<CoveringRegionCount> stratums__region_cnt;
