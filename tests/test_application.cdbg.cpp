@@ -36,7 +36,7 @@ void test_cdbg_with_verifier(){
     for(auto k: ks){
     // for(int k=2; k<100; k++){
         CompactedDBGWorkspace workspace;
-        extract_paritial_unitigs(k, enhancement, workspace);
+        cdbg_stage1_extract_paritial_unitigs(k, enhancement, workspace);
         CdbgInvariants veritifer;
         veritifer.set(workspace, enhancement);
         veritifer.assert_result();
@@ -121,7 +121,7 @@ void test_cdbg_construction(){
     for(auto k: ks){
         cout << "k: " << k << "start" << endl;
         CompactedDBGWorkspace workspace;
-        extract_paritial_unitigs(k, ext, workspace);
+        cdbg_stage1_extract_paritial_unitigs(k, ext, workspace);
         cout << "k: " << k << "extracted" << endl;
 
         CdbgInvariants veritifer;
@@ -139,8 +139,8 @@ void test_cdbg_construction(){
 
         MemorySequenceAccess sequence_access(seq_texts);
         MemoryStringDataStore string_store;
-        update_stratum_based_loc_to_seq_based_loc(ext, workspace);
-        construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
+        cdbg_stage2_update_stratum_based_loc_to_seq_based_loc(ext, workspace);
+        cdbg_stage3_construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
         cout << "constructed" << endl;
         set<string> unique_str;
         int unique_cnt=0;
@@ -155,8 +155,59 @@ void test_cdbg_construction(){
     }
 }
 
+void test_cdbg_construction_parallel(){
+    int Lmin = 5;
+    int num_threads=4;
+    WaveletString str(PATH6_CDBG_SAMPLE2, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    ProkrusteanExtension ext(prokrustean);
+    prokrustean.contains_stratum_extension_count=true;
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    setup_stratum_example_occ(ext);
+
+    vector<string> seq_texts;
+    recover_sequences_parallel(fm_idx, seq_texts, 8);
+    
+    vector<int> ks={10, 20};
+    for(auto k: ks){
+        cout << "k: " << k << "start" << endl;
+        CompactedDBGWorkspace workspace1;
+        cdbg_stage1_extract_paritial_unitigs_parallel(k, ext, workspace1, num_threads);
+        CompactedDBGWorkspace workspace2;
+        cdbg_stage1_extract_paritial_unitigs(k, ext, workspace2, num_threads);
+        cout << "k: " << k << "extracted" << endl;
+
+        assert(workspace1.unitigs.size()==workspace2.unitigs.size());
+
+        MemorySequenceAccess sequence_access(seq_texts);
+        MemoryStringDataStore string_store;
+
+        cdbg_stage2_update_stratum_based_loc_to_seq_based_loc(ext, workspace1);
+        cdbg_stage3_construct_cdbg(workspace1.unitigs, sequence_access, string_store, k);
+
+        cdbg_stage2_update_stratum_based_loc_to_seq_based_loc_parallel(ext, workspace2);
+        cdbg_stage3_construct_cdbg_parallel(workspace2.unitigs, sequence_access, string_store, k);
+
+        cout << "constructed" << endl;
+        set<string> unique_str1;
+        set<string> unique_str2;
+        for(int i=0; i<workspace1.unitigs.size(); i++){
+            if(workspace1.unitigs[i].is_start_of_maximal){
+                unique_str1.insert(workspace1.unitigs[i].content);
+            }
+            if(workspace2.unitigs[i].is_start_of_maximal){
+                unique_str2.insert(workspace2.unitigs[i].content);
+            }
+        }
+        assert(unique_str1==unique_str2);
+    }
+}
+
 
 void main_application_cdbg() {
     test_cdbg_with_verifier();
     test_cdbg_construction();
+    // test_cdbg_construction_parallel();
 }

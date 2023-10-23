@@ -113,21 +113,22 @@ int main(int argc, char** argv){
 	
 	DiskSequenceAccess sequence_access(input_access);
 	sequence_access.load_metadata();
-	sequence_access.read_open();
+	sequence_access.load_all_strings();
+	// sequence_access.read_open();
 	
 	start = std::chrono::steady_clock::now();
 	cout << "compute unitigs... " << endl;
 	
     CompactedDBGWorkspace workspace;
-    extract_paritial_unitigs(k, ext, workspace);
+    cdbg_stage1_extract_paritial_unitigs(k, ext, workspace);
 	
-	update_stratum_based_loc_to_seq_based_loc(ext, workspace);
+	cdbg_stage2_update_stratum_based_loc_to_seq_based_loc(ext, workspace);
 	
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();
 	cout << "complete and save cdbg... " << endl;
 	DiskStringDataStore string_store(output_file);
-	construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
+	cdbg_stage3_construct_cdbg(workspace.unitigs, sequence_access, string_store, k);
 	// store_kmers(mers, output_file);
 	cout << "stored: " << output_file << endl;
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

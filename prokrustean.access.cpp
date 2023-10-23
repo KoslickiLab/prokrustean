@@ -96,13 +96,13 @@ int main(int argc, char** argv){
 	DiskSequenceAccess sequence_access(output_file);
 	sequence_access.write_open();
 	sequence_access.write_metadata(seq_sizes);
-	// sequence_access.write_strings(strs);
+	sequence_access.write_strings(seq_texts);
 	sequence_access.write_close();
-	sequence_access.update_open();
-	for(int i=0; i< seq_texts.size(); i++){
-		sequence_access.update_single_sequence(i, seq_texts[i]);
-	}
-	sequence_access.update_close();
+	// sequence_access.update_open();
+	// for(int i=0; i< seq_texts.size(); i++){
+	// 	sequence_access.update_single_sequence(i, seq_texts[i]);
+	// }
+	// sequence_access.update_close();
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 

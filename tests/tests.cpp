@@ -28,14 +28,14 @@ int main(void){
     // cout << "--- test kmer counting ---" << endl;
     // main_application_kmer_count();
     
-    // cout << "--- test cdbg ---" << endl;
-    // main_application_cdbg();
+    cout << "--- test cdbg ---" << endl;
+    main_application_cdbg();
 
     // cout << "--- test unitig counting ---" << endl;
     // main_application_unitig_count();
 
-    cout << "--- test store ---" << endl;
-    main_test_storage();
+    // cout << "--- test store ---" << endl;
+    // main_test_storage();
 
     // cout << "--- test support ---" << endl;
     // main_prokrustean_support();

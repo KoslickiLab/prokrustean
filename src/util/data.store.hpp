@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include "../data_types.hpp"
 
 using namespace std;
 
@@ -16,6 +17,7 @@ class DiskStringDataStore: public  AbstractStringDataStore{
     std::ofstream outfile;
     std::vector<std::string> buffer;
     const uint64_t batchSize=10000;
+    SpinLock lock;
     
     void writeBuffer() {
         for (const auto& str : buffer) {
@@ -43,10 +45,13 @@ public:
         outfile.close();
     }
     void store(std::string string){
-        buffer.push_back(string);
-        if (buffer.size() >= batchSize) {
-            writeBuffer();
-        }
+        this->lock.lock();
+            outfile << string << '\n';
+            // buffer.push_back(string);
+            // if (buffer.size() >= batchSize) {
+            //     writeBuffer();
+            // }
+        this->lock.unlock();
     }
 };
 

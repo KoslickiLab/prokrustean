@@ -110,17 +110,35 @@ int main(int argc, char** argv){
 	ProkrusteanExtension ext(prokrustean);
 	// setup_stratum_example_occ(ext);
     setup_stratum_example_occ_parallel(ext, num_threads);
+
+	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	start = std::chrono::steady_clock::now();
+	cout << "loading all strings ... " << endl;
 	
 	DiskSequenceAccess sequence_access(input_sequences);
 	sequence_access.load_metadata();
-	sequence_access.read_open();
-	// sequence_access.load_all_strings();
+	sequence_access.load_all_strings();
+	// sequence_access.read_open();
 	
+	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();
 	cout << "find and store distinct kmers... " << endl;
-	vector<string> output;
+	// vector<string> output;
 	DiskStringDataStore string_store(output_file);
-	get_distinct_kmers(k, ext, sequence_access, string_store);
+	// get_distinct_kmers(k, ext, sequence_access, string_store);
+
+	// vector<DiskSequenceAccess> sequence_access_list;
+	// for(int i=0;i<num_threads; i++){
+	// 	sequence_access_list.emplace_back(input_sequences);
+	// 	sequence_access_list[i].load_metadata();
+	// 	sequence_access_list[i].read_open();
+	// }
+	vector<DiskStringDataStore*> store_list(num_threads);
+	for(int i=0;i<num_threads; i++){
+		auto thread_file_name=output_file+"_t"+to_string(i);
+		store_list[i]=new DiskStringDataStore(thread_file_name);
+	}
+	get_distinct_kmers_parallel(k, ext, sequence_access, store_list, num_threads);
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "stored: " << output_file << endl;
 	

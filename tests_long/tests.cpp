@@ -40,6 +40,6 @@ int main(void){
     // cout << "--- application dbg unitig count ---" << endl;
     // main_application_unitig_count();
 
-    // cout << "--- test text indexing ---" << endl;
+    cout << "--- test text indexing ---" << endl;
     main_text_indexing();
 }

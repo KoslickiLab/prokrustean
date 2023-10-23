@@ -54,9 +54,10 @@ struct Unitig {
     bool is_void_k_minus_1_unitig=false;
     // vector<UnitigId> nexts; // optimize
 
-    UnitigId* nexts_new;
     uint8_t next_cnt=0;
     uint8_t next_cnt_capacity=0;
+
+    UnitigId* nexts_new;
 
     string content;
 
@@ -94,7 +95,12 @@ struct Unitig {
     }
     
     void set_next(UnitigId next_id){
-        assert(next_cnt<next_cnt_capacity);
+        if(next_cnt>=next_cnt_capacity){
+            cout << " next_id " << next_id << " next_cnt " << (int)next_cnt <<  " next_cnt_capacity " << (int)next_cnt_capacity << endl;
+            assert(false);
+            // assert(next_cnt<next_cnt_capacity);
+        }
+        
         if(this->nexts_new==nullptr){
             this->nexts_new = new UnitigId[this->next_cnt_capacity];    
         }
@@ -131,10 +137,6 @@ struct StratumExt {
 };
 
 struct CompactedDBGWorkspace {
-    Vertex working_vertex;
-    vector<Edge> working_bands;
-    
-    vector<StratumId> working_stratum_ids;
     vector<Unitig> unitigs;
     // vector<bool> is_unitig_from_stratum; 
     // vector<bool> is_unitig_maximal; 
@@ -170,26 +172,26 @@ struct CompactedDBGWorkspace {
     }
 };
 
-void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
+void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, Vertex &working_vertex, vector<Edge> &working_edges){
     // optimize
-    ext.prokrustean.get_stratum(stratum_id, work.working_vertex);
-    ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
+    ext.prokrustean.get_stratum(stratum_id, working_vertex);
+    ext.prokrustean.get_spectrum(working_vertex, k-1, working_edges);
     // important. unitig for first made only when exploration stop here
     // if not reflected, no.
     // if not left count 1, no
     // but if bottom that bands is 1, yes 
     bool is_first_tip=ext.prokrustean.get_left_cnt(stratum_id)==0;
     bool is_first_convergence=ext.prokrustean.get_left_cnt(stratum_id)>1;
-    bool is_first_reflected=work.working_bands[0].is_reflected;
+    bool is_first_reflected=working_edges[0].is_reflected;
     bool make_first_unitig=(
         is_first_reflected && (is_first_tip || is_first_convergence) // maximal
-        ) || work.working_bands.size()==1; // bottom
+        ) || working_edges.size()==1; // bottom
     if(make_first_unitig){
         auto unitig_id=work.make_unitig();
         // cout << "unitig make for: " << stratum_id << endl;
         work.unitigs[unitig_id].loc_id=stratum_id;
-        work.unitigs[unitig_id].loc_from=work.working_bands[0].from;
-        work.unitigs[unitig_id].loc_to=work.working_bands[0].to;
+        work.unitigs[unitig_id].loc_from=working_edges[0].from;
+        work.unitigs[unitig_id].loc_to=working_edges[0].to;
         work.unitigs[unitig_id].is_from_stratum=true;
         work.unitigs[unitig_id].is_convergence=is_first_convergence;
         work.unitigs[unitig_id].set_next_capacity(1); 
@@ -212,23 +214,23 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
 
         work.stratum_exts[stratum_id].first_unitig=unitig_id;
         // exceptional - first is last
-        if(work.working_bands.size()==1){
+        if(working_edges.size()==1){
             work.stratum_exts[stratum_id].last_unitig=unitig_id;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=ext.prokrustean.stratums__size[stratum_id]==k-1;
             work.unitigs[unitig_id].set_next_capacity(ext.prokrustean.get_right_cnt(stratum_id));
         }
     }
     // last if maximal
-    auto last_band_idx=work.working_bands.size()-1;
+    auto last_band_idx=working_edges.size()-1;
     bool is_last_diverge=ext.prokrustean.get_right_cnt(stratum_id)>1;
     bool is_last_tip=ext.prokrustean.get_right_cnt(stratum_id)==0;
     // not single element band, reflected, diverged. Bottom case is covered above(exceptional).
-    bool make_last_unitig=last_band_idx>0 && work.working_bands[last_band_idx].is_reflected && (is_last_diverge || is_last_tip );
+    bool make_last_unitig=last_band_idx>0 && working_edges[last_band_idx].is_reflected && (is_last_diverge || is_last_tip );
     if(make_last_unitig){
         auto unitig_id=work.make_unitig();
         work.unitigs[unitig_id].loc_id=stratum_id;
-        work.unitigs[unitig_id].loc_from=work.working_bands[last_band_idx].from;
-        work.unitigs[unitig_id].loc_to=work.working_bands[last_band_idx].to;
+        work.unitigs[unitig_id].loc_from=working_edges[last_band_idx].from;
+        work.unitigs[unitig_id].loc_to=working_edges[last_band_idx].to;
         work.unitigs[unitig_id].is_from_stratum=true;
 
         work.unitigs[unitig_id].is_void_k_minus_1_unitig=ext.prokrustean.stratums__size[stratum_id]==k-1;
@@ -237,16 +239,16 @@ void _set_first_last_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &
     }
 }
 
-void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
+void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, vector<Edge> working_edges, vector<StratumId> working_stratum_ids){
     StratifiedEdge edge;
     auto &prokrustean=ext.prokrustean;
     
-    work.working_stratum_ids.clear();
+    working_stratum_ids.clear();
     StratumId curr_stratum_id=stratum_id;
     while(true){
         // already visited
-        if(work.is_rightmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
-            for(auto id: work.working_stratum_ids){
+        if(work.is_rightmost_descendent_set[curr_stratum_id]==1 && working_stratum_ids.size()>0){
+            for(auto id: working_stratum_ids){
                 work.stratum_exts[id].descendent_of_rightmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted;
             }
             break;
@@ -257,11 +259,11 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
         if(ext.get_stratum_last_stratified(curr_stratum_id, edge)
         && edge.to==ext.prokrustean.get_stratum_size(curr_stratum_id)
         && edge.size()>=k-1){
-            work.working_stratum_ids.push_back(curr_stratum_id);
+            working_stratum_ids.push_back(curr_stratum_id);
             curr_stratum_id=edge.stratum_id;
             continue;
         } else {
-            for(auto id: work.working_stratum_ids){
+            for(auto id: working_stratum_ids){
                 work.stratum_exts[id].descendent_of_rightmost_refracted=curr_stratum_id;
             }
             work.stratum_exts[curr_stratum_id].descendent_of_rightmost_refracted=curr_stratum_id;
@@ -269,12 +271,12 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
         }
     }
     // set leftmost descendent
-    work.working_stratum_ids.clear();
+    working_stratum_ids.clear();
     curr_stratum_id=stratum_id;
     while(true){
         // already visited
-        if(work.is_leftmost_descendent_set[curr_stratum_id]==1 && work.working_stratum_ids.size()>0){
-            for(auto id: work.working_stratum_ids){
+        if(work.is_leftmost_descendent_set[curr_stratum_id]==1 && working_stratum_ids.size()>0){
+            for(auto id: working_stratum_ids){
                 work.stratum_exts[id].descendent_of_leftmost_refracted=work.stratum_exts[curr_stratum_id].descendent_of_leftmost_refracted;
             }
             break;
@@ -285,11 +287,11 @@ void _set_deepest_descendents(StratumId stratum_id, int k, ProkrusteanExtension 
         if(ext.get_stratum_first_stratified(curr_stratum_id, edge)
         && edge.from==0
         && edge.size()>=k-1){
-            work.working_stratum_ids.push_back(curr_stratum_id);
+            working_stratum_ids.push_back(curr_stratum_id);
             curr_stratum_id=edge.stratum_id;
             continue;
         } else {
-            for(auto id: work.working_stratum_ids){
+            for(auto id: working_stratum_ids){
                 work.stratum_exts[id].descendent_of_leftmost_refracted=curr_stratum_id;
             }
             work.stratum_exts[curr_stratum_id].descendent_of_leftmost_refracted=curr_stratum_id;
@@ -410,16 +412,16 @@ void _dig_rightmosts_and_extend(UnitigId unitig_id, StratumId stratum_id, int k,
     }
 }
 
-void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
-    ext.prokrustean.get_sequence(seq_id, work.working_vertex);
-    ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
+void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, Vertex &working_vertex, vector<Edge> &working_edges){
+    ext.prokrustean.get_sequence(seq_id, working_vertex);
+    ext.prokrustean.get_spectrum(working_vertex, k-1, working_edges);
     // if(seq_id==0){
-    //     for(auto &band: work.working_bands){
+    //     for(auto &band: working_edges){
     //         band.print();
     //     }
     // }
-    for(int i=0; i<work.working_bands.size(); i++){
-        auto &band=work.working_bands[i];
+    for(int i=0; i<working_edges.size(); i++){
+        auto &band=working_edges[i];
         if(!band.is_reflected){
             continue;
         }
@@ -435,58 +437,58 @@ void _extend_seq_unitigs(SeqId seq_id, int k, ProkrusteanExtension &ext, Compact
         if(i==0){
             // maximal case 1
             work.unitigs[unitig_id].is_start_of_maximal=true; 
-            if(work.working_bands.size()>1){
+            if(working_edges.size()>1){
                 //since k-1 is applied, move pos right by 1
-                _dig_leftmosts_and_extend(unitig_id, work.working_bands[i+1].stratum_id, k, ext, work);
+                _dig_leftmosts_and_extend(unitig_id, working_edges[i+1].stratum_id, k, ext, work);
             }
-        } else if(i==work.working_bands.size()-1){
+        } else if(i==working_edges.size()-1){
             //since k-1 is applied, move pos left by 1
             // work.unitigs[unitig_id].loc_from-=1; 
-            _dig_rightmosts_and_extend(unitig_id, work.working_bands[i-1].stratum_id, k, ext, work);
+            _dig_rightmosts_and_extend(unitig_id, working_edges[i-1].stratum_id, k, ext, work);
             
         } else {
             //since k-1 is applied, move pos left/right by 1
             // work.unitigs[unitig_id].loc_to+=1;
             // work.unitigs[unitig_id].loc_from-=1; 
             // middle
-            _dig_leftmosts_and_extend(unitig_id, work.working_bands[i+1].stratum_id, k, ext, work);
-            _dig_rightmosts_and_extend(unitig_id, work.working_bands[i-1].stratum_id, k, ext, work);
+            _dig_leftmosts_and_extend(unitig_id, working_edges[i+1].stratum_id, k, ext, work);
+            _dig_rightmosts_and_extend(unitig_id, working_edges[i-1].stratum_id, k, ext, work);
         }
     }
 
     // connect void intersections
-    for(int i=0; i+1<work.working_bands.size(); i++){
-        if(work.working_bands[i].is_stratified 
-        && work.working_bands[i+1].is_stratified
-        // && work.stratum_exts[work.working_bands[i].stratum_id].rightmost_reflectum_descendent==work.working_bands[i].stratum_id
-        // && work.stratum_exts[work.working_bands[i+1].stratum_id].leftmost_reflectum_descendent==work.working_bands[i+1].stratum_id
-        && work.working_bands[i].to - work.working_bands[i+1].from==k-2){
+    for(int i=0; i+1<working_edges.size(); i++){
+        if(working_edges[i].is_stratified 
+        && working_edges[i+1].is_stratified
+        // && work.stratum_exts[working_edges[i].stratum_id].rightmost_reflectum_descendent==working_edges[i].stratum_id
+        // && work.stratum_exts[working_edges[i+1].stratum_id].leftmost_reflectum_descendent==working_edges[i+1].stratum_id
+        && working_edges[i].to - working_edges[i+1].from==k-2){
             // populates length k unitig.
             auto unitig_id=work.make_unitig();
             work.unitigs[unitig_id].loc_id=seq_id; 
-            work.unitigs[unitig_id].loc_from=work.working_bands[i+1].from;
-            work.unitigs[unitig_id].loc_to=work.working_bands[i].to;
+            work.unitigs[unitig_id].loc_from=working_edges[i+1].from;
+            work.unitigs[unitig_id].loc_to=working_edges[i].to;
             work.unitigs[unitig_id].is_from_stratum=false;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=false;
-            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(work.working_bands[i].stratum_id)));
+            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(working_edges[i].stratum_id)));
             // work.unitigs[unitig_id].is_from_void_intersection=true;
 
             // work.unitigs[unitig_id].loc_from-=1;
             // work.unitigs[unitig_id].loc_to+=1;
-            _dig_leftmosts_and_extend(unitig_id, work.working_bands[i+1].stratum_id, k, ext, work);
-            _dig_rightmosts_and_extend(unitig_id, work.working_bands[i].stratum_id, k, ext, work);
+            _dig_leftmosts_and_extend(unitig_id, working_edges[i+1].stratum_id, k, ext, work);
+            _dig_rightmosts_and_extend(unitig_id, working_edges[i].stratum_id, k, ext, work);
         }
     }
 }
 
-void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
-    ext.prokrustean.get_stratum(stratum_id, work.working_vertex);
-    ext.prokrustean.get_spectrum(work.working_vertex, k-1, work.working_bands);
+void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, Vertex &working_vertex, vector<Edge> &working_edges){
+    ext.prokrustean.get_stratum(stratum_id, working_vertex);
+    ext.prokrustean.get_spectrum(working_vertex, k-1, working_edges);
 
     if(work.stratum_exts[stratum_id].first_unitig.has_value()){
         auto unitig_id=work.stratum_exts[stratum_id].first_unitig.value();
-        if(work.working_bands.size()>1){
-            auto &right_stratified=work.working_bands[1];
+        if(working_edges.size()>1){
+            auto &right_stratified=working_edges[1];
             assert(right_stratified.is_stratified);
             //since k-1 is applied, move pos right by 1
             // work.unitigs[unitig_id].loc_to+=1;
@@ -497,7 +499,7 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
         auto unitig_id=work.stratum_exts[stratum_id].last_unitig.value();
         // can be duplicated with first unitig
         if(work.unitigs[unitig_id].loc_from!=0){
-            auto &left_stratified=work.working_bands[work.working_bands.size()-2];
+            auto &left_stratified=working_edges[working_edges.size()-2];
             assert(left_stratified.is_stratified);
             // cout << "stratum id: " << stratum_id << " left stratified id: " << left_stratified.stratum_id << endl;
             //since k-1 is applied, move pos left by 1
@@ -511,8 +513,8 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
     }
 
     // middle cases
-    for(int i=1; i+1<work.working_bands.size(); i++){
-        auto &band=work.working_bands[i];
+    for(int i=1; i+1<working_edges.size(); i++){
+        auto &band=working_edges[i];
         if(!band.is_reflected){
             continue;
         }
@@ -525,8 +527,8 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
         work.unitigs[unitig_id].is_void_k_minus_1_unitig=false; // cannot be true
         work.unitigs[unitig_id].set_next_capacity(1);
 
-        auto &left_stratieid=work.working_bands[i-1];
-        auto &right_stratieid=work.working_bands[i+1];
+        auto &left_stratieid=working_edges[i-1];
+        auto &right_stratieid=working_edges[i+1];
         assert(left_stratieid.is_stratified);
         assert(right_stratieid.is_stratified);
         //since k-1 is applied, move pos left/right by 1
@@ -537,27 +539,84 @@ void _extend_stra_unitigs(StratumId stratum_id, int k, ProkrusteanExtension &ext
     }
 
     // connect void intersections
-    for(int i=0; i+1<work.working_bands.size(); i++){
-        if(work.working_bands[i].is_stratified 
-        && work.working_bands[i+1].is_stratified
-        // && work.stratum_exts[work.working_bands[i].stratum_id].rightmost_reflectum_descendent==work.working_bands[i].stratum_id
-        // && work.stratum_exts[work.working_bands[i+1].stratum_id].leftmost_reflectum_descendent==work.working_bands[i+1].stratum_id
-        && work.working_bands[i].to - work.working_bands[i+1].from==k-2){
+    for(int i=0; i+1<working_edges.size(); i++){
+        if(working_edges[i].is_stratified 
+        && working_edges[i+1].is_stratified
+        // && work.stratum_exts[working_edges[i].stratum_id].rightmost_reflectum_descendent==working_edges[i].stratum_id
+        // && work.stratum_exts[working_edges[i+1].stratum_id].leftmost_reflectum_descendent==working_edges[i+1].stratum_id
+        && working_edges[i].to - working_edges[i+1].from==k-2){
             // populates length k unitig.
             auto unitig_id=work.make_unitig();
             work.unitigs[unitig_id].loc_id=stratum_id; // the parent stratum
-            work.unitigs[unitig_id].loc_from=work.working_bands[i+1].from;
-            work.unitigs[unitig_id].loc_to=work.working_bands[i].to;
+            work.unitigs[unitig_id].loc_from=working_edges[i+1].from;
+            work.unitigs[unitig_id].loc_to=working_edges[i].to;
             work.unitigs[unitig_id].is_from_stratum=true;
             work.unitigs[unitig_id].is_void_k_minus_1_unitig=false;
             // work.unitigs[unitig_id].is_from_void_intersection=true;
-            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(work.working_bands[i].stratum_id)));
+            work.unitigs[unitig_id].set_next_capacity(std::max<uint8_t>(1, ext.prokrustean.get_right_cnt(working_edges[i].stratum_id)));
 
-            _dig_leftmosts_and_extend(unitig_id, work.working_bands[i+1].stratum_id, k, ext, work);
-            _dig_rightmosts_and_extend(unitig_id, work.working_bands[i].stratum_id, k, ext, work);
+            _dig_leftmosts_and_extend(unitig_id, working_edges[i+1].stratum_id, k, ext, work);
+            _dig_rightmosts_and_extend(unitig_id, working_edges[i].stratum_id, k, ext, work);
         }
     }
 }
+
+
+void _build_string_of_unitig(UnitigId uni_id, vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, int k){
+    assert(unitigs[uni_id].is_start_of_maximal);
+    // implement string
+    unitigs[uni_id].content=unitigs[uni_id].get_string(seq_access);
+    if(unitigs[uni_id].next_cnt!=1){
+        return;
+    }
+    UnitigId curr_id=uni_id;
+    // UnitigId next_id=unitigs[curr_id].nexts[0];
+    UnitigId next_id=unitigs[curr_id].nexts_new[0];
+    while(true){
+        Unitig &next_unitig=unitigs[next_id];
+        // normal case
+        if(next_unitig.is_void_k_minus_1_unitig==false){
+            if(next_unitig.is_convergence){
+                // unitigs[uni_id].nexts.clear();
+                // unitigs[uni_id].nexts.push_back(next_id);
+                unitigs[uni_id].set_next_capacity(1);
+                unitigs[uni_id].set_next(next_id);
+                break;
+            } else {
+                // if(unitigs[curr_id].nexts.size()<=1){
+                if(unitigs[curr_id].next_cnt<=1){
+                    // merge
+                    unitigs[uni_id].content+=next_unitig.get_string(seq_access).substr(k-1);
+                }
+
+                // if(next_unitig.nexts.size()!=1){
+                if(next_unitig.next_cnt!=1){
+                    // unitigs[uni_id].nexts=next_unitig.nexts;
+                    unitigs[uni_id].replace_nexts(next_unitig);
+                    break;
+                } else {
+                    curr_id=next_id;
+                    // next_id=next_unitig.nexts[0];
+                    next_id=next_unitig.nexts_new[0];
+                }
+            }
+        } else {
+            // void case
+            // if(next_unitig.nexts.size()!=1){
+            if(next_unitig.next_cnt!=1){
+                // unitigs[uni_id].nexts=next_unitig.nexts;
+                unitigs[uni_id].replace_nexts(next_unitig);
+                break;
+            // } else if(next_unitig.nexts.size()==1){
+            } else if(next_unitig.next_cnt==1){
+                curr_id=next_id;
+                // next_id=next_unitig.nexts[0];
+                next_id=next_unitig.nexts_new[0];
+            }
+        }
+    }
+}
+
 
 void switch_loc(Unitig &unitig, ProkrusteanExtension &ext){
     //line order matter
@@ -566,7 +625,7 @@ void switch_loc(Unitig &unitig, ProkrusteanExtension &ext){
     unitig.loc_id=ext.stratum_sample_occ_seq_id[unitig.loc_id]; 
 }
 
-void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, bool verbose=false){
+void cdbg_stage1_extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, bool verbose=false){
     assert(k>1);
     assert(ext.prokrustean.contains_stratum_extension_count);
     int stratum_count=ext.prokrustean.stratum_count;
@@ -574,26 +633,19 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
     
     work.reset(stratum_count);
     
+    Vertex working_vertex;
+    vector<Edge> working_edges;
+    vector<StratumId> working_stratum_ids;
+    
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
-            _set_first_last_unitigs(i, k, ext, work);
-        }
-    }
-    
-    int first_cnt=0;
-    int last_cnt=0;
-    for(int i=0; i<ext.prokrustean.stratum_count; i++){
-        if(work.stratum_exts[i].first_unitig.has_value()){
-            first_cnt++;
-        }
-        if(work.stratum_exts[i].last_unitig.has_value()){
-            last_cnt++;
+            _set_first_last_unitigs(i, k, ext, work, working_vertex, working_edges);
         }
     }
     
     for(int i=0; i<stratum_count; i++){
         if(ext.prokrustean.stratums__size[i]>=k-1){
-            _set_deepest_descendents(i, k, ext, work);            
+            _set_deepest_descendents(i, k, ext, work, working_edges, working_stratum_ids);            
         }
     }
     work.is_leftmost_descendent_set.clear();
@@ -604,29 +656,267 @@ void extract_paritial_unitigs(int k, ProkrusteanExtension &ext, CompactedDBGWork
     for(int i=0; i<stratum_count; i++){
         // skip <k-2
         if(ext.prokrustean.stratums__size[i]>k-1){
-            _extend_stra_unitigs(i, k, ext, work);
+            _extend_stra_unitigs(i, k, ext, work, working_vertex, working_edges);
         }
     }
     
     for(int i=0; i<seq_count; i++){
         if(ext.prokrustean.sequences__size[i]>k-1){
-            _extend_seq_unitigs(i, k, ext, work);
+            _extend_seq_unitigs(i, k, ext, work, working_vertex, working_edges);
         }
     }
 }
 
-void update_stratum_based_loc_to_seq_based_loc(ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
+void cdbg_stage2_update_stratum_based_loc_to_seq_based_loc(ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
     assert(ext.is_sample_occ_available);
     for(auto &unitig: work.unitigs){
         if(unitig.is_from_stratum){
             switch_loc(unitig, ext);
-            // cout << "unitig: " << sequences[unitig.loc_id].substr(unitig.loc_from, unitig.loc_to-unitig.loc_from) << " seq id: " << unitig.loc_id << endl;
-        }
-        else {
-            // cout << "unitig: " << sequences[unitig.loc_id].substr(unitig.loc_from, unitig.loc_to-unitig.loc_from) << " seq id: " << unitig.loc_id << endl;
         }
     }
 }
+
+
+void cdbg_stage3_construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, AbstractStringDataStore &store, int k){
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        auto &unitig = unitigs[id];
+        if(unitig.is_start_of_maximal){
+            _build_string_of_unitig(id, unitigs, seq_access, k);
+            // cout << " unitig.content " << unitig.content << endl;
+            // store.store(unitig.content);
+        }
+    }
+    store.store("------------------------------------------------------------------------------------------------");
+    store.store("---------------         columns: unitig id, next unitig ids, unitig content     ----------------");
+    store.store("------------------------------------------------------------------------------------------------");
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        if(unitigs[id].is_start_of_maximal){
+            string expr=to_string((int)id);
+            for(int i=0; i<unitigs[id].next_cnt; i++){
+                expr+="  ";
+                expr+=to_string((int)unitigs[id].nexts_new[i]);
+            }
+            expr+="    ";
+            expr+=unitigs[id].content;
+            store.store(expr);
+        }
+    }
+}
+
+
+void cdbg_stage1_extract_paritial_unitigs_parallel(int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, int thread_cnt, bool verbose=false){
+    assert(k>1 && k>ext.prokrustean.lmin);
+    assert(ext.prokrustean.contains_stratum_extension_count);
+    assert(thread_cnt>0);
+    int stratum_count=ext.prokrustean.stratum_count;
+    int seq_count=ext.prokrustean.sequence_count;
+    vector<future<void>> futures;
+
+    work.reset(stratum_count);
+    thread_cnt=2;
+    
+    Vertex working_vertex;
+    vector<Edge> working_edges;
+    vector<StratumId> working_stratum_ids;
+    
+    auto func1_ = [](int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, int thread_idx, int thread_cnt) {
+        Vertex working_vertex;
+        vector<Edge> working_edges;
+        for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+            if(ext.prokrustean.stratums__size[i]>=k-1){
+                _set_first_last_unitigs(i, k, ext, work, working_vertex, working_edges);
+            }
+        }
+    };
+    for(int i=0; i<thread_cnt; i++){futures.push_back(
+        std::async(std::launch::async, func1_, k, ref(ext), ref(work), i, thread_cnt)
+    );}
+    for (auto &f : futures) {f.wait();}
+    futures.clear();
+    
+    // for(int i=0; i<stratum_count; i++){
+    //     if(ext.prokrustean.stratums__size[i]>=k-1){
+    //         _set_first_last_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //     }
+    // }
+    int cnt1=0;
+    int cnt2=0;
+    cout << " work.unitigs " << work.unitigs.size() << endl;
+    for(auto &unitig: work.unitigs){
+        if(unitig.next_cnt_capacity==0){
+            cout << "unitig " << unitig.loc_id << endl;
+            assert(false);
+        }
+        cnt1+=unitig.next_cnt;
+        cnt2+=unitig.next_cnt_capacity;
+    }
+    cout << " unitig.next_cnt " << cnt1 << " unitig.next_cnt_capacity " << cnt2 << endl;
+    
+    for(int i=0; i<stratum_count; i++){
+        if(ext.prokrustean.stratums__size[i]>=k-1){
+            _set_deepest_descendents(i, k, ext, work, working_edges, working_stratum_ids);            
+        }
+    }
+    work.is_leftmost_descendent_set.clear();
+    work.is_leftmost_descendent_set.shrink_to_fit();
+    work.is_rightmost_descendent_set.clear();
+    work.is_rightmost_descendent_set.shrink_to_fit();
+    
+    
+    for(int i=0; i<stratum_count; i++){
+        // skip <k-2
+        if(ext.prokrustean.stratums__size[i]>k-1){
+            _extend_stra_unitigs(i, k, ext, work, working_vertex, working_edges);
+        }
+    }
+    
+    for(int i=0; i<seq_count; i++){
+        if(ext.prokrustean.sequences__size[i]>k-1){
+            _extend_seq_unitigs(i, k, ext, work, working_vertex, working_edges);
+        }
+    }
+    
+
+
+    // auto func2_ = [](int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, uint8_t thread_idx, uint8_t thread_cnt) {
+    //     vector<Edge> working_edges;
+    //     vector<StratumId> working_stratum_ids;
+    //     for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+    //         if(ext.prokrustean.stratums__size[i]>=k-1){
+    //             _set_deepest_descendents(i, k, ext, work, working_edges, working_stratum_ids);            
+    //         }
+    //     }
+    // };
+    // for(int i=0; i<thread_cnt; i++){futures.push_back(
+    //     std::async(std::launch::async, func2_, k, ref(ext), ref(work), i, thread_cnt)
+    // );}
+    // for (auto &f : futures) {f.wait();}
+    // futures.clear();
+
+    // for(int i=0; i<stratum_count; i++){
+    //     // skip <k-2
+    //     if(ext.prokrustean.stratums__size[i]>k-1){
+    //         _extend_stra_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //     }
+    // }
+    
+    // for(int i=0; i<seq_count; i++){
+    //     if(ext.prokrustean.sequences__size[i]>k-1){
+    //         _extend_seq_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //     }
+    // }
+    
+    // auto func3_ = [](int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, uint8_t thread_idx, uint8_t thread_cnt) {    
+    //     Vertex working_vertex;
+    //     vector<Edge> working_edges;
+    //     for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+    //         // skip <k-2
+    //         if(ext.prokrustean.stratums__size[i]>k-1){
+    //             _extend_stra_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //         }
+    //     }
+    //     for(int i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
+    //         if(ext.prokrustean.sequences__size[i]>k-1){
+    //             _extend_seq_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //         }
+    //     }
+    // };
+    // for(int i=0; i<thread_cnt; i++){futures.push_back(
+    //     std::async(std::launch::async, func3_, k, ref(ext), ref(work), i, thread_cnt)
+    // );}
+    // for (auto &f : futures) {f.wait();}
+    // futures.clear();
+   
+
+    // auto func2_ = [](int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, uint8_t thread_idx, uint8_t thread_cnt) {
+    //     vector<Edge> working_edges;
+    //     vector<StratumId> working_stratum_ids;
+    //     for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+    //         if(ext.prokrustean.stratums__size[i]>=k-1){
+    //             _set_deepest_descendents(i, k, ext, work, working_edges, working_stratum_ids);            
+    //         }
+    //     }
+    // };
+    // for(int i=0; i<thread_cnt; i++){futures.push_back(
+    //     std::async(std::launch::async, func2_, k, ref(ext), ref(work), i, thread_cnt)
+    // );}
+    // for (auto &f : futures) {f.wait();}
+    // futures.clear();
+    // // for(int i=0; i<ext.prokrustean.stratum_count; i++){
+    // //     if(ext.prokrustean.stratums__size[i]>=k-1){
+    // //         _set_first_last_unitigs(i, k, ext, work);
+    // //     }
+    // // }
+    
+    // // for(int i=0; i<ext.prokrustean.stratum_count; i++){
+    // //     if(ext.prokrustean.stratums__size[i]>=k-1){
+    // //         _set_deepest_descendents(i, k, ext, work);            
+    // //     }
+    // // }
+
+    // work.is_leftmost_descendent_set.clear();
+    // work.is_leftmost_descendent_set.shrink_to_fit();
+    // work.is_rightmost_descendent_set.clear();
+    // work.is_rightmost_descendent_set.shrink_to_fit();
+    
+    // auto func3_ = [](int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, uint8_t thread_idx, uint8_t thread_cnt) {    
+    //     Vertex working_vertex;
+    //     vector<Edge> working_edges;
+    //     for(int i=thread_idx; i<ext.prokrustean.stratum_count; i+=thread_cnt){
+    //         // skip <k-2
+    //         if(ext.prokrustean.stratums__size[i]>k-1){
+    //             _extend_stra_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //         }
+    //     }
+    //     for(int i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
+    //         if(ext.prokrustean.sequences__size[i]>k-1){
+    //             _extend_seq_unitigs(i, k, ext, work, working_vertex, working_edges);
+    //         }
+    //     }
+    // };
+    // for(int i=0; i<thread_cnt; i++){futures.push_back(
+    //     std::async(std::launch::async, func3_, k, ref(ext), ref(work), i, thread_cnt)
+    // );}
+    // for (auto &f : futures) {f.wait();}
+    // futures.clear();
+}
+
+void cdbg_stage2_update_stratum_based_loc_to_seq_based_loc_parallel(ProkrusteanExtension &ext, CompactedDBGWorkspace &work){
+    assert(ext.is_sample_occ_available);
+    for(auto &unitig: work.unitigs){
+        if(unitig.is_from_stratum){
+            switch_loc(unitig, ext);
+        }
+    }
+}
+
+
+void cdbg_stage3_construct_cdbg_parallel(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, AbstractStringDataStore &store, int k){
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        auto &unitig = unitigs[id];
+        if(unitig.is_start_of_maximal){
+            _build_string_of_unitig(id, unitigs, seq_access, k);
+            // cout << " unitig.content " << unitig.content << endl;
+            // store.store(unitig.content);
+        }
+    }
+    store.store("------------------------------------------------------------------------------------------------");
+    store.store("---------------         columns: unitig id, next unitig ids, unitig content     ----------------");
+    store.store("------------------------------------------------------------------------------------------------");
+    for(UnitigId id=0; id<unitigs.size(); id++){
+        if(unitigs[id].is_start_of_maximal){
+            string expr=to_string((int)id);
+            for(int i=0; i<unitigs[id].next_cnt; i++){
+                expr+="  ";
+                expr+=to_string((int)unitigs[id].nexts_new[i]);
+            }
+            expr+="    ";
+            expr+=unitigs[id].content;
+            store.store(expr);
+        }
+    }
+}
+
 
 struct CdbgInvariants {
     int total_left_count=0;
@@ -722,85 +1012,5 @@ struct CdbgInvariants {
 };
 
 
-void build_strings(UnitigId uni_id, vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, int k){
-    assert(unitigs[uni_id].is_start_of_maximal);
-    // implement string
-    unitigs[uni_id].content=unitigs[uni_id].get_string(seq_access);
-    if(unitigs[uni_id].next_cnt!=1){
-        return;
-    }
-    UnitigId curr_id=uni_id;
-    // UnitigId next_id=unitigs[curr_id].nexts[0];
-    UnitigId next_id=unitigs[curr_id].nexts_new[0];
-    while(true){
-        Unitig &next_unitig=unitigs[next_id];
-        // normal case
-        if(next_unitig.is_void_k_minus_1_unitig==false){
-            if(next_unitig.is_convergence){
-                // unitigs[uni_id].nexts.clear();
-                // unitigs[uni_id].nexts.push_back(next_id);
-                unitigs[uni_id].set_next_capacity(1);
-                unitigs[uni_id].set_next(next_id);
-                break;
-            } else {
-                // if(unitigs[curr_id].nexts.size()<=1){
-                if(unitigs[curr_id].next_cnt<=1){
-                    // merge
-                    unitigs[uni_id].content+=next_unitig.get_string(seq_access).substr(k-1);
-                }
-
-                // if(next_unitig.nexts.size()!=1){
-                if(next_unitig.next_cnt!=1){
-                    // unitigs[uni_id].nexts=next_unitig.nexts;
-                    unitigs[uni_id].replace_nexts(next_unitig);
-                    break;
-                } else {
-                    curr_id=next_id;
-                    // next_id=next_unitig.nexts[0];
-                    next_id=next_unitig.nexts_new[0];
-                }
-            }
-        } else {
-            // void case
-            // if(next_unitig.nexts.size()!=1){
-            if(next_unitig.next_cnt!=1){
-                // unitigs[uni_id].nexts=next_unitig.nexts;
-                unitigs[uni_id].replace_nexts(next_unitig);
-                break;
-            // } else if(next_unitig.nexts.size()==1){
-            } else if(next_unitig.next_cnt==1){
-                curr_id=next_id;
-                // next_id=next_unitig.nexts[0];
-                next_id=next_unitig.nexts_new[0];
-            }
-        }
-    }
-}
-
-void construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess &seq_access, AbstractStringDataStore &store, int k){
-    for(UnitigId id=0; id<unitigs.size(); id++){
-        auto &unitig = unitigs[id];
-        if(unitig.is_start_of_maximal){
-            build_strings(id, unitigs, seq_access, k);
-            // cout << " unitig.content " << unitig.content << endl;
-            // store.store(unitig.content);
-        }
-    }
-    store.store("------------------------------------------------------------------------------------------------");
-    store.store("---------------         columns: unitig id, next unitig ids, unitig content     ----------------");
-    store.store("------------------------------------------------------------------------------------------------");
-    for(UnitigId id=0; id<unitigs.size(); id++){
-        if(unitigs[id].is_start_of_maximal){
-            string expr=to_string((int)id);
-            for(int i=0; i<unitigs[id].next_cnt; i++){
-                expr+="  ";
-                expr+=to_string((int)unitigs[id].nexts_new[i]);
-            }
-            expr+="    ";
-            expr+=unitigs[id].content;
-            store.store(expr);
-        }
-    }
-}
 
 #endif
