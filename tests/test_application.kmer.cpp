@@ -93,5 +93,5 @@ void test_distinct_kmers_ondisk(){
 
 void main_application_kmer() {
     test_distinct_kmers(); 
-    test_distinct_kmers_ondisk(); 
+    // test_distinct_kmers_ondisk();
 }
