@@ -2,14 +2,24 @@ import os
 import glob
 import gzip
 ##################################################
-# grlbwt is assumed to be built already.
+# sdsl-lite installation - grlbwt uses it
 ##################################################
-# git clone git@github.com:ddiazdom/grlBWT.git
-# cd grlBWT
-# mkdir build
-# cd build
-# cmake ..
-# make
+'''
+git clone https://github.com/simongog/sdsl-lite.git
+cd sdsl-lite
+./install.sh
+'''
+##################################################
+# grlbwt installation
+##################################################
+'''
+git clone git@github.com:ddiazdom/grlBWT.git
+cd grlBWT
+mkdir build
+cd build
+cmake ..
+make
+'''
 ##################################################
 def main(input):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
@@ -21,7 +31,7 @@ def main(input):
     # grlbwt processed to text. ex. "./downloads/x_x_x.bwt"
     out_txt_path_grlbwt_txt_file = in_path_for_fastq_file.replace(".fastq.gz", ".bwt")
     print(f'input: {input}')
-    print(f'will be concatenated : {in_path_for_concatenated_string}')
+    print(f'sequences will be concatenated : {in_path_for_concatenated_string}')
     print(f'grlbwt will be processed : {out_path_grlbwt_rl_bwt_file}')
     print(f'grlbwt output will be converted to txt : {out_txt_path_grlbwt_txt_file}')
 
