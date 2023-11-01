@@ -88,18 +88,18 @@ void test_bwt_prokrustean_indexing_update(){
     sequence_access3.read_close(); 
 }
 
-void test_temp(){
-    DiskSequenceAccess sequence_access("../../../prokrustean_data/experiments/ERR3450203_1.bwt.prokrustean.sequences");
-    // DiskSequenceAccess sequence_access("../../../prokrustean_data/experiments/SRR20044276.bwt.prokrustean.sequences");
+// void test_temp_____(){
+//     DiskSequenceAccess sequence_access("../../../prokrustean_data/experiments/ERR3450203_1.bwt.prokrustean.sequences");
+//     // DiskSequenceAccess sequence_access("../../../prokrustean_data/experiments/SRR20044276.bwt.prokrustean.sequences");
     
-	sequence_access.load_metadata();
-	sequence_access.read_open();
-    sequence_access.metadata.print();
-    cout << "seq0: " << sequence_access.sequence_start_positions[27510303] << endl;
-    string seq;
-    sequence_access.read_seq(27510303, seq);
-    cout << "seq0: " << seq << endl;
-}
+// 	sequence_access.load_metadata();
+// 	sequence_access.read_open();
+//     sequence_access.metadata.print();
+//     cout << "seq0: " << sequence_access.sequence_start_positions[27510303] << endl;
+//     string seq;
+//     sequence_access.read_seq(27510303, seq);
+//     cout << "seq0: " << seq << endl;
+// }
 
 void main_text_indexing() {
     test_bwt_prokrustean_indexing_update();

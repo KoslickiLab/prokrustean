@@ -5,7 +5,7 @@
 // #include "test_step2_repr_blocks.cpp"
 // #include "test_step3_build_prokrustean.cpp"
 // #include "test_full_process.cpp"
-// #include "test_ssa.cpp"
+#include "test_ssa.cpp"
 // #include "test_construction.cpp"
 // #include "test_application.cdbg.naive.cpp"
 // #include "test_application.dbg.count.cpp"
@@ -28,8 +28,8 @@ int main(void){
 
     // cout << "--- construction ---" << endl;
     // main_construction();
-    // cout << "--- test ssa ---" << endl;
-    // main_performance_ssa();
+    cout << "--- test ssa ---" << endl;
+    main_performance_ssa();
     // cout << "--- full process2 ---" << endl;
     // main_performance_full2();
 
@@ -40,6 +40,6 @@ int main(void){
     // cout << "--- application dbg unitig count ---" << endl;
     // main_application_unitig_count();
 
-    cout << "--- test text indexing ---" << endl;
-    main_text_indexing();
+    // cout << "--- test text indexing ---" << endl;
+    // main_text_indexing();
 }

@@ -78,14 +78,14 @@ int main(int argc, char** argv){
 	};
 	auto start = std::chrono::steady_clock::now();
 	auto start_total = std::chrono::steady_clock::now();
-	cout << "loading prokrustean ... " << input_prokrustean << endl;
+	// cout << "loading prokrustean ... " << input_prokrustean << endl;
 	Prokrustean prokrustean;
 	bool success=load_prokrustean(input_prokrustean, prokrustean);
 	if(!success){
 		cout << "loading failed " << input_prokrustean << endl;
 		exit(0);
 	}
-	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	// cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	if(from==-1){
 		from=prokrustean.lmin;
 	} else if(from<prokrustean.lmin){
@@ -111,9 +111,9 @@ int main(int argc, char** argv){
 
 	vector<uint64_t> output;
 	count_distinct_kmers_of_range_parallel(from, to, num_threads, prokrustean, output);
-	cout << "counting kmers" << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	cout << "counting kmers finished " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	
-	cout << "saving kmer counts... ";
+	cout << "saving kmer counts... " << endl;
 
 	std::ofstream outputFile(output_file);
 	for(int i=0; i<output.size(); i++){

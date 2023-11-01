@@ -108,7 +108,6 @@ int main(int argc, char** argv){
 	cout << "annotate strata example occurrences (so that they can be printed) ... " << endl;
 	
 	ProkrusteanExtension ext(prokrustean);
-	// setup_stratum_example_occ(ext);
     setup_stratum_example_occ_parallel(ext, num_threads);
 
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
@@ -123,22 +122,22 @@ int main(int argc, char** argv){
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();
 	cout << "find and store distinct kmers... " << endl;
-	// vector<string> output;
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////// single file approach ///////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	DiskStringDataStore string_store(output_file);
-	// get_distinct_kmers(k, ext, sequence_access, string_store);
-
-	// vector<DiskSequenceAccess> sequence_access_list;
+	get_distinct_kmers_parallel(k, ext, sequence_access, string_store, num_threads);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////// for multi file approach used in the experiment /////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// vector<DiskStringDataStore*> store_list(num_threads);
 	// for(int i=0;i<num_threads; i++){
-	// 	sequence_access_list.emplace_back(input_sequences);
-	// 	sequence_access_list[i].load_metadata();
-	// 	sequence_access_list[i].read_open();
+	// 	auto thread_file_name=output_file+"_t"+to_string(i);
+	// 	store_list[i]=new DiskStringDataStore(thread_file_name);
 	// }
-	vector<DiskStringDataStore*> store_list(num_threads);
-	for(int i=0;i<num_threads; i++){
-		auto thread_file_name=output_file+"_t"+to_string(i);
-		store_list[i]=new DiskStringDataStore(thread_file_name);
-	}
-	get_distinct_kmers_parallel(k, ext, sequence_access, store_list, num_threads);
+	// get_distinct_kmers_parallel_multi_file(k, ext, sequence_access, store_list, num_threads);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	cout << "stored: " << output_file << endl;
 	

@@ -524,7 +524,7 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         // Deserialize sequences__region_cnt and StratifiedData vectors
         StratifiedData* total_seq_rgn;
         if(data.total_sequence_region_count>0){
-            cout << "total! " <<  data.total_sequence_region_count << endl;
+            // cout << "total! " <<  data.total_sequence_region_count << endl;
             total_seq_rgn=new StratifiedData[data.total_sequence_region_count];
         }
         uint64_t acc_seq_rgn_count=0;
@@ -534,6 +534,7 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
             data.sequences__region_cnt[i]=count;
             // data.sequences__region[i]=new StratifiedData[count];
             if(count>0){
+                // cout << "acc_seq_rgn_count! " <<  acc_seq_rgn_count << endl;
                 data.sequences__region[i]=&total_seq_rgn[acc_seq_rgn_count];
             }
             acc_seq_rgn_count+=count;
