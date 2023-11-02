@@ -46,8 +46,8 @@ def main(input):
             file.write(concatenated_sequence)
 
     def run_grlbwt(file_path, out_file_path, out_txt_file_path):
-        os.system(f'../grlbwt/build/grlbwt-cli {file_path} -o {out_file_path}')
-        os.system(f'../grlbwt/build/grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
+        os.system(f'../../grlbwt/build/grlbwt-cli {file_path} -o {out_file_path}')
+        os.system(f'../../grlbwt/build/grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
 
     # preprocess 
     process_fastq_gz(in_path_for_fastq_file, in_path_for_concatenated_string)
