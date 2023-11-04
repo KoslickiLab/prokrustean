@@ -12,27 +12,35 @@
 using namespace std;
 using namespace sdsl;
 
+// this is becoming problematic. AnnotCount has to be smaller than StratumId
+typedef uint16_t AnnotCount; 
+const int ANNOT_BIT_LIMIT=sizeof(AnnotCount)*8;
+const int ANNOT_LIMIT=numeric_limits<AnnotCount>::max();
 
 struct SuccinctStratifiedData {
     StratumId* data;
 
-    void set_data(uint8_t annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
+    void set_data(int annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
         assert(annot_cnt>0);
-        uint8_t bits_per_type=(8*sizeof(StratumId));
-        uint8_t extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
+        if(annot_cnt>=ANNOT_LIMIT){
+            cout << "exceeded annot count limit. the number of stratum annotation possible to each suffix index. this will limit the scale of data. fix soon!" << endl;
+            assert(false);
+        }
+        uint8_t bits_per_type=(ANNOT_BIT_LIMIT*sizeof(StratumId));
+        int extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
         data=new StratumId[annot_cnt+extra]; // 8* size means bits available so that is_primaries are added
         for(int i=0; i<annot_cnt; i++){
             data[i]=stratum_ids[i];
         }
         StratumId result=0;
         if(extra==1){
-            for (uint8_t i = 0; i < annot_cnt; ++i) {
+            for (int i = 0; i < annot_cnt; ++i) {
                 result |= (is_primaries[i] ? 1 : 0) << (i % bits_per_type);
             }
             data[annot_cnt]=result;
         } else {
             vector<StratumId> results;
-            for (uint8_t i = 0; i < annot_cnt; ++i) {
+            for (int i = 0; i < annot_cnt; ++i) {
                 result |= (is_primaries[i] ? 1 : 0) << (i % bits_per_type);
                 if ((i + 1) % bits_per_type == 0) {
                     results.push_back(result);
@@ -48,18 +56,18 @@ struct SuccinctStratifiedData {
     void get_data(int annot_cnt, vector<StratumId> &stratum_ids, vector<bool> &is_primaries){
         stratum_ids.resize(annot_cnt);
         is_primaries.resize(annot_cnt);
-        int bits_per_type=(8*sizeof(StratumId));
-        uint8_t extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
-        for (int8_t i = 0; i < annot_cnt; ++i) {
+        int bits_per_type=(ANNOT_BIT_LIMIT*sizeof(StratumId));
+        int extra=annot_cnt%bits_per_type>0? annot_cnt/bits_per_type+1 : annot_cnt/bits_per_type;
+        for (int i = 0; i < annot_cnt; ++i) {
             stratum_ids[i]=data[i];
         }
         if(extra==1){
-            for (int8_t i = 0; i < annot_cnt; ++i) {
+            for (int i = 0; i < annot_cnt; ++i) {
                 is_primaries[i] = ((data[annot_cnt] >> (i % bits_per_type)) & 1) != 0;
             }
         } else {
             for(int idx=0; idx<extra; idx++){
-                for (int8_t i = 0; i < bits_per_type; ++i) {
+                for (int i = 0; i < bits_per_type; ++i) {
                     is_primaries[bits_per_type*idx+i] = ((data[annot_cnt+idx] >> (i % bits_per_type)) & 1) != 0;
                 }
             }
@@ -74,7 +82,7 @@ struct SuffixArrayAnnotationBlock{
     // query
     bit_vector sa_bv;
     rank_support_v<> sa_rb;
-    vector<uint8_t> sa_idx_abundances;
+    vector<AnnotCount> sa_idx_abundances;
     vector<SuccinctStratifiedData> sa_idx_data;
     int sa_idx_queriable_left;
 
@@ -88,7 +96,6 @@ struct SuffixArrayAnnotationBlock{
             sa_bv[idx]=true;
         }
         this->sa_rb=rank_support_v<>(&this->sa_bv);
-        
         // content indices
         int sa_idx_cnt=this->sa_rb.rank(this->sa_bv.size());
         this->sa_idx_abundances.resize(sa_idx_cnt, 0);
@@ -100,7 +107,7 @@ struct SuffixArrayAnnotationBlock{
             this->sa_idx_abundances[content_idx]++;
             raw_indices_by_content_indices[content_idx].push_back(i);
         }
-
+        
         vector<StratumId> stratum_ids;
         vector<bool> is_primaries;
         for(int content_idx=0; content_idx<sa_idx_cnt; content_idx++){
@@ -109,6 +116,10 @@ struct SuffixArrayAnnotationBlock{
             for(auto i: raw_indices_by_content_indices[content_idx]){
                 stratum_ids.push_back(raw_block.raw_stratum_ids[i]);
                 is_primaries.push_back(raw_block.raw_is_primarys[i]);
+            }
+            if(raw_indices_by_content_indices[content_idx].size()>1000){
+                cout << " raw_indices_by_content_indices[content_idx].size() " << raw_indices_by_content_indices[content_idx].size();
+                // assert(false);
             }
             this->sa_idx_data[content_idx].set_data(raw_indices_by_content_indices[content_idx].size(), stratum_ids, is_primaries);
         }

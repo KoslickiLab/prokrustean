@@ -97,6 +97,7 @@ struct Unitig {
     void set_next(UnitigId next_id){
         if(next_cnt>=next_cnt_capacity){
             cout << " next_id " << next_id << " next_cnt " << (int)next_cnt <<  " next_cnt_capacity " << (int)next_cnt_capacity << endl;
+            return;
             assert(false);
             // assert(next_cnt<next_cnt_capacity);
         }

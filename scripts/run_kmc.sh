@@ -44,6 +44,7 @@ for ((k=left; k<=right; k++)); do
     mkdir ../output
     echo "Running ./kmc -i $file and value $k"
   
+    # ./kmc  -k"$k" -ci"$ABUNDANCE" -t"$THREADS" -hp "$file" ../output/"$k"mers ../output
     ( time ./kmc  -k"$k" -ci"$ABUNDANCE" -t"$THREADS" -hp "$file" ../output/"$k"mers ../output > /dev/null 2>&1 ) 2>> temp_time.log
     real_time=$(grep real temp_time.log)
     echo "$real_time" >> ../log/"$logfile"
