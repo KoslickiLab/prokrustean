@@ -60,8 +60,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', metavar='path', required=True,
-                        help='the path to input')
+    parser.add_argument('-i', metavar='path', required=True, help='the path to input')
     args = parser.parse_args()
-    main(args.input)
+    main(args.i)
 

@@ -23,7 +23,7 @@ string output_file;
 string output_seq_file;
 bool output_txt=false;
 int num_threads=8;
-bool contains_char_ext = false;
+bool contains_char_ext = true;
 bool contains_frequency = false;
 bool recover_seuqneces = false;
 char TERM = '$';
@@ -41,7 +41,7 @@ void help(){
 	"-o <arg>    output file. default: {input}.prokrustean" << endl <<
 	"-t <arg>    thread count. default: " << num_threads << endl <<
 	"-c          prokrustean is a txt file. Cannot be reused for applications. default: no" << endl <<
-	"-e          include stratum character extensions. default: no" << endl <<
+	// "-e          include stratum character extensions. default: no" << endl <<
 	"-f          include stratum frequency. default: no" << endl;
 	exit(0);
 }
@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "i:o:l:q:t:cefhr")) != -1){
+	while ((opt = getopt(argc, argv, "i:o:l:q:t:cfhr")) != -1){
 		switch (opt){
 			case 'h':
 				help();
@@ -73,9 +73,9 @@ int main(int argc, char** argv){
 			case 'c':
 				output_txt=true;
 			break;
-			case 'e':
-				contains_char_ext = true;
-			break;
+			// case 'e':
+			// 	contains_char_ext = true;
+			// break;
 			case 'f':
 				contains_frequency = true;
 			case 'r':
@@ -123,45 +123,31 @@ int main(int argc, char** argv){
 	} else {
 		store_prokrustean_text(prokrustean, output_file);
 	}
+
 	// dispose prokrustean
-	// prokrustean=Prokrustean();
+	prokrustean=Prokrustean();
 
 	if(recover_seuqneces){
-		auto start = std::chrono::steady_clock::now();
-		cout << "recovering sequences (" << output_seq_file << ") ... " << endl;
-		vector<string> strs;
-		vector<SequenceSize> seq_sizes;
-		recover_sequences_parallel(fm_idx, strs, num_threads);
-		for(auto &s: strs){
-			seq_sizes.push_back(s.size());
-		}
+		cout << "recover sequences.." << endl;
+		
+		vector<string> seq_texts;
+		recover_sequences_parallel(fm_idx, seq_texts, num_threads);
+
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 		start = std::chrono::steady_clock::now();
-		cout << "indexing sequences (" << output_seq_file << ") ... " << endl;
-		DiskSequenceAccess sequence_access(output_seq_file);
+		
+		auto sequence_output_file=output_file+".sequences";
+		cout << "indexing sequences (" << sequence_output_file << ") ... " << endl;
+		vector<SequenceSize> seq_sizes;
+		for(auto &s: seq_texts){
+			seq_sizes.push_back(s.size());
+		}
+		DiskSequenceAccess sequence_access(sequence_output_file);
 		sequence_access.write_open();
 		sequence_access.write_metadata(seq_sizes);
-		// sequence_access.write_strings(strs);
+		sequence_access.write_strings(seq_texts);
 		sequence_access.write_close();
-		sequence_access.update_open();
-		for(int i=0; i< strs.size(); i++){
-		    sequence_access.update_single_sequence(i, strs[i]);
-		}
-		sequence_access.update_close();
 		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-
-	// 	sequnce_access.write_open();
-    // sequnce_access.write_metadata(prokrustean);
-    // sequnce_access.write_close();
-    
-    // sequnce_access.update_open();
-    // auto start = std::chrono::steady_clock::now();
-
-    // for(int i=0; i< seq_texts.size(); i++){
-    //     sequnce_access.update_single_sequence(i, seq_texts[i]);
-    // }
-    // cout << "save: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-    // sequnce_access.update_close();
 	}
 }
 
