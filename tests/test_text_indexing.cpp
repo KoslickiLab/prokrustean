@@ -14,55 +14,32 @@
 using namespace std;
 
 void test_metadata_store(){
-    Prokrustean prokrustean;
-    prokrustean.file_name="temp.something";
-    prokrustean.lmin=20;
-    prokrustean.sequence_count=123;
-    prokrustean.stratum_count=987;
-    prokrustean.sequences__size.resize(prokrustean.sequence_count);
-    prokrustean.sequences__size[0]=1000;
-    prokrustean.sequences__size[1]=2000;
-    prokrustean.sequences__size[2]=3000;
-    prokrustean.sequences__size[10]=999;
-
+    vector<SequenceSize> sequences__size={10,20,50};
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(prokrustean.sequences__size, prokrustean);
+    sequnce_access.write_metadata(sequences__size);
     sequnce_access.write_close();
-    sequnce_access.load_metadata();
+
+    DiskSequenceAccess sequnce_access2("data.dat");
+    sequnce_access2.load_metadata();
     
-    // cout << std::string(sequnce_access.metadata.evidence) << endl;
-    assert(sequnce_access.metadata.evidence==PROKRUSTEAN_EVIDENCE);
-    prokrustean.file_name.resize(256);
-    assert(sequnce_access.metadata.prokrustean_file_name==prokrustean.file_name);
-    assert(sequnce_access.metadata.lmin==prokrustean.lmin);
-    // cout << "sequnce_access.metadata.sequence_count " << sequnce_access.metadata.sequence_count << endl;
-    assert(sequnce_access.metadata.sequence_count==prokrustean.sequence_count);
-    assert(sequnce_access.metadata.strata_count==prokrustean.stratum_count);
-    assert(sequnce_access.sequence_start_positions.size()==prokrustean.sequence_count);
-    for(int i=1; i<prokrustean.sequence_count; i++){
-        // sequence content = size + letters
-        assert(prokrustean.sequences__size[i-1]+sizeof(SequenceSize) == sequnce_access.sequence_start_positions[i]-sequnce_access.sequence_start_positions[i-1]);
-    }
+    assert(sequnce_access.metadata.evidence==sequnce_access2.metadata.evidence);
+    assert(sequnce_access.metadata.bwt_file_name==sequnce_access2.metadata.bwt_file_name);
+    assert(sequnce_access.metadata.sequence_count==sequnce_access2.metadata.sequence_count);
+    assert(sequnce_access.metadata.sequence_size_type_byte_size==sequnce_access2.metadata.sequence_size_type_byte_size);
 }
+
 
 void test_sequence_save_and_load(){
     std::vector<std::string> sequences = {"apple", "orange", "banana", "grape"};
-    Prokrustean prokrustean;
-    prokrustean.file_name="temp.something";
-    prokrustean.lmin=20;
-    prokrustean.sequence_count=123;
-    prokrustean.stratum_count=987;
-    vector<SequenceSize> sequences__size(prokrustean.sequence_count);
-    sequences__size[0]=sequences[0].size();
-    sequences__size[1]=sequences[1].size();
-    sequences__size[2]=sequences[2].size();
-    sequences__size[10]=sequences[3].size();
-    
+    vector<SequenceSize> sequences__size;
+    for(auto &seq: sequences){
+        sequences__size.push_back(seq.size());
+    }
     
     DiskSequenceAccess sequnce_access("data.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(sequences__size, prokrustean);
+    sequnce_access.write_metadata(sequences__size);
     sequnce_access.write_strings(sequences);
     sequnce_access.write_close();
     sequnce_access.read_open();
@@ -75,32 +52,9 @@ void test_sequence_save_and_load(){
     assert(str==sequences[3].substr(3,2));
 }
 
-// void test_indexing_simple(){
-//     std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
-//     vector<int> seq_sizes;
-//     for(auto &str: strings){
-//         seq_sizes.push_back(str.size());
-//     }
-//     DiskSequenceAccess sequnce_access("data.dat");
-//     sequnce_access.write_open();
-//     sequnce_access.write_meta(seq_sizes);
-//     sequnce_access.write_strings(strings);
-//     sequnce_access.write_close();
-//     sequnce_access.load_all_strings();
-//     // sequnce_access.read_open();
-//     cout << sequnce_access.get_metadata() << endl;
-
-//     cout << sequnce_access.get_string(1) << endl;
-//     assert("orange"==sequnce_access.get_string(1));
-//     assert("rang"==sequnce_access.get_substring(1, 1, 4));
-//     sequnce_access.read_close();
-// }
-
 void test_bwt_prokrustean_indexing(){
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
-    Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean);
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
     vector<SequenceSize> seq_sizes;
@@ -110,12 +64,13 @@ void test_bwt_prokrustean_indexing(){
     vector<tuple<SeqId, int, int>> substring_locs={
         make_tuple(1, 3, 20),
         make_tuple(3, 8, 37),
-        make_tuple(9, 20, 42)
+        make_tuple(9, 20, 42),
+        make_tuple(seq_sizes.size()-1, 10, 30),
     };
 
     DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(seq_sizes, prokrustean);
+    sequnce_access.write_metadata(seq_sizes);
     sequnce_access.write_strings(seq_texts);
     sequnce_access.write_close();
     
@@ -130,44 +85,33 @@ void test_bwt_prokrustean_indexing(){
         assert(seq_texts[idx].substr(from, to-from+1)==result);
     }
     sequnce_access2.read_close(); 
-    //in memory
-    // sequnce_access.load_all_strings();
-    // for(auto [idx, from, to]: substring_locs){
-    //     assert(seq_texts[idx]==sequnce_access.get_string(idx));
-    //     assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
-    // }
 }
 
-
-void test_bwt_prokrustean_indexing_update(){
+void test_bwt_prokrustean_indexing_loaded(){
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
-    Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean);
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
-    vector<tuple<SeqId, int, int>> substring_locs={
-        make_tuple(1, 3, 20),
-        make_tuple(3, 8, 37),
-        make_tuple(9, 20, 42)
-    };
     vector<SequenceSize> seq_sizes;
 	for(auto &s: seq_texts){
 		seq_sizes.push_back(s.size());
 	}
+    vector<tuple<SeqId, int, int>> substring_locs={
+        make_tuple(1, 3, 20),
+        make_tuple(3, 8, 37),
+        make_tuple(9, 20, 42),
+        make_tuple(seq_sizes.size()-1, 10, 30),
+    };
+
     DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
     sequnce_access.write_open();
-    sequnce_access.write_metadata(seq_sizes, prokrustean);
+    sequnce_access.write_metadata(seq_sizes);
+    sequnce_access.write_strings(seq_texts);
     sequnce_access.write_close();
     
-    sequnce_access.update_open();
-    for(int i=0; i< seq_texts.size(); i++){
-        sequnce_access.update_single_sequence(i, seq_texts[i]);
-    }
-    sequnce_access.update_open();
-
     DiskSequenceAccess sequnce_access2("test_bwt_prokrustean_indexing.dat");
     sequnce_access2.load_metadata();
+    sequnce_access2.load_all_strings();
     sequnce_access2.read_open();
     string result;
     for(auto [idx, from, to]: substring_locs){
@@ -177,69 +121,59 @@ void test_bwt_prokrustean_indexing_update(){
         assert(seq_texts[idx].substr(from, to-from+1)==result);
     }
     sequnce_access2.read_close(); 
-    //in memory
-    // sequnce_access.load_all_strings();
-    // for(auto [idx, from, to]: substring_locs){
-    //     assert(seq_texts[idx]==sequnce_access.get_string(idx));
-    //     assert(seq_texts[idx].substr(from, to-from+1)==sequnce_access.get_substring(idx, from, to-from+1));
-    // }
 }
 
-// void test_verification(){
-//     std::vector<std::string> strings = {"apple", "orange", "banana", "grape"};
-//     DiskSequenceAccess sequnce_access("data.dat");
-//     vector<int> seq_sizes;
-//     for(auto &str: strings){
-//         seq_sizes.push_back(str.size());
-//     }
-//     sequnce_access.write_open();
-//     sequnce_access.write_meta(seq_sizes);
-//     sequnce_access.write_strings(strings);
-//     sequnce_access.write_close();
-//     DiskSequenceAccess sequnce_access1("data.dat");
-//     sequnce_access1.verify();
-// }
+void test_bwt_prokrustean_indexing_loaded_vs_unloaded(){
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    vector<string> seq_texts;
+    fm_idx.recover_all_texts(seq_texts);
+    vector<SequenceSize> seq_sizes;
+	for(auto &s: seq_texts){
+		seq_sizes.push_back(s.size());
+	}
+    vector<tuple<SeqId, int, int>> substring_locs={
+        make_tuple(1, 3, 20),
+        make_tuple(3, 8, 37),
+        make_tuple(9, 20, 42),
+        make_tuple(seq_sizes.size()-1, 10, 30),
+    };
 
-
-// void test_bwt_indexing2(){
-//     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
-//     auto fm_idx = FmIndex(str);
+    DiskSequenceAccess sequnce_access("test_bwt_prokrustean_indexing.dat");
+    sequnce_access.write_open();
+    sequnce_access.write_metadata(seq_sizes);
+    sequnce_access.write_strings(seq_texts);
+    sequnce_access.write_close();
     
-//     vector<string> seq_texts;
-//     fm_idx.recover_all_texts(seq_texts);
-//     // seq_texts={ "orange", "apple"};
-//     vector<tuple<int, int, int>> substring_locs={
-//         make_tuple(1, 3, 20),
-//         make_tuple(3, 8, 37),
-//         make_tuple(9, 20, 42)
-//     };
-//     // vector<tuple<int, int, int>> substring_locs={
-//     //     make_tuple(1, 1, 3),
-//     //     make_tuple(0, 1, 3)
-//     // };
-//     Access sequnce_access;
-//     sequnce_access.filename="test_data.dat";
-//     sequnce_access.outfile=std::ofstream(sequnce_access.filename, std::ios::binary);
-//     vector<int> sizes;
-//     for(auto &str: seq_texts){
-//         sizes.push_back(str.size());
-//     }
-//     sequnce_access.save_meta(sizes);
-//     sequnce_access.save_strings(seq_texts);
-//     for(auto [idx, from, size]: substring_locs){
-//         cout << sequnce_access.get_string(idx) << endl;
-//         assert(seq_texts[idx]==sequnce_access.get_string(idx));
-//         assert(seq_texts[idx].substr(from, size)==sequnce_access.get_substring(idx, from, size));
-//     }
-// }
+    DiskSequenceAccess sequnce_access1("test_bwt_prokrustean_indexing.dat");
+    sequnce_access1.load_metadata();
+    sequnce_access1.read_open();
+
+    DiskSequenceAccess sequnce_access2("test_bwt_prokrustean_indexing.dat");
+    sequnce_access2.load_metadata();
+    sequnce_access2.load_all_strings();
+    sequnce_access2.read_open();
+    string result1;
+    string result2;
+    for(auto [idx, from, to]: substring_locs){
+        sequnce_access1.read_seq(idx, result1);
+        sequnce_access2.read_seq(idx, result2);
+        assert(result1==result2);
+        sequnce_access1.read_seq_substr(idx, from, to-from+1, result1);
+        sequnce_access2.read_seq_substr(idx, from, to-from+1, result2);
+        assert(result1==result2);
+    }
+    sequnce_access1.read_close(); 
+    sequnce_access2.read_close(); 
+}
 
 
 void main_text_indexing() {
     test_metadata_store();
     test_sequence_save_and_load();
-    test_bwt_prokrustean_indexing_update();
     test_bwt_prokrustean_indexing();
-    // test_verification();
+    test_bwt_prokrustean_indexing_loaded();
+    test_bwt_prokrustean_indexing_loaded_vs_unloaded();
 }
 
 #endif

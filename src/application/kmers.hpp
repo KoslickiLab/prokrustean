@@ -60,7 +60,7 @@ void get_distinct_kmers(int k, ProkrusteanExtension &ext, AbstractSequenceAccess
     }
 }
 
-void get_distinct_kmers_parallel(int k, ProkrusteanExtension &ext, DiskSequenceAccess &sequence_access, DiskStringDataStore &string_store, int thread_cnt){
+void get_distinct_kmers_parallel(int k, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, DiskStringDataStore &string_store, int thread_cnt){
     vector<future<void>> futures;
     auto func_ = [](ProkrusteanExtension &ext, int k, uint8_t thread_idx, uint8_t thread_cnt, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store) {
         Vertex vertex; 
@@ -89,7 +89,7 @@ void get_distinct_kmers_parallel(int k, ProkrusteanExtension &ext, DiskSequenceA
 }
 
 
-void get_distinct_kmers_parallel_multi_file(int k, ProkrusteanExtension &ext, DiskSequenceAccess &sequence_access, vector<DiskStringDataStore*> &string_store_list, int thread_cnt){
+void get_distinct_kmers_parallel_multi_file(int k, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, vector<DiskStringDataStore*> &string_store_list, int thread_cnt){
     vector<future<void>> futures;
     auto func_ = [](ProkrusteanExtension &ext, int k, uint8_t thread_idx, uint8_t thread_cnt, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store) {
         Vertex vertex; 

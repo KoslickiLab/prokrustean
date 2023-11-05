@@ -117,7 +117,7 @@ int main(int argc, char** argv){
 	DiskSequenceAccess sequence_access(input_sequences);
 	sequence_access.load_metadata();
 	sequence_access.load_all_strings();
-	// sequence_access.read_open();
+	sequence_access.read_open();
 	
 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	start = std::chrono::steady_clock::now();

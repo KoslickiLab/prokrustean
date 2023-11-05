@@ -155,7 +155,7 @@ void test_store_and_retrieve_random_data() {
     originalData.set_seq_count(sequence_cnt);
     originalData.set_stratum_count(stratum_cnt);
     for(int i=0; i<sequence_cnt; i++){
-        auto rgn_count = generate_random_val<CoveringRegionIdx>();
+        CoveringRegionCount rgn_count = generate_random_val<uint8_t>();
         StratifiedData* arr= new StratifiedData[rgn_count];
         for(int r=0; r<rgn_count; r++){
             arr[r].stratum_id=generate_random_val<StratumId>();
@@ -166,7 +166,7 @@ void test_store_and_retrieve_random_data() {
         originalData.total_sequence_region_count+=rgn_count;
     }
     for(int i=0; i<stratum_cnt; i++){
-        auto rgn_count = generate_random_val<CoveringRegionIdx>();
+        CoveringRegionCount rgn_count = generate_random_val<uint8_t>();
         StratifiedData* arr= new StratifiedData[rgn_count];
         for(int r=0; r<rgn_count; r++){
             arr[r].stratum_id=generate_random_val<StratumId>();
@@ -182,7 +182,6 @@ void test_store_and_retrieve_random_data() {
     store_prokrustean(originalData, "data.bin");
 
     start = std::chrono::steady_clock::now();
-
     // Deserialize the data from the file
     Prokrustean loadedData;  
     load_prokrustean("data.bin", loadedData);
