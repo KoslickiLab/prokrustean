@@ -67,7 +67,8 @@ def main(input):
         os.system(f'../../grlbwt/build/grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
 
     # preprocess 
-    process_fastq_gz(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
+    if os.path.isfile(in_path_for_concatenated_string):
+        process_fastq_gz(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
 
     # grlbwt and conversion to txt 
     run_grlbwt(in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file, out_txt_path_grlbwt_txt_file)
