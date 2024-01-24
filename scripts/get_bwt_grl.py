@@ -68,6 +68,8 @@ def main(input):
 
     # preprocess 
     if os.path.isfile(in_path_for_concatenated_string):
+        print('already concatenated')
+    else:
         process_fastq_gz(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
 
     # grlbwt and conversion to txt 
