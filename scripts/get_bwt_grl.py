@@ -59,7 +59,7 @@ def process_sequence_file(file_path, output_file_path, file_format):
             file.write(concatenated_sequence)
 
 
-def run_grlbwt(file_path, out_file_path, out_txt_file_path):
+def run_grlbwt(file_path, out_file_path, out_txt_file_path, num_threads):
         os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T . -t {num_threads}')
         os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
 
@@ -99,7 +99,7 @@ def main(input, num_threads, save_intermediate):
         process_sequence_file(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
 
     # grlbwt and conversion to txt 
-    run_grlbwt(in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file, out_txt_path_grlbwt_txt_file)
+    run_grlbwt(in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file, out_txt_path_grlbwt_txt_file, num_threads)
 
     # Remove intermediate files
     if not save_intermediate:
