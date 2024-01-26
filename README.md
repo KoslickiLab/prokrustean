@@ -9,7 +9,7 @@ Prokrustean graph is a location-based model that does not directly store sequenc
 #### Install
 Prokrustean is a header-only stand-alone c++ project. The graph construction requires the wavelet tree of [SDSL project](https://github.com/simongog/sdsl-lite), but I copied the required part from the large project to avoid annoying dependency collsions. Credit goes to their contribution.
 
-To install SDSL, please do the following:
+To install the prerequisites for creating bwts, SDSL and grlBWT, please do the following:
 ```
 git clone https://github.com/simongog/sdsl-lite.git
 cd sdsl-lite
