@@ -32,7 +32,7 @@ def is_program_installed(program):
     except FileNotFoundError:
         return False
 
-def main(input, num_threads):
+def main(input, num_threads, save_intermediate):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
     in_path_for_fastq_file = input
     
@@ -91,6 +91,14 @@ def main(input, num_threads):
     # grlbwt and conversion to txt 
     run_grlbwt(in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file, out_txt_path_grlbwt_txt_file)
 
+    # Remove intermediate files
+    if not save_intermediate:
+        intermediate_files = [in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file + ".rl_bwt"]
+        for file in intermediate_files:
+            if os.path.exists(file):
+                os.remove(file)
+                print(f'Removed intermediate file: {file}')
+
 
 if __name__ == '__main__':
     import argparse
@@ -98,9 +106,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', metavar='path', required=True, help='The path to input FASTQ or FASTQ.gz file')
     parser.add_argument('-t', metavar='threads', required=False, default=1, help='The number of threads used to run the BWT construction.')
+    parser.add_argument('--save_intermediate', action='store_true', help='Save intermediate files')
     args = parser.parse_args()
+    save_intermediate = args.save_intermediate
     num_threads = int(args.t)
     if num_threads <= 0:
         raise ValueError(f"Number of threads must be a positive integer. You used {num_threads}.")
-    main(args.i, num_threads)
+    main(args.i, num_threads, save_intermediate)
 
