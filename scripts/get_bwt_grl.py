@@ -73,7 +73,7 @@ def main(input, num_threads, save_intermediate):
             extension = file_ending
             break
     if not extension:
-        raise Exception(f'File must be one of the following formats: {FORMAT_MAPPING.keys()}')
+        raise ValueError(f'File must be one of the following formats: {FORMAT_MAPPING.keys()}')
     
 
     if not is_program_installed('grlbwt-cli'):
