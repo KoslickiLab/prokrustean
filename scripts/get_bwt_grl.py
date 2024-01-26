@@ -1,6 +1,7 @@
 import os
 import glob
 import gzip
+import subprocess
 ##################################################
 # sdsl-lite installation - grlbwt uses it
 ##################################################
@@ -21,6 +22,16 @@ cmake ..
 make
 '''
 ##################################################
+
+
+def is_program_installed(program):
+    try:
+        # Attempt to execute the program with --version or a similar argument that causes it to exit quickly
+        subprocess.run([program, '--version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except FileNotFoundError:
+        return False
+
 def main(input):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
     in_path_for_fastq_file = input
@@ -31,6 +42,11 @@ def main(input):
         extension='.fastq'
     else:
         raise Exception('non-fastq file (fastq.gz or .fastq)')
+
+    if not is_program_installed('grlbwt-cli'):
+        raise EnvironmentError("grlbwt-cli is not installed. Please install it to continue.")
+    if not is_program_installed('grl2plain'):
+        raise EnvironmentError("grl2plain is not installed. Please install it to continue.")
 
     # input file becomes concatenated ex. "./downloads/x_x_x.txt"
     in_path_for_concatenated_string = in_path_for_fastq_file.replace(extension, ".txt")
@@ -63,8 +79,8 @@ def main(input):
             file.write(concatenated_sequence)
 
     def run_grlbwt(file_path, out_file_path, out_txt_file_path):
-        os.system(f'../../grlbwt/build/grlbwt-cli {file_path} -o {out_file_path}')
-        os.system(f'../../grlbwt/build/grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
+        os.system(f'grlbwt-cli {file_path} -o {out_file_path}')
+        os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
 
     # preprocess 
     if os.path.isfile(in_path_for_concatenated_string):
