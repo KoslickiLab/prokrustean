@@ -36,6 +36,7 @@ FORMAT_MAPPING = {
     '.fq.gz': 'fastq',
 }
 
+
 def is_program_installed(program):
     try:
         # Attempt to execute the program with --version or a similar argument that causes it to exit quickly
@@ -43,6 +44,25 @@ def is_program_installed(program):
         return True
     except FileNotFoundError:
         return False
+
+
+def process_sequence_file(file_path, output_file_path, file_format):
+        concatenated_sequence = ""
+        open_func = gzip.open if file_path.endswith('.gz') else open
+        file_format = FORMAT_MAPPING.get(file_format.lower())
+        with open_func(file_path, "rt") as file:
+            for record in SeqIO.parse(file, file_format):
+                sequence = str(record.seq).upper()  # Convert sequence to uppercase
+                concatenated_sequence += sequence + '$'
+
+        with open(output_file_path, 'w') as file:
+            file.write(concatenated_sequence)
+
+
+def run_grlbwt(file_path, out_file_path, out_txt_file_path):
+        os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T . -t {num_threads}')
+        os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
+
 
 def main(input, num_threads, save_intermediate):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
@@ -72,22 +92,6 @@ def main(input, num_threads, save_intermediate):
     print(f'grlbwt will be processed : {out_path_grlbwt_rl_bwt_file}')
     print(f'grlbwt output will be converted to txt : {out_txt_path_grlbwt_txt_file}')
     
-    def process_sequence_file(file_path, output_file_path, file_format):
-        concatenated_sequence = ""
-        open_func = gzip.open if file_path.endswith('.gz') else open
-        file_format = FORMAT_MAPPING.get(extension.lower())
-        with open_func(file_path, "rt") as file:
-            for record in SeqIO.parse(file, file_format):
-                sequence = str(record.seq).upper()  # Convert sequence to uppercase
-                concatenated_sequence += sequence + '$'
-        
-        with open(output_file_path, 'w') as file:
-            file.write(concatenated_sequence)
-        
-    def run_grlbwt(file_path, out_file_path, out_txt_file_path):
-        os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T . -t {num_threads}')
-        os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
-
     # preprocess 
     if os.path.isfile(in_path_for_concatenated_string):
         print('already concatenated')
