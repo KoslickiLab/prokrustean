@@ -2,6 +2,8 @@ import os
 import glob
 import gzip
 import subprocess
+from Bio import SeqIO
+import gzip
 ##################################################
 # sdsl-lite installation - grlbwt uses it
 ##################################################
@@ -23,6 +25,16 @@ make
 '''
 ##################################################
 
+FORMAT_MAPPING = {
+    '.fasta': 'fasta',
+    '.fa': 'fasta',
+    '.fastq': 'fastq',
+    '.fq': 'fastq',
+    '.fasta.gz': 'fasta',
+    '.fa.gz': 'fasta',
+    '.fastq.gz': 'fastq',
+    '.fq.gz': 'fastq',
+}
 
 def is_program_installed(program):
     try:
@@ -35,13 +47,14 @@ def is_program_installed(program):
 def main(input, num_threads, save_intermediate):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
     in_path_for_fastq_file = input
+    extension=''
+    for file_ending in FORMAT_MAPPING:
+        if str.endswith(input, file_ending):
+            extension = file_ending
+            break
+    if not extension:
+        raise Exception(f'File must be one of the following formats: {FORMAT_MAPPING.keys()}')
     
-    if str.endswith(input, '.fastq.gz'):
-        extension='.fastq.gz'
-    elif str.endswith(input, '.fastq'):
-        extension='.fastq'
-    else:
-        raise Exception('non-fastq file (fastq.gz or .fastq)')
 
     if not is_program_installed('grlbwt-cli'):
         raise EnvironmentError("grlbwt-cli is not installed. Please install it to continue.")
@@ -58,26 +71,19 @@ def main(input, num_threads, save_intermediate):
     print(f'sequences will be concatenated : {in_path_for_concatenated_string}')
     print(f'grlbwt will be processed : {out_path_grlbwt_rl_bwt_file}')
     print(f'grlbwt output will be converted to txt : {out_txt_path_grlbwt_txt_file}')
-
-    def process_fastq_gz(file_path, output_file_path, extension):
+    
+    def process_sequence_file(file_path, output_file_path, file_format):
         concatenated_sequence = ""
-        if extension=='.fastq.gz':
-            with gzip.open(file_path, "rt", encoding="utf-8") as file:  # 'rt' stands for read text
-                lines = file.readlines()
-                for i, line in enumerate(lines):
-                    if (i % 4 == 1):  # sequences are located every 4 lines starting at line 1 (0-indexed)
-                        concatenated_sequence += line.strip() + '$'
-        elif extension=='.fastq':
-            with open(file_path, "rt") as file:  # 'rt' stands for read text
-                lines = file.readlines()
-                for i, line in enumerate(lines):
-                    if (i % 4 == 1):  # sequences are located every 4 lines starting at line 1 (0-indexed)
-                        concatenated_sequence += line.strip() + '$'
-        else:
-            raise Exception('non-fastq extension')
+        open_func = gzip.open if file_path.endswith('.gz') else open
+        file_format = FORMAT_MAPPING.get(extension.lower())
+        with open_func(file_path, "rt") as file:
+            for record in SeqIO.parse(file, file_format):
+                sequence = str(record.seq).upper()  # Convert sequence to uppercase
+                concatenated_sequence += sequence + '$'
+        
         with open(output_file_path, 'w') as file:
             file.write(concatenated_sequence)
-
+        
     def run_grlbwt(file_path, out_file_path, out_txt_file_path):
         os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T . -t {num_threads}')
         os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
@@ -86,7 +92,7 @@ def main(input, num_threads, save_intermediate):
     if os.path.isfile(in_path_for_concatenated_string):
         print('already concatenated')
     else:
-        process_fastq_gz(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
+        process_sequence_file(in_path_for_fastq_file, in_path_for_concatenated_string, extension)
 
     # grlbwt and conversion to txt 
     run_grlbwt(in_path_for_concatenated_string, out_path_grlbwt_rl_bwt_file, out_txt_path_grlbwt_txt_file)

@@ -15,6 +15,10 @@ cmake -B build .
 cd build
 make
 ```
+There is a helper script `get_bwt_grl.py` that converts fastq/a files into a bwt. If you wish to use it, you will need to install BioPython:
+```
+conda install -c bioconda biopython
+```
 
 #### Get input (ebwt)
 Below script uses [grl bwt](https://github.com/ddiazdom/grlBWT) to compute the ebwt of a sequence file (fastq.gz). Any ebwt using a seperator (normally '$') is accepted. (Having a simpler way would be great. Any recommendation is appreciated.)
