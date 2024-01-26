@@ -32,7 +32,7 @@ def is_program_installed(program):
     except FileNotFoundError:
         return False
 
-def main(input):
+def main(input, num_threads):
     # input file fastq name ex. "./downloads/x_x_x.fastq.gz"
     in_path_for_fastq_file = input
     
@@ -79,7 +79,7 @@ def main(input):
             file.write(concatenated_sequence)
 
     def run_grlbwt(file_path, out_file_path, out_txt_file_path):
-        os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T .')
+        os.system(f'grlbwt-cli {file_path} -o {out_file_path} -T . -t {num_threads}')
         os.system(f'grl2plain {out_file_path}.rl_bwt {out_txt_file_path}')
 
     # preprocess 
@@ -96,7 +96,11 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', metavar='path', required=True, help='the path to input')
+    parser.add_argument('-i', metavar='path', required=True, help='The path to input FASTQ or FASTQ.gz file')
+    parser.add_argument('-t', metavar='threads', required=False, default=1, help='The number of threads used to run the BWT construction.')
     args = parser.parse_args()
-    main(args.i)
+    num_threads = int(args.t)
+    if num_threads <= 0:
+        raise ValueError(f"Number of threads must be a positive integer. You used {num_threads}.")
+    main(args.i, num_threads)
 
