@@ -148,6 +148,33 @@ struct ProkrusteanExtension {
             stratum_right_ext_count[id]++;
         }
     }
+
+    bool is_first_reflecting_seq(SeqId id, int k){
+        if(prokrustean.sequences__region_cnt[id]==0){
+            return true;
+        }
+        auto first_pos = prokrustean.sequences__region[id][0].pos;
+        auto first_stra_id = prokrustean.sequences__region[id][0].stratum_id;
+        return first_pos!=0 || k>prokrustean.stratums__size[first_stra_id] && first_pos==0;
+    }
+    bool is_first_reflecting(StratumId id, int k){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return true;
+        }
+        auto first_pos = prokrustean.stratums__region[id][0].pos;
+        auto first_stra_id = prokrustean.stratums__region[id][0].stratum_id;
+        return first_pos!=0 || k>prokrustean.stratums__size[first_stra_id] && first_pos==0;
+    }
+
+    bool is_last_reflecting(StratumId id, int k){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return true;
+        }
+        auto last_pos = prokrustean.stratums__region[id][prokrustean.stratums__region_cnt[id]-1].pos;
+        auto last_stra_id = prokrustean.stratums__region[id][prokrustean.stratums__region_cnt[id]-1].stratum_id;
+        auto last_to = last_pos + prokrustean.stratums__size[last_stra_id];
+        return last_to!=prokrustean.stratums__size[id] || k>prokrustean.stratums__size[last_stra_id];
+    }
 };
 
 bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
@@ -545,7 +572,7 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         /////////////////////////////////////////////////////////////////////////////////
         // If caught at here, then amost surely a data type problem.
         /////////////////////////////////////////////////////////////////////////////////
-        // cout << "acc_seq_rgn_count: " << acc_seq_rgn_count <<   " data.total_sequence_region_count: " << data.total_sequence_region_count << endl;
+        cout << "acc_seq_rgn_count: " << acc_seq_rgn_count <<   " data.total_sequence_region_count: " << data.total_sequence_region_count << endl;
         assert(acc_seq_rgn_count==data.total_sequence_region_count);
         
         // Deserialize the StratumSize vector
