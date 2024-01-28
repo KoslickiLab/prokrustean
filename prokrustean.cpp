@@ -105,6 +105,11 @@ int main(int argc, char** argv){
 	cout << "Lmin: " << lmin << endl;
 	cout << "threads: " << num_threads << endl;
 
+	string file_ext=".bwt";
+	if (!std::equal(file_ext.rbegin(), file_ext.rend(), input_bwt.rbegin())) {
+        cout << "Warning: the file extension is not '" << file_ext << ",' meaning possibly it is not a bwt file. A text file of ebwt comprising a single concatenated string with nucleotide symbols(A,C,G,T,N, etc..) and a terminal symbol $ is expected." << endl;
+    }
+
 	auto start = std::chrono::steady_clock::now();
     cout << "stage0 wavelet tree ... " ;
     WaveletString str(input_bwt);
