@@ -87,8 +87,8 @@ struct StratificationWorkSpace {
     vector<bool> work_is_primaries;
     vector<StratumId> work_stratum_ids;
 
-    uint64_t total_seq_region_cnt;
-    uint64_t total_strata_region_cnt;
+    uint64_t total_seq_region_cnt=0;
+    uint64_t total_strata_region_cnt=0;
     
     void update_contexts_for_seq(SeqId seq_id, FmIndex &fm_index, SuffixAnnotationWorkspace &suffix_annot, Prokrustean &prokrustean){
         this->seq_annot.seq_id=seq_id;

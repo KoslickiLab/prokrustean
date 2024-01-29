@@ -498,6 +498,10 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
 bool load_prokrustean(const std::string& filename, Prokrustean& data) {
     auto start = std::chrono::steady_clock::now();
 	cout << "loading prokrustean (" << filename << ") ... " << endl;
+    std::string file_ext = ".prokrustean";
+    if (!std::equal(file_ext.rbegin(), file_ext.rend(), filename.rbegin())) {
+        cout << "Warning: the file extension is not '" << file_ext << ",' meaning possibly the file is not a prokrustean graph representation." << endl;
+    }
 
     std::ifstream file(filename, std::ios::binary);
     
