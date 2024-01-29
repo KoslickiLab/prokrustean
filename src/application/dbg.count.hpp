@@ -280,7 +280,7 @@ void count_maximal_unitigs_range_of_k(uint64_t from, uint64_t to, ProkrusteanExt
 
 void count_maximal_unitigs_range_of_k_parallel(uint64_t from, uint64_t to, ProkrusteanExtension &ext, vector<uint64_t> &output, int thread_cnt){
     // Definitions:
-    assert(from>1 && from<=to);
+    assert(from>=1 && from<=to);
     assert(ext.prokrustean.contains_stratum_extension_count);
     output.clear();
     output.resize(to+1, 0);
