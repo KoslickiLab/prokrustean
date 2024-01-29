@@ -118,8 +118,9 @@ int main(int argc, char** argv){
 	std::ofstream outputFile(output_file);
 	for(int i=0; i<output.size(); i++){
 		if(from<=i && i<=to){
-			outputFile << std::left << std::setw(20) << i;
-			outputFile << output[i] << endl;
+//			outputFile << std::left << std::setw(20) << i;
+//			outputFile << output[i] << endl;
+			outputFile << i << "," << output[i] << endl;
 		}
 	}
 		
