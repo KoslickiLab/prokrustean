@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "hi:l:r:o:p:t")) != -1){
+	while ((opt = getopt(argc, argv, "hi:l:r:o:p:t:")) != -1){
 		switch (opt){
 			case 'h':
 				help();
