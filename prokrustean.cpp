@@ -25,7 +25,7 @@ bool output_txt=false;
 int num_threads=8;
 bool contains_char_ext = true;
 bool contains_frequency = false;
-bool recover_seuqneces = false;
+// bool recover_seuqneces = false;
 char TERM = '$';
 
 void help(){
@@ -37,7 +37,7 @@ void help(){
 	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
 	"-l <arg>    (REQUIRED) lmin - minimum length of a stratum(maximal repeat)" << endl <<
 	"-q <arg>    terminator. default:" << TERM << "($) ASCII code. Cannot be the code for A,C,G,T,N." << endl <<
-	"-r     	 recover sequences of the bwt and store in {output}.sequences" << endl <<
+	// "-r     	 recover sequences of the bwt and store in {output}.sequences" << endl <<
 	"-o <arg>    output file. default: {input}.prokrustean" << endl <<
 	"-t <arg>    thread count. default: " << num_threads << endl <<
 	"-c          prokrustean is a txt file. Cannot be reused for applications. default: no" << endl <<
@@ -78,8 +78,8 @@ int main(int argc, char** argv){
 			// break;
 			case 'f':
 				contains_frequency = true;
-			case 'r':
-				recover_seuqneces = true;
+			// case 'r':
+			// 	recover_seuqneces = true;
 			break;
 			default:
 				help();
@@ -132,27 +132,27 @@ int main(int argc, char** argv){
 	// dispose prokrustean
 	prokrustean=Prokrustean();
 
-	if(recover_seuqneces){
-		cout << "recover sequences.." << endl;
+	// if(recover_seuqneces){
+	// 	cout << "recover sequences.." << endl;
 		
-		vector<string> seq_texts;
-		recover_sequences_parallel(fm_idx, seq_texts, num_threads);
+	// 	vector<string> seq_texts;
+	// 	recover_sequences_parallel(fm_idx, seq_texts, num_threads);
 
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-		start = std::chrono::steady_clock::now();
+	// 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	// 	start = std::chrono::steady_clock::now();
 		
-		auto sequence_output_file=output_file+".sequences";
-		cout << "indexing sequences (" << sequence_output_file << ") ... " << endl;
-		vector<SequenceSize> seq_sizes;
-		for(auto &s: seq_texts){
-			seq_sizes.push_back(s.size());
-		}
-		DiskSequenceAccess sequence_access(sequence_output_file);
-		sequence_access.write_open();
-		sequence_access.write_metadata(seq_sizes);
-		sequence_access.write_strings(seq_texts);
-		sequence_access.write_close();
-		cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
-	}
+	// 	auto sequence_output_file=output_file+".sequences";
+	// 	cout << "indexing sequences (" << sequence_output_file << ") ... " << endl;
+	// 	vector<SequenceSize> seq_sizes;
+	// 	for(auto &s: seq_texts){
+	// 		seq_sizes.push_back(s.size());
+	// 	}
+	// 	DiskSequenceAccess sequence_access(sequence_output_file);
+	// 	sequence_access.write_open();
+	// 	sequence_access.write_metadata(seq_sizes);
+	// 	sequence_access.write_strings(seq_texts);
+	// 	sequence_access.write_close();
+	// 	cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
+	// }
 }
 
