@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 
 	if(argc < 2) help();
 	int opt;
-	while ((opt = getopt(argc, argv, "hp:l:r:o:t")) != -1){
+	while ((opt = getopt(argc, argv, "hp:l:r:o:t:")) != -1){
 		switch (opt){
 			case 'h':
 				help();
@@ -120,8 +120,9 @@ int main(int argc, char** argv){
 	std::ofstream outputFile(output_file);
 	for(int i=0; i<output.size(); i++){
 		if(from<=i && i<=to){
-			outputFile << std::left << std::setw(20) << i;
-			outputFile << output[i] << endl;
+//			outputFile << std::left << std::setw(20) << i;
+//			outputFile << output[i] << endl;
+			outputFile << i << "," << output[i] << endl;
 		}
 	}
 		
