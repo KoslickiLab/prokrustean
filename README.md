@@ -1,9 +1,8 @@
 # ProKrustean
 
-Prokrustean graph is a space efficient data structure that can quickly be queried to extract essentially arbitrary information regarding kmers for any value of k, or multiple k-values with time complexity essentially independent of k size range. The contribution of Prokrustean graph is to reveal the general structure of similarities of genetic sequences and their connections to kmers. It is expected to be useful at constructing mathematical models that can more precisely anticipate the behaviors of kmer-based applications, and at building practical applications that can advance the existing kmer-based methods.
+The Prokrustean graph is a space-efficient data structure capable of quickly querying to extract a wide range of information about kmers for any given value of k, or multiple k-values, with a time complexity that is independent of the k size range. A theoretical contribution of the Prokrustean graph is at elucidating the relationship between substring similarities in genomic sequences and the set of kmers. Its expected utility lies in defining quantitative metrics that describe the behaviors of kmer-based applications, which can be rapidly computed using a Prokrustean graph for a range of k values. Additionally, it offers potential benefits in building competitive multi-k (variable-order) representations of sequences or reads, which are particularly promising for genome assembly and alignment.
 
 This repository supports (1) Prokrustean graph construction from an ebwt of a sequence set, and (2) applications using Prokrustean graphs. 
-Prokrustean graph is a location-based model that does not directly store sequences. Instead, it refers to the locations of substring similarity information of a given sequence set.
 
 # Quick start
 #### Install
@@ -36,7 +35,7 @@ This approach requires a eBWT file that includes a single string with a seperato
 ```
 
 #### Make an access to sequences for prokrustean graph
-Application 3&4 requires the string sequences. Below code simply recover sequences from the given bwt. Since ebwt lacks any standard,  [as discussed in this paper](https://arxiv.org/abs/2202.13235), sequence indices in ebwts may or may not match with the order of original sequences, so the best clear way to secure the correctness is to recover the sequences from ebwt.
+Prokrustean graph is a location-based model that does not directly store sequences. Instead, it refers to the locations of substring similarity information of a given sequence set. Application 3&4 requires the string sequences. Below code simply recover sequences from the given bwt. Since ebwt lacks any standard,  [as discussed in this paper](https://arxiv.org/abs/2202.13235), sequence indices in ebwts may or may not match with the order of original sequences, so the clearest way to secure the correctness is to recover the sequences from ebwt. 
 ```
 # generates ./SRR20044276.bwt.prokrustean.sequences 
 ./prokrustean_access -i ./SRR20044276.bwt
@@ -56,7 +55,7 @@ Application 3&4 requires the string sequences. Below code simply recover sequenc
 
 ## BWT Construction
 ### optimalBWT
-We recommend [optimalBWT](https://github.com/davidecenzato/optimalBWT) for generating an input file. Note, some mac-based compiler fails install optimalBWT. Then we recommend using grlBWT in the section later.
+We recommend [optimalBWT](https://github.com/davidecenzato/optimalBWT) for generating an input file. Note, some mac-based compiler fails at installing optimalBWT. Then using the grlBWT at the next section is recommended.
 ```
 git clone https://github.com/davidecenzato/optimalBWT.git
 cd optimalBWT
@@ -71,7 +70,7 @@ python3 optimalBWT.py SRR20044276.fastq SRR20044276.fastq --algorithm sais --fas
 mv SRR20044276.fastq.optbwt SRR20044276.bwt
 ``` 
 ### grlBWT
-For mac users who fail to install optimalBWT, we recommend [grlbwt](https://github.com/ddiazdom/grlBWT). But this library requires a concatenated sequence string as an input, so the initial sequence files have to be converted.
+For users who fail to utilize optimalBWT, we recommend [grlbwt](https://github.com/ddiazdom/grlBWT). But this library requires a concatenated sequence string as an input, so the initial sequence files have to be converted.
 
 To install the prerequisites for creating bwts, SDSL and grlBWT, please do the following:
 ```
@@ -117,11 +116,11 @@ wget -O SRR20044276.bwt "https://pennstateoffice365-my.sharepoint.com/:u:/g/pers
 ```
 ### ropebwt2
 
-Some users might be familiar with the [ropebwt2](https://github.com/lh3/ropebwt2/blob/master/main.c). However, we have not included it in our practice as it seems to generate incorrect results for fairly large datasets. For example, making the bwt of SRR20044276.fasq.gz with ropebwt2 and getting the sequences (./prokrustean_access) do not really recover the original sequences. The recovery is consistent with both grlBWT and optimalBWT, and our naive implementation of bwt.
+[ropebwt2](https://github.com/lh3/ropebwt2/blob/master/main.c) may have been familiarized by some users. However, it is not recommended to use the library to generate the input of this project as it generates an incorrect data for fairly large datasets. For example, get the bwt of SRR20044276.fasq.gz with ropebwt2 and recover the sequences with ./prokrustean_access. It fails at recovering the original sequences. The same task consistently works with both grlBWT and optimalBWT, and our naive implementation of bwt developed for testing purposes.
 
 # Discussions
 ## Structure of prokrustean
-The data structure represents the Prokrustean Graph in the paper. 
+The data structure represents [the Prokrustean Graph](https://www.biorxiv.org/content/10.1101/2023.11.21.568151). 
 * Vertices represent sequences and strata. The size of each is stored only. 
 * Edges represent stratifying regions in a sequence or stratum. For each vertex, a list of position:stratumId pairs are stored. Therefore, intervals of a stratifying region is extracted by (position, position + size(stratumId)).
 * For each stratum, "left/right counts" are also collected as default. Those mean the number of characters that can extend left/right each stratum. For example, for a stratum R, if cR exists in a sequence, then the left count increases by 1. This information is used in de Bruijn graph related applications. 
@@ -130,9 +129,9 @@ For checking the structure with a sample dataset, use -c to get a readable prokr
 ```
 ./prokrustean -i ./SRR20044276.bwt -l 20 -c
 ```
-## Credibility of applications
-The applications were tested with corresponding brute-force approaches. The results were not rigorously compared with the other tools mentioned in the paper (KMC and GGCAT) because those mature tools manipulate the dataset to properly support practitioners. For example, [KMC](https://github.com/refresh-bio/KMC) has a lot of options to filter k-mers by default, i.e. abundances, canonical k-mers, and limited alphabet of `A`,`G`, `C`, and `T`, so the results of k-mer counting with prokrustean is different from that of KMC.
-* k-mer related applications: k-mers from prokrustean were compared with those collected directly from the original file by a naive implementation: chop the sequences by k and gather the unique ones.
+## Correctness of Applications
+All applications were tested alongside their corresponding brute-force approaches. The results were not directly compared bit by bit with those of other tools mentioned in the paper, such as KMC and GGCAT. This is because these mature tools process the dataset in a specific manner to better support practitioners. For instance, [KMC](https://github.com/refresh-bio/KMC) offers numerous options for filtering k-mers by default, including parameters like abundances, canonical k-mers, and a limited alphabet consisting of A, G, C, and T. 
+* k-mer extracting/counting applications: k-mers from prokrustean were compared with those collected directly from the original file by a naive implementation: chop the sequences by k and gather the unique ones.
 * de bruijn graph related applications: compacted de bruijn graph built from prokrustean was compared with the graph naively built from the original file.
 
 
