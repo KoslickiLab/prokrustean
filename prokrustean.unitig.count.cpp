@@ -90,6 +90,7 @@ int main(int argc, char** argv){
 		exit(0);
 	}
 	if(to==-1){
+		to=prokrustean.sequences__size[0];
 		for(auto &size: prokrustean.sequences__size){
 			if(to<size) to=size;
 		}

@@ -15,10 +15,10 @@ typedef uint32_t StratumId; //
 /* Has to be at least (SeqId or StratumId) */
 typedef uint32_t StratumOrSeqId; //
 /* Has to be under possible sequence max length. Has to be synced together */
-typedef uint16_t Pos; 
-typedef uint16_t SequenceSize; 
+typedef uint32_t Pos; 
+typedef uint32_t SequenceSize; 
 /* Has to be under possible stratum length */
-typedef uint16_t StratumSize; 
+typedef uint32_t StratumSize; 
 /* Can covering region be over 255? meaning stratified regions are at least 122? */ 
 /*I doubt about it even if the dataset is very largein normal cases */
 typedef uint32_t CoveringRegionIdx; 
@@ -27,7 +27,7 @@ typedef uint32_t CoveringRegionCount;
 typedef uint8_t CharId; 
 typedef uint8_t CharCount; 
 // frequency
-typedef uint16_t FrequencyCount; 
+typedef uint32_t FrequencyCount; 
 
 /* For prokrustean construction */
 typedef uint16_t SuffixArrayIdx_InBlock;
