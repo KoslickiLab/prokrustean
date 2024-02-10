@@ -16,11 +16,11 @@ int main(void){
     cout << "--- test fm_index ---" << endl;
     main_fm_index();
 
-    cout << "--- test text indexing ---" << endl;
-    main_text_indexing();
-
     cout << "--- test construction ---" << endl;
     main_construction();
+
+    cout << "--- test text indexing ---" << endl;
+    main_text_indexing();
 
     cout << "--- test kmer ---" << endl;
     main_application_kmer();
