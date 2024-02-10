@@ -5,6 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <tuple>
 #include "const.cpp"	
 #include "naive_impl.cpp"
 #include "../src/fm_index/string.sdsl.hpp"
@@ -59,7 +60,7 @@ void test_recovery(){
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
         for(auto pair: fm_idx.recover_suffix_array(i, true)){
-            sa[pair.first]=make_tuple(text_pos, pair.second);
+            sa[pair.first]=make_pair(text_pos, pair.second);
             text_pos++;
         }
     }
@@ -85,7 +86,7 @@ void test_recovery_unsorted(){
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
         for(auto pair: fm_idx.recover_suffix_array(i, true)){
-            sa[pair.first]=make_tuple(text_pos, pair.second);
+            sa[pair.first]=make_pair(text_pos, pair.second);
             text_pos++;
         }
     }
@@ -111,7 +112,7 @@ void test_recovery_unsorted_tied(){
     uint64_t text_pos = 0;
     for (int i=0; i<sequences.size(); i++){
         for(auto pair: fm_idx.recover_suffix_array(i, true)){
-            sa[pair.first]=make_tuple(text_pos, pair.second);
+            sa[pair.first]=make_pair(text_pos, pair.second);
             text_pos++;
         }
     }
