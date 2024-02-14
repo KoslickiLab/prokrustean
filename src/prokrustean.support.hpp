@@ -84,6 +84,24 @@ struct ProkrusteanExtension {
     //         return true;
     //     }
     // }
+    bool get_sequence_first_stratified(SeqId id, StratifiedEdge &edge){
+        if(prokrustean.sequences__region_cnt[id]==0){
+            return false;
+        } else {
+            auto &region=prokrustean.sequences__region[id][0];
+            edge.update(region.pos, region.pos + prokrustean.get_stratum_size(region.stratum_id), true, region.stratum_id);
+            return true;
+        }
+    }
+    bool get_sequence_last_stratified(SeqId id, StratifiedEdge &edge){
+        if(prokrustean.sequences__region_cnt[id]==0){
+            return false;
+        } else {
+            auto &region=prokrustean.sequences__region[id][prokrustean.sequences__region_cnt[id]-1];
+            edge.update(region.pos, region.pos + prokrustean.get_stratum_size(region.stratum_id), true, region.stratum_id);
+            return true;
+        }
+    }
     bool get_stratum_first_stratified(StratumId id, StratifiedEdge &edge){
         if(prokrustean.stratums__region_cnt[id]==0){
             return false;
