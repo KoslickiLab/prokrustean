@@ -8,7 +8,7 @@ This repository supports (1) Prokrustean graph construction from an ebwt of a se
 #### Install
 Prokrustean is a header-only stand-alone c++ project. The graph construction utilizes the wavelet tree of the input ebwt in [SDSL project](https://github.com/simongog/sdsl-lite), but we copied the relevant code from the project to avoid dependency issues.
 ```
-git clone git@github.com:KoslickiLab/prokrustean.git
+git clone https://github.com/KoslickiLab/prokrustean.git
 cd prokrustean
 cmake -B build .
 cd build
