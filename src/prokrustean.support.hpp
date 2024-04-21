@@ -19,6 +19,8 @@ struct ProkrusteanExtension {
     vector<CharCount> stratum_left_ext_count;
     vector<CharCount> stratum_right_ext_count;
 
+    vector<uint8_t> stratum_incoming_degrees;
+
     vector<SpinLock> stratum_locks;
     int stratum_lock_scale;
     bool stratum_lock_active=false;
@@ -147,6 +149,33 @@ struct ProkrusteanExtension {
         } else {
             stratum_right_ext_count[id]++;
         }
+    }
+
+    bool is_first_reflecting_seq(SeqId id, int k){
+        if(prokrustean.sequences__region_cnt[id]==0){
+            return true;
+        }
+        auto first_pos = prokrustean.sequences__region[id][0].pos;
+        auto first_stra_id = prokrustean.sequences__region[id][0].stratum_id;
+        return first_pos!=0 || k>prokrustean.stratums__size[first_stra_id] && first_pos==0;
+    }
+    bool is_first_reflecting(StratumId id, int k){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return true;
+        }
+        auto first_pos = prokrustean.stratums__region[id][0].pos;
+        auto first_stra_id = prokrustean.stratums__region[id][0].stratum_id;
+        return first_pos!=0 || k>prokrustean.stratums__size[first_stra_id] && first_pos==0;
+    }
+
+    bool is_last_reflecting(StratumId id, int k){
+        if(prokrustean.stratums__region_cnt[id]==0){
+            return true;
+        }
+        auto last_pos = prokrustean.stratums__region[id][prokrustean.stratums__region_cnt[id]-1].pos;
+        auto last_stra_id = prokrustean.stratums__region[id][prokrustean.stratums__region_cnt[id]-1].stratum_id;
+        auto last_to = last_pos + prokrustean.stratums__size[last_stra_id];
+        return last_to!=prokrustean.stratums__size[id] || k>prokrustean.stratums__size[last_stra_id];
     }
 };
 
@@ -413,6 +442,186 @@ void count_left_right_character_extensions_parallel(ProkrusteanExtension &ext, i
 }
 
 /********************************************************************************************************/
+/*                              computing graph structure                                           */
+/********************************************************************************************************/
+void compute_incoming_degrees(Prokrustean &prokrustean, vector<uint8_t> &incoming_degrees){
+    incoming_degrees.resize(prokrustean.stratum_count, 0);
+    Vertex vertex;
+    for(SeqId i=0; i<prokrustean.sequence_count; i++){
+        prokrustean.get_sequence(i, vertex);
+        for(auto &edge: vertex.s_edges){
+            incoming_degrees[edge.stratum_id]++;
+        }
+    }
+    for(StratumId i=0; i<prokrustean.stratum_count; i++){
+        prokrustean.get_stratum(i, vertex);
+        int idx=0;
+        for(auto &edge: vertex.s_edges){
+            incoming_degrees[edge.stratum_id]++;
+            idx++;
+        }
+    }
+}
+
+/********************************************************************************************************/
+/*                              computing frequency                                                      */
+/********************************************************************************************************/
+// struct DuplicationRecord {
+//     StratumSize size;
+//     FrequencyCount frequency;
+// };
+
+StratumId _find_leftmost_descendant_of_matching_length(StratumId id, StratumSize length, ProkrusteanExtension &ext){
+    StratifiedEdge edge;
+    StratumId target_id=id;
+    int temp=0;
+    while(true){
+        if(ext.prokrustean.stratums__size[target_id]==length){
+            break;
+        }
+        bool first_exists=ext.get_stratum_first_stratified(target_id, edge);
+        if(!first_exists){
+            cout << "stratum: " << id << "target: " << target_id << " ext.prokrustean.stratums__size[target_id] " << ext.prokrustean.stratums__size[target_id] << " length " << length << endl;
+        }
+        assert(first_exists);
+        assert(length <= ext.prokrustean.stratums__size[edge.stratum_id]);
+        target_id=edge.stratum_id;
+
+        // temp++;
+        // assert(temp<10);
+    }
+
+    // acc_temp+=temp;
+    // if(max_temp<temp){
+    //     max_temp=temp;
+    // }
+    return target_id;
+}
+
+void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &incoming_degrees, vector<FrequencyCount> &frequencies){
+    assert(incoming_degrees.size()==ext.prokrustean.stratum_count);
+    frequencies.resize(ext.prokrustean.stratum_count);
+
+    // uint64_t temp;
+    // int max_temp;
+    Vertex vertex;
+    StratumSize overlap;
+    FrequencyCount frequency=1;
+    stack<StratumId> completed_strata;
+    for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
+        ext.prokrustean.get_sequence(i, vertex);
+        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            auto &s_edge=vertex.s_edges[j];
+            // frequency 
+            frequencies[s_edge.stratum_id]+=frequency;
+            assert(incoming_degrees[s_edge.stratum_id]>0);
+            incoming_degrees[s_edge.stratum_id]--;
+            if(incoming_degrees[s_edge.stratum_id]==0){
+                completed_strata.push(s_edge.stratum_id);
+            }
+
+            overlap=vertex.overlap_length_on_left(j);
+            if(overlap<ext.prokrustean.lmin){
+                continue;
+            }
+            // pinpoint the overlap matching stratum
+            assert(ext.prokrustean.stratums__size[s_edge.stratum_id]>overlap);
+            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(s_edge.stratum_id, overlap, ext);
+            frequencies[stratum_id_to_be_resolved]-=frequency;
+        }
+    }
+    
+    StratumId stratum_id;
+    while(!completed_strata.empty()){
+        stratum_id=completed_strata.top();
+        completed_strata.pop();
+
+        frequency=frequencies[stratum_id];
+        ext.prokrustean.get_stratum(stratum_id, vertex);
+
+        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            auto &s_edge=vertex.s_edges[j];
+            // frequency 
+            frequencies[s_edge.stratum_id]+=frequency;
+            assert(incoming_degrees[s_edge.stratum_id]>0);
+            incoming_degrees[s_edge.stratum_id]--;
+            if(incoming_degrees[s_edge.stratum_id]==0){
+                completed_strata.push(s_edge.stratum_id);
+            }
+
+            overlap=vertex.overlap_length_on_left(j);
+            if(overlap<ext.prokrustean.lmin){
+                continue;
+            }
+            // pinpoint the overlap matching stratum
+            assert(ext.prokrustean.stratums__size[s_edge.stratum_id]>overlap);
+            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(s_edge.stratum_id, overlap, ext);
+            frequencies[stratum_id_to_be_resolved]-=frequency;
+        }
+    }
+    // cout << "avg temp " << temp/ext.prokrustean.stratum_count << " max_temp " << max_temp << endl;
+    if(ext.prokrustean.contains_stratum_frequency){
+        cout << " Frequency counting verified " << endl;    
+        for(int i=0; i<ext.prokrustean.stratum_count; i++){
+            assert(frequencies[i]==ext.prokrustean.stratums__frequency_cnt[i]);
+        }
+    } else {
+        cout << " frequency does not exist. Frequency counting not verified " << endl;    
+    }
+}
+
+
+// void compute_strata_frequencies(Prokrustean &prokrustean, vector<uint8_t> &incoming_degrees, vector<FrequencyCount> &frequencies){
+//     assert(incoming_degrees.size()==prokrustean.stratum_count);
+//     frequencies.resize(prokrustean.stratum_count);
+    
+//     vector<optional<int>> dup_record_indices_per_stratum(prokrustean.stratum_count);
+
+//     stack<StratumId> completed_strata; // <id, dup record index>
+//     vector<vector<pair<StratumSize, FrequencyCount>>> dup_records; // each index refers to multiple dup records
+//     stack<int> available_dup_record_indices;
+
+//     Vertex vertex;
+//     StratumSize overlap;
+//     FrequencyCount frequency=1;
+//     for(SeqId i=0; i<prokrustean.sequence_count; i++){
+//         prokrustean.get_sequence(i, vertex);
+//         for(CoveringRegionIdx j=1; vertex.s_edges.size(); j++){
+//             auto &s_edge=vertex.s_edges[j];
+//             // frequency 
+//             frequencies[s_edge.stratum_id]+=frequency;
+//             assert(incoming_degrees[s_edge.stratum_id]>0);
+//             incoming_degrees[s_edge.stratum_id]--;
+//             //recording overlaps
+//             overlap=vertex.overlap_length_on_left(i);
+//             if(overlap<prokrustean.lmin){
+//                 continue;
+//             }
+//             if(!dup_record_indices_per_stratum[s_edge.stratum_id].has_value()){
+//                 if (!available_dup_record_indices.empty()) {
+//                     dup_record_indices_per_stratum[s_edge.stratum_id]=available_dup_record_indices.top();
+//                     available_dup_record_indices.pop();
+//                 } else {
+//                     dup_records.push_back(vector<pair<StratumSize, FrequencyCount>>());
+//                     dup_record_indices_per_stratum[s_edge.stratum_id]=dup_records.size()-1;
+//                 }
+//             } 
+            
+//             dup_records[dup_record_indices_per_stratum[s_edge.stratum_id].value()].push_back(make_pair(overlap, frequency));
+//         }
+//     }
+//     // using stacks, 
+//     StratumId stratum_id;
+//     while(!completed_strata.empty()){
+//         stratum_id=completed_strata.top();
+//         completed_strata.pop();
+//     }
+
+//     for(auto &degree: incoming_degrees){
+//         assert(degree==0);
+//     }
+// }
+/********************************************************************************************************/
 /*                              save/load                                                                */
 /********************************************************************************************************/
 
@@ -549,7 +758,7 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         /////////////////////////////////////////////////////////////////////////////////
         // If caught at here, then amost surely a data type problem.
         /////////////////////////////////////////////////////////////////////////////////
-        // cout << "acc_seq_rgn_count: " << acc_seq_rgn_count <<   " data.total_sequence_region_count: " << data.total_sequence_region_count << endl;
+        cout << "acc_seq_rgn_count: " << acc_seq_rgn_count <<   " data.total_sequence_region_count: " << data.total_sequence_region_count << endl;
         assert(acc_seq_rgn_count==data.total_sequence_region_count);
         
         // Deserialize the StratumSize vector

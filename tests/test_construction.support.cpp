@@ -104,9 +104,49 @@ void test_stratum_occ_sampling_parallel(){
     }
 }
 
+void test_frequency_computation(){
+    int Lmin = 1;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    ProkrusteanExtension ext(prokrustean);
+    prokrustean.contains_stratum_frequency=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+
+    // Compute naive frequencies
+    vector<string> seqs; 
+    vector<string> stratum_strings;
+    fm_idx.recover_all_texts(seqs);
+    setup_stratum_example_occ(ext);
+    // too slow - use only 1/20 samples
+    int factor=20;
+    for(StratumId id=0; id<prokrustean.stratum_count; id++){
+        if(id%factor==0){
+            string stratum_str=seqs[ext.stratum_sample_occ_seq_id[id]].substr(ext.stratum_sample_occ_pos[id], prokrustean.stratums__size[id]);
+            stratum_strings.push_back(stratum_str);
+        }
+    }
+    auto naive_frequencies=get_frequencies(seqs, stratum_strings);
+
+    // Compute frequencies from prokrustean
+    vector<uint8_t> incoming_degrees;
+    vector<FrequencyCount> frequencies;
+    compute_incoming_degrees(prokrustean, incoming_degrees);
+    compute_strata_frequencies(ext, incoming_degrees, frequencies);
+    
+    // Check
+    for(StratumId id=0; id<prokrustean.stratum_count; id++){
+        if(id%factor==0){
+            assert(naive_frequencies[id/factor]==frequencies[id]);
+        }
+    }
+}
+
 void main_prokrustean_support(){
     test_left_right_extension_counting();
     test_left_right_extension_counting_parallel();
     test_left_right_storage();
     test_stratum_occ_sampling_parallel();
+    test_frequency_computation();
 }

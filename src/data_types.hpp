@@ -37,6 +37,8 @@ typedef std::vector<uint64_t> RankArray;
 typedef uint32_t UnitigId; // 
 typedef uint32_t UnitigOrMaxUnitigId; // 
 
+// the context of metagenome comparison
+typedef uint8_t DatasetId; // 
 
 class SpinLock {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;

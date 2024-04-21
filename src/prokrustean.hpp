@@ -120,6 +120,14 @@ struct Vertex {
             }
         }
     }
+    StratumSize overlap_length_on_left(CoveringRegionIdx idx){
+        if(idx==0) {
+            return 0;
+        } else {
+            return s_edges[idx-1].to > s_edges[idx].from? s_edges[idx-1].to-s_edges[idx].from : 0; 
+        }
+    }
+
     void print(){
         if(is_sequence) cout << "sequence("<< id <<"): " << endl;
         if(is_stratum)  cout << "stratum("<< id <<"): " << endl; 
@@ -353,6 +361,7 @@ struct Prokrustean {
     }
 
     void set_stratum_frequency(StratumId id, FrequencyCount frequency) {
+        assert(frequency>0);
         this->stratums__frequency_cnt[id]=frequency;
     }
 

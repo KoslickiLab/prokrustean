@@ -288,4 +288,26 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
     return output;
 }
 
+vector<int> get_frequencies(vector<string> sequences, vector<string> patterns){
+    vector<int> frequencies;
+    for(auto pattern: patterns){
+        int count = 0;  // Initialize count of occurrences
+
+        // Iterate over each string in the vector
+        for (const std::string& seq : sequences) {
+            // Search for the pattern in the string starting from position 0
+            std::size_t pos = seq.find(pattern, 0);
+
+            // Continue finding the pattern until the end of the string
+            while (pos != std::string::npos) {
+                count++;  // Increment count for each occurrence found
+                // Move to the position after the last found occurrence to find new occurrences
+                pos = seq.find(pattern, pos + 1);
+            }
+        }
+
+        frequencies.push_back(count);
+    }
+    return frequencies;
+}
 #endif

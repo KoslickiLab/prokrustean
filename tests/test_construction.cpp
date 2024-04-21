@@ -100,8 +100,33 @@ void test_basic_construction_w_kmers(){
     }
 }
 
+// Check the basic extension aligns with overlaps
+void test_basic_rule_w_extension(){
+    int Lmin = 1;
+    auto str = WaveletString(PATH4_SREAD_PARTITIONED);
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    prokrustean.contains_stratum_extension_count=true;
+    ProkrusteanExtension ext(prokrustean);
+    construct_prokrustean_parallel(fm_idx, prokrustean, Lmin);
+
+    for(int i=0; i < prokrustean.sequence_count; i++){
+        SequenceVertex vertex = prokrustean.get_sequence(i);
+        for(auto edge: vertex.s_edges){
+            if(edge.from>0){
+                assert(ext.prokrustean.get_left_cnt(edge.stratum_id)>0);
+            }
+            if(edge.to<vertex.size){
+                assert(ext.prokrustean.get_right_cnt(edge.stratum_id)>0);
+            }
+        }
+    }
+}
+
 void main_construction() {
     test_step1_binary_storage();
     test_basic_construction();
     test_basic_construction_w_kmers();
+    test_basic_rule_w_extension();
 }
