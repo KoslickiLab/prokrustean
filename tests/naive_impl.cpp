@@ -358,4 +358,39 @@ uint64_t get_kmer_frequency_sum_naive(const std::vector<std::string>& sequences,
     }
     return total_sum;
 }
+
+uint64_t get_braycurtis_nominator_naive(const std::vector<std::string>& sequences, vector<uint8_t> dataset_ids, int k, int least_frequency, uint8_t dt_id1, uint8_t dt_id2) {
+    std::unordered_map<std::string, uint64_t> kmer_count1;
+    std::unordered_map<std::string, uint64_t> kmer_count2;
+    std::unordered_map<std::string, uint64_t> kmer_count_merged;
+
+    for(int id=0; id<sequences.size(); id++){
+        // assert(dataset_ids[id]==dt_id1 || dataset_ids[id]==dt_id2);
+        auto &seq=sequences[id];
+        if (seq.size() >= k) {  // Check if the sequence is long enough to contain any k-mers
+            for (size_t i = 0; i <= seq.size() - k; i++) {
+                // Extract the k-mer starting at position i
+                std::string kmer = seq.substr(i, k);
+                kmer_count_merged[kmer]+=1;
+                if(dataset_ids[id]==dt_id1){
+                    kmer_count1[kmer]+=1;
+                    kmer_count2[kmer]+=0; // for key registeration
+                }
+                if(dataset_ids[id]==dt_id2){
+                    kmer_count1[kmer]+=0; // for key registeration
+                    kmer_count2[kmer]+=1;
+                }
+            }
+        }
+    }
+
+    // sum up min frequencies
+    uint64_t total_sum = 0;
+    for (const auto& pair : kmer_count_merged) {
+        if(least_frequency<=pair.second){
+            total_sum += min(kmer_count1[pair.first], kmer_count2[pair.first]);
+        }
+    }
+    return total_sum;
+}
 #endif

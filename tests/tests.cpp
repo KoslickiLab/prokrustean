@@ -1,6 +1,7 @@
 #include "test_fm_index.cpp"
 #include "test_bitvector.cpp"
 #include "test_construction.cpp"
+#include "test_application.braycurtis.cpp"
 #include "test_application.kmer.cpp"
 #include "test_application.kmer.count.cpp"
 #include "test_application.dbg.count.cpp"
@@ -39,4 +40,7 @@ int main(void){
 
     cout << "--- test support ---" << endl;
     main_prokrustean_support();
+
+    cout << "--- test braycurtis ---" << endl;
+    main_application_braycurtis();
 }

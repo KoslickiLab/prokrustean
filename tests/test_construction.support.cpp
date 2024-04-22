@@ -127,7 +127,7 @@ void test_frequency_computation(){
             stratum_strings.push_back(stratum_str);
         }
     }
-    auto naive_frequencies=get_frequencies(seqs, stratum_strings);
+    auto naive_frequencies=get_pattern_frequencies_naive(seqs, stratum_strings);
 
     // Compute frequencies from prokrustean
     vector<uint8_t> incoming_degrees;

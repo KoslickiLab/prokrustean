@@ -559,15 +559,15 @@ void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &inco
             frequencies[stratum_id_to_be_resolved]-=frequency;
         }
     }
-    // cout << "avg temp " << temp/ext.prokrustean.stratum_count << " max_temp " << max_temp << endl;
-    if(ext.prokrustean.contains_stratum_frequency){
-        cout << " Frequency counting verified " << endl;    
-        for(int i=0; i<ext.prokrustean.stratum_count; i++){
-            assert(frequencies[i]==ext.prokrustean.stratums__frequency_cnt[i]);
-        }
-    } else {
-        cout << " frequency does not exist. Frequency counting not verified " << endl;    
-    }
+    // // cout << "avg temp " << temp/ext.prokrustean.stratum_count << " max_temp " << max_temp << endl;
+    // if(ext.prokrustean.contains_stratum_frequency){
+    //     cout << " Frequency counting verified " << endl;    
+    //     for(int i=0; i<ext.prokrustean.stratum_count; i++){
+    //         assert(frequencies[i]==ext.prokrustean.stratums__frequency_cnt[i]);
+    //     }
+    // } else {
+    //     cout << " frequency does not exist. Frequency counting not verified " << endl;    
+    // }
 }
 
 
