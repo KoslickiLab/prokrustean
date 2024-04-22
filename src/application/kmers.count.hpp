@@ -21,18 +21,19 @@ int64_t _count_k_mers(Vertex &vertex, int k){
     }
     int64_t cnt=0;    
     for(int i=0; i<rgn_cnt; i++){
-        // refracted at front
+        // reflecting at front
         if(i==0 && vertex.s_edges[i].from>0){
             cnt+=vertex.s_edges[i].from;
         }
-        // refracted at the middle (between stratifieds)
+        // reflecting at the middle (between stratifying regions)
         if(i<rgn_cnt-1){
-            if(vertex.s_edges[i].to - vertex.s_edges[i+1].from >= k-1){
+            // important: vertex.s_edges[i].to - vertex.s_edges[i+1].from >= k-1 did not work because to, from are unsigned
+            if(vertex.s_edges[i].to >= vertex.s_edges[i+1].from + k-1){
             } else {
                 cnt+=vertex.s_edges[i+1].from-vertex.s_edges[i].to+(k-1);
             }
         }
-        // refracted at back
+        // reflecting at back
         if(i==rgn_cnt-1 && vertex.s_edges[i].to<vertex.size){
             cnt+=vertex.size-vertex.s_edges[i].to;
         }
@@ -40,7 +41,7 @@ int64_t _count_k_mers(Vertex &vertex, int k){
     return cnt;
 }
 
-void _refracted_contributions_when_no_stratified_exists(Vertex &vertex, int from, vector<uint64_t> &partial_partial_C){
+void _refracted_contributions_when_no_stratified_exists(Vertex &vertex, int from, vector<int64_t> &partial_partial_C){
     if(vertex.size<from){
         return;
     }
@@ -73,7 +74,7 @@ void _refracted_contributions_when_no_stratified_exists(Vertex &vertex, int from
     }
 }
 
-void _refracted_contributions_between_two_strata(Vertex &vertex, int from, vector<uint64_t> &partial_partial_C){
+void _refracted_contributions_between_two_strata(Vertex &vertex, int from, vector<int64_t> &partial_partial_C){
     if(vertex.size<from){
         return;
     }
@@ -131,8 +132,8 @@ void count_distinct_kmers_of_range(uint64_t from, uint64_t to, Prokrustean &prok
     output.clear();
     output.resize(to+1, 0);
 
-    vector<uint64_t> partial_partial_C(to+1, 0);
-    vector<uint64_t> dOutput(to+1, 0);
+    vector<int64_t> partial_partial_C(to+1, 0);
+    vector<int64_t> dOutput(to+1, 0);
     Vertex vertex;
     for(int i=0; i<prokrustean.sequence_count; i++){
         prokrustean.get_sequence(i, vertex, from);
@@ -159,7 +160,7 @@ void count_distinct_kmers_of_range_parallel(uint64_t from, uint64_t to, int thre
 
     assert(from>0 && from<=to);
     vector<vector<uint64_t>> outputs(thread_cnt);
-    vector<vector<uint64_t>> partial_partial_Cs(thread_cnt);
+    vector<vector<int64_t>> partial_partial_Cs(thread_cnt);
     for(int i=0; i<thread_cnt; i++){
         outputs[i].resize(to+1,0);
         partial_partial_Cs[i].resize(to+1,0);
@@ -168,7 +169,7 @@ void count_distinct_kmers_of_range_parallel(uint64_t from, uint64_t to, int thre
     vector<future<void>> futures;
     atomic<int> seq_idx_gen;
     atomic<int> stratum_idx_gen;
-    auto func_ = [](Prokrustean &prokrustean, uint64_t from, uint8_t thread_idx, uint8_t thread_cnt, atomic<int> &seq_idx_gen, atomic<int> &stratum_idx_gen, vector<uint64_t> &output, vector<uint64_t> &partial_partial_C) {
+    auto func_ = [](Prokrustean &prokrustean, uint64_t from, uint8_t thread_idx, uint8_t thread_cnt, atomic<int> &seq_idx_gen, atomic<int> &stratum_idx_gen, vector<uint64_t> &output, vector<int64_t> &partial_partial_C) {
         Vertex vertex;
         for(uint64_t i=thread_idx; i<prokrustean.sequence_count; i+=thread_cnt){
             prokrustean.get_sequence(i, vertex, from);
@@ -189,7 +190,7 @@ void count_distinct_kmers_of_range_parallel(uint64_t from, uint64_t to, int thre
     for (auto &f : futures) {f.wait();}
     output.clear();
     output.resize(to+1, 0);
-    vector<uint64_t> partial_partial_C(to+1, 0);
+    vector<int64_t> partial_partial_C(to+1, 0);
     vector<uint64_t> dOutput(to+1, 0);
     for(int i=0; i<thread_cnt; i++){
         for(int k=0; k<to+1; k++){

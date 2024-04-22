@@ -15,6 +15,28 @@ using namespace std;
 using namespace sdsl;
 
 
+void test_counting_distinct_kmers_single_k_naive(){
+    int Lmin = 1;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+
+    vector<string> seq_texts;
+    fm_idx.recover_all_texts(seq_texts);
+
+    for(int k=1; k<180; k++){
+        if(k%15==0){
+            auto naive_count = get_distinct_kmer_count_naive(seq_texts, k, 1);
+            auto computed_count = count_distinct_kmers(k, prokrustean);
+            // cout << " naive count: " << naive_count << " count_distinct_kmers(k, prokrustean): " << computed_count << endl;
+            assert(naive_count==computed_count);
+        }
+    }
+}
+
 void test_counting_distinct_kmers_single_k(){
     int Lmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
@@ -53,7 +75,6 @@ void test_counting_distinct_kmers_k_range(){
 
     for(int k=30; k<180; k++){
         auto single_k_count=count_distinct_kmers(k, prokrustean);
-        
         assert(counts[k]==single_k_count);
     }
 }
@@ -79,7 +100,8 @@ void test_counting_distinct_kmers_k_range_parallel(){
     }
 }
 void main_application_kmer_count() {
-    // test_counting_distinct_kmers_single_k();
-    // test_counting_distinct_kmers_k_range();
+    test_counting_distinct_kmers_single_k_naive();
+    test_counting_distinct_kmers_single_k();
+    test_counting_distinct_kmers_k_range();
     test_counting_distinct_kmers_k_range_parallel();
 }

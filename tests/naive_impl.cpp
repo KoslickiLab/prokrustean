@@ -288,7 +288,31 @@ vector<string> get_distinct_kmers_naive(vector<string> sequences, unsigned int k
     return output;
 }
 
-vector<int> get_frequencies(vector<string> sequences, vector<string> patterns){
+uint64_t get_distinct_kmer_count_naive(const std::vector<std::string>& sequences, int k, int least_frequency) {
+    std::unordered_map<std::string, uint64_t> kmer_count;
+
+    // Count all k-mers across all sequences
+    for (const std::string& seq : sequences) {
+        if (seq.size() >= k) {  // Check if the sequence is long enough to contain any k-mers
+            for (size_t i = 0; i <= seq.size() - k; i++) {
+                // Extract the k-mer starting at position i
+                std::string kmer = seq.substr(i, k);
+                kmer_count[kmer]++;
+            }
+        }
+    }
+
+    // Sum up all frequencies
+    uint64_t total_sum = 0;
+    for (const auto& pair : kmer_count) {
+        if(least_frequency<=pair.second){
+            total_sum += 1;
+        }
+    }
+    return total_sum;
+}
+
+vector<int> get_pattern_frequencies_naive(vector<string> sequences, vector<string> patterns){
     vector<int> frequencies;
     for(auto pattern: patterns){
         int count = 0;  // Initialize count of occurrences
@@ -309,5 +333,29 @@ vector<int> get_frequencies(vector<string> sequences, vector<string> patterns){
         frequencies.push_back(count);
     }
     return frequencies;
+}
+
+uint64_t get_kmer_frequency_sum_naive(const std::vector<std::string>& sequences, int k, int least_frequency) {
+    std::unordered_map<std::string, uint64_t> kmer_count;
+
+    // Count all k-mers across all sequences
+    for (const std::string& seq : sequences) {
+        if (seq.size() >= k) {  // Check if the sequence is long enough to contain any k-mers
+            for (size_t i = 0; i <= seq.size() - k; i++) {
+                // Extract the k-mer starting at position i
+                std::string kmer = seq.substr(i, k);
+                kmer_count[kmer]++;
+            }
+        }
+    }
+
+    // Sum up all frequencies
+    uint64_t total_sum = 0;
+    for (const auto& pair : kmer_count) {
+        if(least_frequency<=pair.second){
+            total_sum += pair.second;
+        }
+    }
+    return total_sum;
 }
 #endif

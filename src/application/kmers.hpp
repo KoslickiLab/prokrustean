@@ -42,7 +42,6 @@ void _get_vertex_kmers(int k, Vertex &vertex, vector<Edge> &edges, ProkrusteanEx
 void get_distinct_kmers(int k, ProkrusteanExtension &ext, AbstractSequenceAccess &sequence_access, AbstractStringDataStore &string_store){
     Vertex vertex; 
     vector<Edge> edges;
-    // vector<string> unitigs;
     for(int i=0; i<ext.prokrustean.sequence_count; i++){
         ext.prokrustean.get_sequence(i, vertex);
         if(vertex.size<k){
