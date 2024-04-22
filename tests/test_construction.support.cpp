@@ -143,10 +143,61 @@ void test_frequency_computation(){
     }
 }
 
+void test_compute_incoming_degrees_parallel(){
+    int Lmin = 1;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    ProkrusteanExtension ext(prokrustean);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+
+    // Compute frequencies from prokrustean
+    vector<uint8_t> incoming_degrees;
+    compute_incoming_degrees(prokrustean, incoming_degrees);
+    
+    vector<uint8_t> incoming_degrees_parallel;
+    compute_incoming_degrees_parallel(ext, 4, incoming_degrees_parallel);
+    
+    // Check
+    for(StratumId id=0; id<prokrustean.stratum_count; id++){
+        assert(incoming_degrees[id]==incoming_degrees_parallel[id]);
+    }
+}
+
+void test_frequency_computation_parallel(){
+    int Lmin = 1;
+    int thread_cnt = 4;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    
+    Prokrustean prokrustean;
+    ProkrusteanExtension ext(prokrustean);
+    prokrustean.contains_stratum_frequency=true;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+
+    // Compute frequencies from prokrustean
+    vector<uint8_t> incoming_degrees;
+    vector<FrequencyCount> frequencies;
+    compute_incoming_degrees(prokrustean, incoming_degrees);
+    compute_strata_frequencies(ext, incoming_degrees, frequencies);
+    
+    vector<FrequencyCount> frequencies_parallel;
+    compute_incoming_degrees(prokrustean, incoming_degrees);
+    compute_strata_frequencies_parallel(ext, thread_cnt, incoming_degrees, frequencies_parallel);
+
+    // Check
+    for(StratumId id=0; id<prokrustean.stratum_count; id++){
+        assert(frequencies_parallel[id]==frequencies[id]);
+    }
+}
+
 void main_prokrustean_support(){
     test_left_right_extension_counting();
     test_left_right_extension_counting_parallel();
     test_left_right_storage();
     test_stratum_occ_sampling_parallel();
     test_frequency_computation();
+    test_compute_incoming_degrees_parallel();
+    test_frequency_computation_parallel();
 }

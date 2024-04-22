@@ -25,23 +25,18 @@ void test_single_dataset_returns_frequency(){
     construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
     ProkrusteanExtension ext(prokrustean);
     
-    vector<DatasetId> ids_by_sequence(prokrustean.sequence_count, 0);
     int dataset_count=1;
+    vector<DatasetId> dataset_ids_by_sequence(prokrustean.sequence_count, 0);
+    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
     vector<BrayCurtisOutput> outputs;
-    BrayCurtisIntermediate intermediate;
-    intermediate.from=5;
-    intermediate.to=10;
-    intermediate.dataset_count=dataset_count;
-    intermediate.dataset_ids_by_sequence=ids_by_sequence;
-    intermediate.initialize(ext.prokrustean);
 
     compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
-    compute_frequencies_by_datasets(ext, intermediate);
+    compute_frequencies_by_datasets(ext, dataset_count, dataset_ids_by_sequence, stratum_frequencies_by_dataset);
 
     // verification
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
         auto frequency = ext.prokrustean.stratums__frequency_cnt[i];
-        auto computed_frequency = intermediate.stratum_frequencies_by_dataset[0][i];
+        auto computed_frequency = stratum_frequencies_by_dataset[0][i];
         assert(frequency==computed_frequency);
     }
 }
@@ -63,21 +58,50 @@ void test_two_datasets_return_correct_frequencies(){
     }
     int dataset_count=2;
     vector<BrayCurtisOutput> outputs;
-    BrayCurtisIntermediate intermediate;
-    intermediate.from=5;
-    intermediate.to=10;
-    intermediate.dataset_count=dataset_count;
-    intermediate.dataset_ids_by_sequence=dataset_ids;
-    intermediate.initialize(ext.prokrustean);
+    vector<DatasetId> dataset_ids_by_sequence(prokrustean.sequence_count, 0);
+    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
 
     compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
-    compute_frequencies_by_datasets(ext, intermediate);
+    compute_frequencies_by_datasets(ext, dataset_count, dataset_ids_by_sequence, stratum_frequencies_by_dataset);
 
     // verification
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
         auto frequency = ext.prokrustean.stratums__frequency_cnt[i];
-        auto computed_frequency = intermediate.stratum_frequencies_by_dataset[0][i]+intermediate.stratum_frequencies_by_dataset[1][i];
+        auto computed_frequency = stratum_frequencies_by_dataset[0][i]+stratum_frequencies_by_dataset[1][i];
         assert(frequency==computed_frequency);
+    }
+}
+
+void test_two_datasets_frequencies_parallel(){
+    int Lmin = 1;
+    int thread_cnt = 4;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    
+    vector<DatasetId> dataset_ids;
+    for(int i=0; i<prokrustean.sequence_count; i++){
+        if(i%2==0) dataset_ids.push_back(0);
+        else dataset_ids.push_back(1);
+    }
+    int dataset_count=2;
+    vector<BrayCurtisOutput> outputs;
+    vector<vector<FrequencyCount>> frequencies(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
+
+    compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
+    compute_frequencies_by_datasets(ext, dataset_count, dataset_ids, frequencies);
+
+    ext.set_stratum_locks(thread_cnt);
+    vector<vector<FrequencyCount>> frequencies_parallel(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
+    compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
+    compute_frequencies_by_datasets_parallel(ext, thread_cnt, dataset_count, dataset_ids, frequencies_parallel);
+
+    // verification
+    for(int i=0; i<ext.prokrustean.stratum_count; i++){
+        assert(frequencies[0][i]+frequencies[1][i]==frequencies_parallel[0][i]+frequencies_parallel[1][i]);
     }
 }
 
@@ -99,17 +123,13 @@ void test_single_dataset_returns_frequency_sum_denominator(){
     int from=5;
     int to=10;
     vector<BrayCurtisOutput> outputs;
-    compute_incoming_degrees(prokrustean, ext.stratum_incoming_degrees);
-    // compute_braycurtis_k_range(5, 150, ext, ids_by_sequence, dataset_count, outputs);;
+    vector<DatasetId> dataset_ids_by_sequence(prokrustean.sequence_count, 0);
+    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
 
-    BrayCurtisIntermediate intermediate;
-    intermediate.from=from;
-    intermediate.to=to;
-    intermediate.dataset_count=dataset_count;
-    intermediate.dataset_ids_by_sequence=vector<DatasetId>(prokrustean.sequence_count, 0);
-    intermediate.initialize(ext.prokrustean);
-    
-    compute_frequencies_by_datasets(ext, intermediate);
+    compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
+    compute_frequencies_by_datasets(ext, dataset_count, dataset_ids_by_sequence, stratum_frequencies_by_dataset);
+
+    BrayCurtisIntermediate intermediate(from, to, dataset_ids_by_sequence, dataset_count, stratum_frequencies_by_dataset);
     
     Vertex vertex;
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
@@ -184,9 +204,44 @@ void test_two_datasets_return_correct_nominator(){
     }
 }
 
+void test_two_datasets_nominator_parallel(){
+    int Lmin = 1;
+    int thread_cnt = 4;
+    // usually means sequencing error
+    int least_frequency=2;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    
+    int dataset_count=2;
+    vector<DatasetId> dataset_ids;
+    for(int i=0; i<prokrustean.sequence_count; i++){
+        if(i%2==0) dataset_ids.push_back(0);
+        else dataset_ids.push_back(1);
+    }
+    
+    vector<BrayCurtisOutput> outputs;
+    compute_incoming_degrees(prokrustean, ext.stratum_incoming_degrees);
+    compute_braycurtis_k_range(3, 10, ext, dataset_ids, dataset_count, outputs);
+
+    ext.set_stratum_locks(thread_cnt);
+    vector<BrayCurtisOutput> outputs_parallel;
+    compute_incoming_degrees(prokrustean, ext.stratum_incoming_degrees);
+    compute_braycurtis_k_range_parallel(3, 10, ext, thread_cnt, dataset_ids, dataset_count, outputs_parallel);
+
+    for(int i=0; i<outputs.size(); i++){
+        assert(outputs[i].nominator==outputs_parallel[i].nominator);
+    }
+}
+
 void main_application_braycurtis() {
     test_single_dataset_returns_frequency();
     test_two_datasets_return_correct_frequencies();
+    test_two_datasets_frequencies_parallel();
     test_single_dataset_returns_frequency_sum_denominator();
     test_two_datasets_return_correct_nominator();
+    test_two_datasets_nominator_parallel();
 }

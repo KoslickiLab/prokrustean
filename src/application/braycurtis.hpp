@@ -50,22 +50,30 @@ struct BrayCurtisIntermediate {
     uint64_t to;
 
     // dataset info
-    vector<DatasetId> dataset_ids_by_sequence;
+    vector<DatasetId> &dataset_ids_by_sequence;
     DatasetId dataset_count;
 
     // frequency info
-    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset; // frequency_by_stratum_by_dataset[i][x]:= frequencies of stratum x of dataset i
-    vector<SpinLock> stratum_locks;
+    vector<vector<FrequencyCount>> &stratum_frequencies_by_dataset; // frequency_by_stratum_by_dataset[i][x]:= frequencies of stratum x of dataset i
 
     // counting intermediate values
     // vector<Comparison> nominator_indices;
     vector<Counting> nominator_countings; // each index at x is the dataset pair nominator_indices[x]
     vector<Counting> denominator_countings; // each index is DatasetId
 
-    void initialize(Prokrustean &prokrustean){
-        // copy stratum frequency
-        stratum_frequencies_by_dataset.resize(dataset_count, vector<FrequencyCount>(prokrustean.stratum_count, 0));
-        
+    BrayCurtisIntermediate(uint64_t from,
+                           uint64_t to,
+                           std::vector<DatasetId> &dataset_ids,
+                           DatasetId dataset_count,
+                           std::vector<std::vector<FrequencyCount>> &frequencies)
+        : from(from), to(to), 
+          dataset_ids_by_sequence(dataset_ids), 
+          dataset_count(dataset_count), 
+          stratum_frequencies_by_dataset(frequencies) {
+        initialize();
+    }
+
+    void initialize(){
         for(DatasetId id=0; id<dataset_count; id++){
             Counting counting;
             counting.id1 = id;
@@ -130,69 +138,6 @@ struct BrayCurtisIntermediate {
         }
     }
 };
-
-void compute_frequencies_by_datasets(ProkrusteanExtension &ext, BrayCurtisIntermediate &intermediate){
-    assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
-    
-    Vertex vertex;
-    StratumSize overlap;
-    stack<StratumId> completed_strata;
-    for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
-        ext.prokrustean.get_sequence(i, vertex);
-        DatasetId dt_id=intermediate.dataset_ids_by_sequence[i];
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
-            auto &edge=vertex.s_edges[j];
-            intermediate.stratum_frequencies_by_dataset[dt_id][edge.stratum_id]+=1;
-            
-            assert(ext.stratum_incoming_degrees[edge.stratum_id]>0);
-            ext.stratum_incoming_degrees[edge.stratum_id]--;
-            if(ext.stratum_incoming_degrees[edge.stratum_id]==0){
-                completed_strata.push(edge.stratum_id);
-            }
-
-            overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
-                continue;
-            }
-            // pinpoint the overlap matching stratum
-            assert(ext.prokrustean.stratums__size[edge.stratum_id]>overlap);
-            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(edge.stratum_id, overlap, ext);
-            intermediate.stratum_frequencies_by_dataset[dt_id][stratum_id_to_be_resolved]-=1;
-        }
-    }
-    
-    StratumId stratum_id;
-    while(!completed_strata.empty()){
-        stratum_id=completed_strata.top();
-        completed_strata.pop();
-
-        ext.prokrustean.get_stratum(stratum_id, vertex);
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
-            auto &edge=vertex.s_edges[j];
-            for(DatasetId dt_id=0; dt_id<intermediate.dataset_count; dt_id++){
-                intermediate.stratum_frequencies_by_dataset[dt_id][edge.stratum_id]+=intermediate.stratum_frequencies_by_dataset[dt_id][stratum_id];
-            }
-
-            // incoming check
-            assert(ext.stratum_incoming_degrees[edge.stratum_id]>0);
-            ext.stratum_incoming_degrees[edge.stratum_id]--;
-            if(ext.stratum_incoming_degrees[edge.stratum_id]==0){
-                completed_strata.push(edge.stratum_id);
-            }
-
-            overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
-                continue;
-            }
-            // pinpoint the overlap matching stratum
-            assert(ext.prokrustean.stratums__size[edge.stratum_id]>overlap);
-            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(edge.stratum_id, overlap, ext);
-            for(DatasetId dt_id=0; dt_id<intermediate.dataset_count; dt_id++){
-                intermediate.stratum_frequencies_by_dataset[dt_id][stratum_id_to_be_resolved]-=intermediate.stratum_frequencies_by_dataset[dt_id][stratum_id];
-            }
-        }
-    }
-}
 
 void _count_k_mers_per_datasets(Vertex &vertex, int k, BrayCurtisIntermediate &intermediate){
     /* _count_k_mers */
@@ -280,21 +225,166 @@ void _reflecting_contributions_between_two_strata(Vertex &vertex, int from, Bray
     }
 }
 
+void compute_frequencies_by_datasets(ProkrusteanExtension &ext, int dataset_count, vector<DatasetId> &dataset_ids, vector<vector<FrequencyCount>> &frequencies){
+    assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
+    assert(frequencies.size()==dataset_count);
+    for(auto &f: frequencies){
+        assert(f.size()==ext.prokrustean.stratum_count);
+    }
+    int acc_temp;
+    Vertex vertex;
+    StratumSize overlap;
+    stack<StratumId> completed_strata;
+    for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
+        ext.prokrustean.get_sequence(i, vertex);
+        DatasetId dt_id=dataset_ids[i];
+        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            auto &edge=vertex.s_edges[j];
+            frequencies[dt_id][edge.stratum_id]+=1;
+            
+            assert(ext.stratum_incoming_degrees[edge.stratum_id]>0);
+            ext.stratum_incoming_degrees[edge.stratum_id]--;
+            if(ext.stratum_incoming_degrees[edge.stratum_id]==0){
+                completed_strata.push(edge.stratum_id);
+            }
+
+            overlap=vertex.overlap_length_on_left(j);
+            if(overlap<ext.prokrustean.lmin){
+                continue;
+            }
+            // pinpoint the overlap matching stratum
+            assert(ext.prokrustean.stratums__size[edge.stratum_id]>overlap);
+            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(edge.stratum_id, overlap, ext);
+            frequencies[dt_id][stratum_id_to_be_resolved]-=1;
+        }
+    }
+    
+    StratumId stratum_id;
+    while(!completed_strata.empty()){
+        stratum_id=completed_strata.top();
+        completed_strata.pop();
+
+        ext.prokrustean.get_stratum(stratum_id, vertex);
+        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            auto &edge=vertex.s_edges[j];
+            for(DatasetId dt_id=0; dt_id<dataset_count; dt_id++){
+                frequencies[dt_id][edge.stratum_id]+=frequencies[dt_id][stratum_id];
+            }
+
+            // incoming check
+            assert(ext.stratum_incoming_degrees[edge.stratum_id]>0);
+            ext.stratum_incoming_degrees[edge.stratum_id]--;
+            if(ext.stratum_incoming_degrees[edge.stratum_id]==0){
+                completed_strata.push(edge.stratum_id);
+            }
+
+            overlap=vertex.overlap_length_on_left(j);
+            if(overlap<ext.prokrustean.lmin){
+                continue;
+            }
+            // pinpoint the overlap matching stratum
+            assert(ext.prokrustean.stratums__size[edge.stratum_id]>overlap);
+            StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(edge.stratum_id, overlap, ext);
+            for(DatasetId dt_id=0; dt_id<dataset_count; dt_id++){
+                frequencies[dt_id][stratum_id_to_be_resolved]-=frequencies[dt_id][stratum_id];
+            }
+        }
+    }
+}
+
+
+void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thread_cnt, int dataset_count, vector<DatasetId> &dataset_ids, vector<vector<FrequencyCount>> &frequencies){
+    assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
+    assert(frequencies.size()==dataset_count);
+    for(auto &f: frequencies){
+        assert(f.size()==ext.prokrustean.stratum_count);
+    }
+
+    vector<future<void>> futures;
+    auto func_ = [](ProkrusteanExtension &ext, int thread_idx, int thread_cnt, int dataset_count, vector<DatasetId> &dataset_ids, vector<vector<FrequencyCount>> &frequencies) {
+        Vertex vertex;
+        StratumSize overlap;
+        stack<StratumId> completed_strata;
+        
+        for(SeqId i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
+            ext.prokrustean.get_sequence(i, vertex);
+            DatasetId dt_id=dataset_ids[i];
+            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+                auto &s_edge=vertex.s_edges[j];
+                ext.lock_stratum(s_edge.stratum_id);
+                // frequency 
+                frequencies[dt_id][s_edge.stratum_id]+=1;
+                ext.stratum_incoming_degrees[s_edge.stratum_id]--;
+                ext.unlock_stratum(s_edge.stratum_id);
+                
+                if(ext.stratum_incoming_degrees[s_edge.stratum_id]==0){
+                    completed_strata.push(s_edge.stratum_id);
+                }
+
+                overlap=vertex.overlap_length_on_left(j);
+                if(overlap<ext.prokrustean.lmin){
+                    continue;
+                }
+                // pinpoint the overlap matching stratum
+                assert(ext.prokrustean.stratums__size[s_edge.stratum_id]>overlap);
+                StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(s_edge.stratum_id, overlap, ext);
+                ext.lock_stratum(stratum_id_to_be_resolved);
+                frequencies[dt_id][stratum_id_to_be_resolved]-=1;
+                ext.unlock_stratum(stratum_id_to_be_resolved);
+            }
+        }
+        
+        StratumId stratum_id;
+        while(!completed_strata.empty()){
+            stratum_id=completed_strata.top();
+            completed_strata.pop();
+
+            ext.prokrustean.get_stratum(stratum_id, vertex);
+
+            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+                auto &s_edge=vertex.s_edges[j];
+                ext.lock_stratum(s_edge.stratum_id);
+                // frequency 
+                for(DatasetId dt_id=0; dt_id<dataset_count; dt_id++){
+                    frequencies[dt_id][s_edge.stratum_id]+=frequencies[dt_id][stratum_id];
+                }
+                
+                ext.stratum_incoming_degrees[s_edge.stratum_id]--;
+                ext.unlock_stratum(s_edge.stratum_id);
+
+                if(ext.stratum_incoming_degrees[s_edge.stratum_id]==0){
+                    completed_strata.push(s_edge.stratum_id);
+                }
+
+                overlap=vertex.overlap_length_on_left(j);
+                if(overlap<ext.prokrustean.lmin){
+                    continue;
+                }
+                // pinpoint the overlap matching stratum
+                assert(ext.prokrustean.stratums__size[s_edge.stratum_id]>overlap);
+                StratumId stratum_id_to_be_resolved=_find_leftmost_descendant_of_matching_length(s_edge.stratum_id, overlap, ext);
+                ext.lock_stratum(stratum_id_to_be_resolved);
+                for(DatasetId dt_id=0; dt_id<dataset_count; dt_id++){
+                    frequencies[dt_id][stratum_id_to_be_resolved]-=frequencies[dt_id][stratum_id];
+                }
+                ext.unlock_stratum(stratum_id_to_be_resolved);
+            }
+        }
+    };
+    for(int i=0; i<thread_cnt; i++){futures.push_back(std::async(std::launch::async, func_, ref(ext), i, thread_cnt, dataset_count, ref(dataset_ids), ref(frequencies)));}
+    for (auto &f : futures) {f.wait();}
+}
+
 void compute_braycurtis_k_range(uint64_t from, uint64_t to, ProkrusteanExtension &ext, vector<DatasetId> &dataset_ids, DatasetId dataset_count, vector<BrayCurtisOutput> &outputs){
     // Definitions:
     // - Def partial partial C(k): The contribution to the change of the changing rate of distinct k-mers count.
-
     assert(from>0 && from<=to);
     assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
-    
-    BrayCurtisIntermediate intermediate;
-    intermediate.from=from;
-    intermediate.to=to;
-    intermediate.dataset_count=dataset_count;
-    intermediate.dataset_ids_by_sequence=dataset_ids;
-    intermediate.initialize(ext.prokrustean);
-    
-    compute_frequencies_by_datasets(ext, intermediate);
+
+    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
+    compute_frequencies_by_datasets(ext, dataset_count, dataset_ids, stratum_frequencies_by_dataset);
+
+    BrayCurtisIntermediate intermediate(from, to, dataset_ids, dataset_count, stratum_frequencies_by_dataset);
     
     Vertex vertex;
     for(int i=0; i<ext.prokrustean.stratum_count; i++){
@@ -313,6 +403,73 @@ void compute_braycurtis_k_range(uint64_t from, uint64_t to, ProkrusteanExtension
             output.id2=counting.id2;
             output.nominator=counting.C[k];
             output.denominator=intermediate.denominator_countings[counting.id1].C[k]+intermediate.denominator_countings[counting.id2].C[k];
+            output.value=2*(float64_t)output.nominator/(float64_t)output.denominator;
+            outputs.push_back(output);
+        }
+    }
+}
+
+void compute_braycurtis_k_range_parallel(uint64_t from, uint64_t to, ProkrusteanExtension &ext, int thread_cnt, vector<DatasetId> &dataset_ids, DatasetId dataset_count, vector<BrayCurtisOutput> &outputs){
+    // Definitions:
+    // - Def partial partial C(k): The contribution to the change of the changing rate of distinct k-mers count.
+    assert(from>0 && from<=to);
+    assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
+    assert(ext.stratum_lock_active);
+
+    vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
+    compute_frequencies_by_datasets_parallel(ext, thread_cnt, dataset_count, dataset_ids, stratum_frequencies_by_dataset);
+
+     std::vector<BrayCurtisIntermediate> thread_intermediates;
+    for(int i=0; i<thread_cnt; i++){
+        BrayCurtisIntermediate intermediate(from, to, dataset_ids, dataset_count, stratum_frequencies_by_dataset);
+        thread_intermediates.push_back(intermediate);
+    }
+    
+    vector<future<void>> futures;
+    auto func_ = [](Prokrustean &prokrustean, uint64_t from, uint8_t thread_idx, uint8_t thread_cnt, BrayCurtisIntermediate &intermediate) {
+        Vertex vertex;
+        for(StratumId i=thread_idx; i<prokrustean.stratum_count; i+=thread_cnt){
+            prokrustean.get_stratum(i, vertex, from);
+            _count_k_mers_per_datasets(vertex, from, intermediate);
+            _reflecting_contributions_when_no_stratified_exists(vertex, from, intermediate);
+            _reflecting_contributions_between_two_strata(vertex, from, intermediate);
+        }
+    };
+    for(int i=0; i<thread_cnt; i++){futures.push_back(
+        std::async(std::launch::async, func_, ref(ext.prokrustean), from, i, thread_cnt, ref(thread_intermediates[i]))
+    );}
+    for (auto &f : futures) {f.wait();}
+
+    BrayCurtisIntermediate merged_intermediate(from, to, dataset_ids, dataset_count, stratum_frequencies_by_dataset);
+    for(int i=0; i<merged_intermediate.nominator_countings.size(); i++){
+        auto &counting=merged_intermediate.nominator_countings[i];
+        for(auto &intermediate: thread_intermediates){
+            for(int k=0; k<counting.C.size(); k++){
+                merged_intermediate.nominator_countings[i].C[k]+=intermediate.nominator_countings[i].C[k];
+                merged_intermediate.nominator_countings[i].partial_partial_C[k]+=intermediate.nominator_countings[i].partial_partial_C[k];
+            }
+        }
+    }
+    
+    for(int i=0; i<merged_intermediate.denominator_countings.size(); i++){
+        auto &counting=merged_intermediate.denominator_countings[i];
+        for(auto &intermediate: thread_intermediates){
+            for(int k=0; k<counting.C.size(); k++){
+                merged_intermediate.denominator_countings[i].C[k]+=intermediate.denominator_countings[i].C[k];
+                merged_intermediate.denominator_countings[i].partial_partial_C[k]+=intermediate.denominator_countings[i].partial_partial_C[k];
+            }
+        }
+    }
+    
+    merged_intermediate.complete_countings();
+    for(int k=from; k<to+1; k++){
+        for(auto counting: merged_intermediate.nominator_countings){
+            BrayCurtisOutput output;
+            output.k=k;
+            output.id1=counting.id1;
+            output.id2=counting.id2;
+            output.nominator=counting.C[k];
+            output.denominator=merged_intermediate.denominator_countings[counting.id1].C[k]+merged_intermediate.denominator_countings[counting.id2].C[k];
             output.value=2*(float64_t)output.nominator/(float64_t)output.denominator;
             outputs.push_back(output);
         }
