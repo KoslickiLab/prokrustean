@@ -393,4 +393,61 @@ uint64_t get_braycurtis_nominator_naive(const std::vector<std::string>& sequence
     }
     return total_sum;
 }
+
+
+// Function to calculate overlap degree of each sequence in a vector
+// std::vector<uint32_t> count_overlap_degrees_naive(const std::vector<std::string> &sequences, size_t threshold) {
+//     std::vector<uint32_t> overlapDegrees(sequences.size(), 0);
+
+//     for (size_t i = 0; i < sequences.size(); ++i) {
+//         for (size_t j = 0; j < sequences.size(); ++j) {
+//             size_t overlap = 0;
+//             for (size_t p = 0; p < std::min(sequences[i].size(),sequences[j].size()); ++p) {
+//                 if (sequences[i][sequences[i].size() - p - 1] == sequences[j][p]) {
+//                     overlap++;
+//                     if(overlap>=threshold){
+//                         overlapDegrees[i]++;
+//                         overlapDegrees[j]++;
+//                         break;
+//                     }
+//                 } else {
+//                     break;
+//                 }
+//             }
+//         }
+//     }
+
+//     return overlapDegrees;
+// }
+
+
+std::vector<uint32_t> count_overlap_degrees_naive(const std::vector<std::string> &sequences, uint32_t threshold, bool allow_multi_edge) {
+    std::vector<uint32_t> overlapDegrees(sequences.size(), 0);
+
+    for (int i = 0; i < sequences.size(); ++i) {
+        for (int j = 0; j < sequences.size(); ++j) {
+            uint32_t maxOverlap = std::min(sequences[i].size(), sequences[j].size());
+            if(i==j){
+                maxOverlap--;
+            }
+            // threshold <= len < maxOverlap (not the whole)
+            for (uint32_t len = threshold; len <= maxOverlap; ++len) {
+                // Check if the suffix of sequences[i] of length 'len' matches the prefix of sequences[j] of the same length
+                auto suffix = sequences[i].substr(sequences[i].size() - len);
+                auto prefix = sequences[j].substr(0, len);
+                if (suffix==prefix) {
+                    overlapDegrees[i]++;
+                    overlapDegrees[j]++;
+                    if(allow_multi_edge){
+                        // multiple edges can be defined
+                    } else {
+                        break; // Overlaps in a pair mean at most 1 edge  
+                    }
+                }
+            }
+        }
+    }
+
+    return overlapDegrees;
+}
 #endif

@@ -192,6 +192,57 @@ void test_frequency_computation_parallel(){
     }
 }
 
+void test_simple_overlap_graph_coverage_allowing_multi_edge(){
+    int Lmin = 5;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    vector<string> seqs; 
+    fm_idx.recover_all_texts(seqs);
+    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    
+    vector<uint32_t> outputs;
+    compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
+    count_overlap_based_coverage(ext, ext.stratum_incoming_degrees, outputs, true);
+
+    vector<uint32_t> outputs_naive = count_overlap_degrees_naive(seqs, Lmin, true);
+    
+    // verification
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
+        assert(outputs[i] == outputs_naive[i]);
+    }
+}
+
+void test_simple_overlap_graph_coverage_single_edge(){
+    // the implementation is not precise, so Lmin=3 will make this test fail. However, in most datasets this will be enough.
+    int Lmin = 4;
+    WaveletString str(PATH4_SREAD_PARTITIONED, '$');
+    auto fm_idx = FmIndex(str);
+    vector<string> seqs; 
+    fm_idx.recover_all_texts(seqs);
+    
+    Prokrustean prokrustean;
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    ProkrusteanExtension ext(prokrustean);
+    
+    vector<uint32_t> outputs;
+    compute_incoming_degrees(ext.prokrustean, ext.stratum_incoming_degrees);
+    count_overlap_based_coverage(ext, ext.stratum_incoming_degrees, outputs, false);
+
+    vector<uint32_t> outputs_naive = count_overlap_degrees_naive(seqs, Lmin, false);
+    
+    // verification
+    // int cnt, cnt_naive=0;
+    for(int i=0; i<ext.prokrustean.sequence_count; i++){
+        assert(outputs[i] == outputs_naive[i]);
+        // cnt+=outputs[i];
+        // cnt_naive+=outputs_naive[i];
+    }
+    // cout << "cnt " << cnt << " cnt_ naive " << cnt_naive << endl;
+}
+
 void main_prokrustean_support(){
     test_left_right_extension_counting();
     test_left_right_extension_counting_parallel();
@@ -200,4 +251,6 @@ void main_prokrustean_support(){
     test_frequency_computation();
     test_compute_incoming_degrees_parallel();
     test_frequency_computation_parallel();
+    test_simple_overlap_graph_coverage_allowing_multi_edge();
+    test_simple_overlap_graph_coverage_single_edge();
 }

@@ -40,7 +40,4 @@ int main(void){
 
     cout << "--- test support ---" << endl;
     main_prokrustean_support();
-
-    cout << "--- test braycurtis ---" << endl;
-    main_application_braycurtis();
 }

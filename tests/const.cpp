@@ -12,6 +12,7 @@ string PATH2_BWT = "../data/2_ebwt.txt";
 string PATH3_SEQ = "../data/3_sequences_unsorted_tied.txt";
 string PATH3_BWT = "../data/3_ebwt.txt";
 string PATH4_SREAD_PARTITIONED="../data/SRR20044276.001001.bwt";
+// string PATH4_SREAD_PARTITIONED="../data/SRR20044276.part_001.part_001.bwt";
 string PATH5_CDBG_SAMPLE="../data/cdbg_sample.bwt";
 string PATH6_CDBG_SAMPLE2="../data/cdbg_sample2.bwt";
 
