@@ -421,8 +421,9 @@ uint64_t get_braycurtis_nominator_naive(const std::vector<std::string>& sequence
 // }
 
 
-std::vector<uint32_t> count_overlap_degrees_naive(const std::vector<std::string> &sequences, uint32_t threshold, bool allow_multi_edge) {
-    std::vector<uint32_t> overlapDegrees(sequences.size(), 0);
+void count_overlap_degrees_naive(const std::vector<std::string> &sequences, uint32_t threshold, std::vector<uint32_t> &degrees_in, std::vector<uint32_t> &degrees_out, bool allow_multi_edge) {
+    degrees_in.resize(sequences.size(), 0);
+    degrees_out.resize(sequences.size(), 0);
 
     for (int i = 0; i < sequences.size(); ++i) {
         for (int j = 0; j < sequences.size(); ++j) {
@@ -436,8 +437,8 @@ std::vector<uint32_t> count_overlap_degrees_naive(const std::vector<std::string>
                 auto suffix = sequences[i].substr(sequences[i].size() - len);
                 auto prefix = sequences[j].substr(0, len);
                 if (suffix==prefix) {
-                    overlapDegrees[i]++;
-                    overlapDegrees[j]++;
+                    degrees_out[i]++;
+                    degrees_in[j]++;
                     if(allow_multi_edge){
                         // multiple edges can be defined
                     } else {
@@ -447,7 +448,5 @@ std::vector<uint32_t> count_overlap_degrees_naive(const std::vector<std::string>
             }
         }
     }
-
-    return overlapDegrees;
 }
 #endif

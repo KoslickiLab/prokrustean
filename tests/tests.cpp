@@ -6,6 +6,7 @@
 #include "test_application.kmer.count.cpp"
 #include "test_application.dbg.count.cpp"
 #include "test_application.cdbg.cpp"
+#include "test_application.overlap.cpp"
 #include "test_storage.cpp"
 #include "test_construction.support.cpp"
 #include "test_text_indexing.cpp"
@@ -34,6 +35,9 @@ int main(void){
 
     cout << "--- test unitig counting ---" << endl;
     main_application_unitig_count();
+
+    cout << "--- test overlap ---" << endl;
+    main_application_overlap();
 
     cout << "--- test store ---" << endl;
     main_test_storage();

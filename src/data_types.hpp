@@ -15,7 +15,7 @@ typedef uint32_t StratumId; //
 /* Has to be at least (SeqId or StratumId) */
 typedef uint32_t StratumOrSeqId; //
 /* Has to be under possible sequence max length. Has to be synced together */
-typedef uint32_t Pos; 
+typedef uint32_t Pos;
 typedef uint32_t SequenceSize; 
 /* Has to be under possible stratum length */
 typedef uint32_t StratumSize; 
