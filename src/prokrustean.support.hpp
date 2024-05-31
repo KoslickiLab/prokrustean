@@ -567,7 +567,7 @@ void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &inco
             }
 
             overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
+            if(overlap<ext.prokrustean.kmin){
                 continue;
             }
             // pinpoint the overlap matching stratum
@@ -596,7 +596,7 @@ void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &inco
             }
 
             overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
+            if(overlap<ext.prokrustean.kmin){
                 continue;
             }
             // pinpoint the overlap matching stratum
@@ -647,7 +647,7 @@ void compute_strata_frequencies_parallel(ProkrusteanExtension &ext, int thread_c
                 }
 
                 overlap=vertex.overlap_length_on_left(j);
-                if(overlap<ext.prokrustean.lmin){
+                if(overlap<ext.prokrustean.kmin){
                     continue;
                 }
                 // pinpoint the overlap matching stratum
@@ -681,7 +681,7 @@ void compute_strata_frequencies_parallel(ProkrusteanExtension &ext, int thread_c
                 }
 
                 overlap=vertex.overlap_length_on_left(j);
-                if(overlap<ext.prokrustean.lmin){
+                if(overlap<ext.prokrustean.kmin){
                     continue;
                 }
                 // pinpoint the overlap matching stratum
@@ -730,7 +730,7 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
         file.write(reinterpret_cast<const char*>(&id_max_value), sizeof(id_max_value));
         file.write(reinterpret_cast<const char*>(&length_max_value), sizeof(length_max_value));
         file.write(reinterpret_cast<const char*>(&region_id_max_value), sizeof(region_id_max_value));
-        file.write(reinterpret_cast<const char*>(&data.lmin), sizeof(data.lmin));
+        file.write(reinterpret_cast<const char*>(&data.kmin), sizeof(data.kmin));
         file.write(reinterpret_cast<const char*>(&data.sequence_count), sizeof(data.sequence_count));
         file.write(reinterpret_cast<const char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
         file.write(reinterpret_cast<const char*>(&data.stratum_count), sizeof(data.stratum_count));
@@ -809,7 +809,7 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         file.read(reinterpret_cast<char*>(&id_max_value), sizeof(id_max_value));
         file.read(reinterpret_cast<char*>(&length_max_value), sizeof(length_max_value));
         file.read(reinterpret_cast<char*>(&region_id_max_value), sizeof(region_id_max_value));
-        file.read(reinterpret_cast<char*>(&data.lmin), sizeof(data.lmin));
+        file.read(reinterpret_cast<char*>(&data.kmin), sizeof(data.kmin));
         file.read(reinterpret_cast<char*>(&sequence_count), sizeof(sequence_count));
         file.read(reinterpret_cast<char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
         file.read(reinterpret_cast<char*>(&stratum_count), sizeof(stratum_count));
@@ -951,7 +951,7 @@ void store_prokrustean_text(Prokrustean& prokrustean, const std::string& filenam
     outputFile << "sequence regions: " << prokrustean.total_sequence_region_count << endl; 
     outputFile << "strata: " << prokrustean.stratum_count << endl; 
     outputFile << "strata regions: " << prokrustean.total_strata_region_count << endl; 
-    outputFile << "Lmin: " << prokrustean.lmin << endl;
+    outputFile << "Kmin: " << prokrustean.kmin << endl;
     outputFile << "** sequences are listed after all "<< prokrustean.stratum_count << " strata are listed " << endl;
     outputFile << std::left << std::setw(columnWidth) << "strata"
                << std::left << std::setw(columnWidth) << "length";

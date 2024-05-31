@@ -19,14 +19,14 @@ using namespace std;
 using namespace sdsl;
 
 void test_cdbg_with_verifier(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH5_CDBG_SAMPLE, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -104,14 +104,14 @@ void assert_by_naive_cdbg(vector<Unitig> &unitigs, std::unordered_map<std::strin
 
 
 void test_cdbg_construction(){
-    int Lmin = 10;
+    int Kmin = 10;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_parallel(fm_idx, prokrustean, 8, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, 8, Kmin);
     setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;
@@ -156,7 +156,7 @@ void test_cdbg_construction(){
 }
 
 void test_cdbg_construction_parallel(){
-    int Lmin = 5;
+    int Kmin = 5;
     int num_threads=4;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
@@ -164,7 +164,7 @@ void test_cdbg_construction_parallel(){
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Kmin);
     setup_stratum_example_occ(ext);
 
     vector<string> seq_texts;

@@ -155,7 +155,7 @@ struct SequenceVertex: Vertex{
 
 struct Prokrustean {
     string file_name;
-    int lmin;
+    int kmin;
     int version=1; // for file loading compatibility 
     bool contains_stratum_extension_count;
     bool contains_stratum_frequency;
@@ -413,7 +413,7 @@ struct Prokrustean {
         cout << "-- " << "stratified regions in sequences: " << total_sequence_region_count << endl;
         cout << "-- " << "strata: " << stratum_count << endl;
         cout << "-- " << "stratified regions in strata: " << total_strata_region_count << endl;
-        cout << "-- " << "lmin used: " << lmin << endl;
+        cout << "-- " << "kmin used: " << kmin << endl;
         cout << "------------------------------------------------------" << endl;
     }
 };

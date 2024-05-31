@@ -36,7 +36,7 @@ void help(){
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-p <arg>    (REQUIRED) input prokrustean file name" << endl <<
-	"-k <arg>    (REQUIRED) k - at least lmin." << endl <<
+	"-k <arg>    (REQUIRED) k - at least kmin." << endl <<
 	"-s <arg>    input sequence access file name. Default: {input prokrustean}.sequences" << endl <<
 	"-o <arg>    output file name. Default: {input prokrustean}.cdbg.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
@@ -100,8 +100,8 @@ int main(int argc, char** argv){
 	}
 	prokrustean.print_abstract();
 	
-	if(k<prokrustean.lmin+1){
-		cout << "[failed] k has to be at least lmin+1. given k: " << k << ", lmin of prokrustean: " << prokrustean.lmin  << endl;
+	if(k<prokrustean.kmin+1){
+		cout << "[failed] k has to be at least kmin+1. given k: " << k << ", kmin of prokrustean: " << prokrustean.kmin  << endl;
 		exit(0);
 	}
 	

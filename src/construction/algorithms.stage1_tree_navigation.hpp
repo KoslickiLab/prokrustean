@@ -200,8 +200,8 @@ SuffixArrayNode get_root(FmIndex &index){
 template<class T> using NodeFunc_NEW = void(*)(FmIndex&, TreeWorkspace&, T&);
 
 template<class T, NodeFunc_NEW<T> process_node>
-void navigate_strata(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, int thread_idx=0, bool verbose=false){
-    Lmin = Lmin >= 1? Lmin : 1;
+void navigate_strata(SuffixArrayNode &root, int Kmin, FmIndex &fm_idx, T &t, int thread_idx=0, bool verbose=false){
+    Kmin = Kmin >= 1? Kmin : 1;
     // assert(fm_idx.locator!=nullptr);
     // cout << "warning: sample x" << endl;
 
@@ -226,7 +226,7 @@ void navigate_strata(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, int
         if(verbose) ext.any_measure[2]+=(std::chrono::steady_clock::now()-start).count();
         if(verbose) start = std::chrono::steady_clock::now();
 
-        if(ext.node.depth>=Lmin){    
+        if(ext.node.depth>=Kmin){    
             process_node(fm_idx, ext, t);
         }
         
@@ -252,8 +252,8 @@ void navigate_strata(SuffixArrayNode &root, int Lmin, FmIndex &fm_idx, T &t, int
 }
 
 template<class T, NodeFunc_NEW<T> process_node>
-vector<SuffixArrayNode> collect_roots_while_navigate_strata(int Lmin, FmIndex &fm_idx, T &t, int depth_max){
-    assert(Lmin>=1 && depth_max >=1);
+vector<SuffixArrayNode> collect_roots_while_navigate_strata(int Kmin, FmIndex &fm_idx, T &t, int depth_max){
+    assert(Kmin>=1 && depth_max >=1);
 
     TreeWorkspace ext(fm_idx.characters_cnt);
     vector<SuffixArrayNode> roots;
@@ -268,7 +268,7 @@ vector<SuffixArrayNode> collect_roots_while_navigate_strata(int Lmin, FmIndex &f
             roots.push_back(ext.node);
         } else {
             extend_node(fm_idx, ext);
-            if(ext.node.depth>=Lmin){    
+            if(ext.node.depth>=Kmin){    
                 process_node(fm_idx, ext, t);
             }
         

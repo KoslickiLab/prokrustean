@@ -17,7 +17,7 @@
 using namespace std;
 using namespace sdsl;
 
-int lmin=-1;
+int kmin=-1;
 string input_bwt;
 string output_file;
 string output_seq_file;
@@ -35,7 +35,7 @@ void help(){
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
-	"-l <arg>    (REQUIRED) lmin - minimum length of a stratum(maximal repeat)" << endl <<
+	"-l <arg>    (REQUIRED) kmin - minimum length of a stratum(maximal repeat)" << endl <<
 	"-q <arg>    terminator. default:" << TERM << "($) ASCII code. Cannot be the code for A,C,G,T,N." << endl <<
 	// "-r     	 recover sequences of the bwt and store in {output}.sequences" << endl <<
 	"-o <arg>    output file. default: {input}.prokrustean" << endl <<
@@ -62,7 +62,7 @@ int main(int argc, char** argv){
 				output_file = string(optarg);
 			break;
 			case 'l':
-				lmin = stoi(string(optarg));
+				kmin = stoi(string(optarg));
 			break;
 			case 't':
 				num_threads = stoi(string(optarg));
@@ -102,7 +102,7 @@ int main(int argc, char** argv){
 
 	cout << "Input bwt file: " << input_bwt << endl;
 	cout << "Output prokrustean file: " << output_file << endl;
-	cout << "Lmin: " << lmin << endl;
+	cout << "Kmin: " << kmin << endl;
 	cout << "threads: " << num_threads << endl;
 
 	string file_ext=".bwt";
@@ -119,7 +119,7 @@ int main(int argc, char** argv){
 	Prokrustean prokrustean;
 	prokrustean.contains_stratum_extension_count=contains_char_ext;
 	prokrustean.contains_stratum_frequency=contains_frequency;
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, kmin);
 
 	prokrustean.print_abstract();
 	

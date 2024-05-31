@@ -19,12 +19,12 @@ using namespace sdsl;
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_distinct_kmers(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH5_CDBG_SAMPLE, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
@@ -59,12 +59,12 @@ void test_distinct_kmers(){
 }
 
 void test_distinct_kmers_ondisk(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH5_CDBG_SAMPLE, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 

@@ -22,7 +22,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //     std::string evidence;
 //     std::string prokrustean_file_name;
 //     uint8_t type_bytes_in_variables[20]; // fixed
-//     int lmin;
+//     int kmin;
 //     uint64_t sequence_count;
 //     uint64_t strata_count;
 //     // sequence_indics[i] -> starting position of sequence[i]
@@ -34,7 +34,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         cout << " meta: " << endl;
 //         cout << " evidence " << evidence << endl;
 //         cout << " prokrustean_file_name " << prokrustean_file_name << endl;
-//         cout << " lmin " << lmin << endl;
+//         cout << " kmin " << kmin << endl;
 //         cout << " sequence_count " << sequence_count << endl;
 //         cout << " strata_count " << strata_count << endl;
 //         cout << " streampos_sequence_indices " << streampos_sequence_indices << endl;
@@ -69,7 +69,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         ////////////////////////////////////////////////
 //         // std::string evidence;
 //         // std::string prokrustean_file_name;
-//         // int lmin;
+//         // int kmin;
 //         // uint64_t sequence_count;
 //         // uint64_t strata_count;
 //         ////////////////////////////////////////////////
@@ -77,10 +77,10 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         this->metadata.evidence=PROKRUSTEAN_EVIDENCE;
 //         this->metadata.prokrustean_file_name=prokrustean.has_value()? prokrustean.value().file_name: "not set";
 //         this->metadata.sequence_count=seq_sizes.size();
-//         this->metadata.lmin=prokrustean.has_value()? prokrustean.value().lmin: 0;
+//         this->metadata.kmin=prokrustean.has_value()? prokrustean.value().kmin: 0;
 //         this->metadata.strata_count=prokrustean.has_value()? prokrustean.value().stratum_count: 0;
 
-//         // int metadata_fixed_size = 256 + 256 + sizeof(metadata.sequence_count) + sizeof(metadata.lmin) + sizeof(metadata.strata_count) + sizeof(std::streampos) + sizeof(std::streampos) + sizeof(std::streampos);
+//         // int metadata_fixed_size = 256 + 256 + sizeof(metadata.sequence_count) + sizeof(metadata.kmin) + sizeof(metadata.strata_count) + sizeof(std::streampos) + sizeof(std::streampos) + sizeof(std::streampos);
 //         // std::streampos start_position_of_sequence_positions = metadata_fixed_size; 
 //         // this->metadata.streampos_sequence_indices=start_position_of_sequence_positions;
 
@@ -107,7 +107,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         // PROKRUSTEAN_EVIDENCE                 // 256
 //         // prokrustean_file_name                // 256
 //         // sequence_count                       // sequence_count
-//         // lmin                                 // lmin
+//         // kmin                                 // kmin
 //         // strata_count                         // strata_count
 //         // startPos                             // startPos
 //         // sequence counts                      // sequence_count per d
@@ -118,7 +118,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         this->metadata.prokrustean_file_name.resize(256);
 //         writefile.write(this->metadata.prokrustean_file_name.c_str(), 256);
 //         writefile.write(reinterpret_cast<const char*>(&this->metadata.sequence_count), sizeof(this->metadata.sequence_count));
-//         writefile.write(reinterpret_cast<const char*>(&this->metadata.lmin), sizeof(this->metadata.lmin));
+//         writefile.write(reinterpret_cast<const char*>(&this->metadata.kmin), sizeof(this->metadata.kmin));
 //         writefile.write(reinterpret_cast<const char*>(&this->metadata.strata_count), sizeof(this->metadata.strata_count));
 //         std::streampos startPos = writefile.tellp();
 //         startPos+=sizeof(std::streampos); // point to right after the variable
@@ -188,7 +188,7 @@ std::string PROKRUSTEAN_EVIDENCE = std::string("I am Prokrustes. Do not confuse 
 //         metadata.prokrustean_file_name = std::string(prokrustean_file_name_buffer, 256);
 
 //         _infile.read(reinterpret_cast<char*>(&metadata.sequence_count), sizeof(metadata.sequence_count));
-//         _infile.read(reinterpret_cast<char*>(&metadata.lmin), sizeof(metadata.lmin));
+//         _infile.read(reinterpret_cast<char*>(&metadata.kmin), sizeof(metadata.kmin));
 //         _infile.read(reinterpret_cast<char*>(&metadata.strata_count), sizeof(metadata.strata_count));
 //         _infile.read(reinterpret_cast<char*>(&metadata.streampos_sequence_indices), sizeof(metadata.streampos_sequence_indices));
 //         // _infile.read(reinterpret_cast<char*>(&metadata.streampos_sequence), sizeof(metadata.streampos_sequence));
@@ -523,7 +523,7 @@ public:
         ////////////////////////////////////////////////
         // std::string evidence;
         // std::string prokrustean_file_name;
-        // int lmin;
+        // int kmin;
         // uint64_t sequence_count;
         // uint64_t strata_count;
         ////////////////////////////////////////////////

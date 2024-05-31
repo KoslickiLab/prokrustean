@@ -405,7 +405,7 @@
 
 
 // void test_compare_various_tree_exploration(){
-//     int Lmin = 1;
+//     int Kmin = 1;
 //     auto str = WaveletString(PATH1_PERFORMANCE_SREAD_SEQ, '$');
 //     auto fm_idx = FmIndex(str);
 //     cout << "bwt $ cout: " << fm_idx.seq_cnt() << endl;
@@ -435,7 +435,7 @@
 // }
 
 // void test_tree_exploration_investigation(){
-//     int Lmin = 1;
+//     int Kmin = 1;
 //     // auto str = WaveletString(PATH1_PERFORMANCE_SREAD_SEQ, '$');
 //     auto str = WaveletString(PATH2_PERFORMANCE_SREAD_FULL_ROPEBWT2_BWT, '$');
     
@@ -449,7 +449,7 @@
 
 //     start = std::chrono::steady_clock::now();
 //     vector<MaximalRepeatAnnotation> repeats;
-//     navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Lmin, fm_idx, repeats);
+//     navigate_tree<MaximalRepeatAnnotation, get_repeat_annotations>(root, Kmin, fm_idx, repeats);
 //     cout << "original navi : " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 // }
 

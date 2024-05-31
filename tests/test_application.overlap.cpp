@@ -18,7 +18,7 @@ using namespace sdsl;
 
 
 void test_simple_overlap_graph_coverage_allowing_multi_edge(){
-    int Lmin = 3;
+    int Kmin = 3;
     int min_length = 5;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
@@ -26,7 +26,7 @@ void test_simple_overlap_graph_coverage_allowing_multi_edge(){
     fm_idx.recover_all_texts(seqs);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     vector<uint32_t> degrees_in;
@@ -47,8 +47,8 @@ void test_simple_overlap_graph_coverage_allowing_multi_edge(){
 }
 
 void test_simple_overlap_graph_coverage_single_edge(){
-    // the implementation is not precise, so Lmin=3 will make this test fail. However, in most datasets this will be enough.
-    int Lmin = 3;
+    // the implementation is not precise, so Kmin=3 will make this test fail. However, in most datasets this will be enough.
+    int Kmin = 3;
     int min_length = 4;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
@@ -56,7 +56,7 @@ void test_simple_overlap_graph_coverage_single_edge(){
     fm_idx.recover_all_texts(seqs);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     vector<uint32_t> degrees_in;

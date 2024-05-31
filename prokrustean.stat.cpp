@@ -32,8 +32,8 @@ void help(){
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-p <arg>    (REQUIRED) prokrustean file name" << endl <<
-	"-l <arg>    lmin range left. default: lmin." << endl <<
-	"-r <arg>    lmin range right. default: largest sequence size." << endl <<
+	"-l <arg>    kmin range left. default: kmin." << endl <<
+	"-r <arg>    kmin range right. default: largest sequence size." << endl <<
 	"-o <arg>    output file name. Default: input file name + .stat.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
 	exit(0);
@@ -88,9 +88,9 @@ int main(int argc, char** argv){
 	
 	// cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	if(from==-1){
-		from=prokrustean.lmin;
-	} else if(from<prokrustean.lmin){
-		cout << "from(l) value should be at least the lmin of prokrustean: " << prokrustean.lmin << endl;
+		from=prokrustean.kmin;
+	} else if(from<prokrustean.kmin){
+		cout << "from(l) value should be at least the kmin of prokrustean: " << prokrustean.kmin << endl;
 		exit(0);
 	}
 	if(to==-1){

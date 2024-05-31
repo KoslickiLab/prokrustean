@@ -31,7 +31,7 @@ void test_bwt_prokrustean_indexing_update(){
         prokrustean.sequences__size[i]=seq_texts[i].size();
     }
     prokrustean.stratum_count=1;
-    prokrustean.lmin=4;
+    prokrustean.kmin=4;
 
     vector<SequenceSize> seq_sizes;
 	for(auto &s: seq_texts){

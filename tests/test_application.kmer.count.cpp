@@ -16,12 +16,12 @@ using namespace sdsl;
 
 
 void test_counting_distinct_kmers_single_k_naive(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
 
     vector<string> seq_texts;
@@ -38,12 +38,12 @@ void test_counting_distinct_kmers_single_k_naive(){
 }
 
 void test_counting_distinct_kmers_single_k(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
@@ -62,12 +62,12 @@ void test_counting_distinct_kmers_single_k(){
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_counting_distinct_kmers_k_range(){
-    int Lmin = 20;
+    int Kmin = 20;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
 
     vector<uint64_t> counts;
@@ -81,13 +81,13 @@ void test_counting_distinct_kmers_k_range(){
 
 
 void test_counting_distinct_kmers_k_range_parallel(){
-    int Lmin = 5;
+    int Kmin = 5;
     int thread_cnt=4;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
 
     vector<uint64_t> counts;

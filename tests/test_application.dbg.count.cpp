@@ -18,14 +18,14 @@ using namespace std;
 using namespace sdsl;
 
 void test_unitig_counting_single(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension enhancement(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
 
     vector<string> seq_texts;
     fm_idx.recover_all_texts(seq_texts);
@@ -45,14 +45,14 @@ void test_unitig_counting_single(){
 
 
 void test_unitig_counting_range(){
-    int Lmin = 15;
+    int Kmin = 15;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     vector<uint64_t> output;
     count_maximal_unitigs_range_of_k(30, 200, ext, output);
     for(int k=30; k<200; k++){
@@ -62,7 +62,7 @@ void test_unitig_counting_range(){
 }
 
 void test_unitig_counting_range_parallel(){
-    int Lmin = 15;
+    int Kmin = 15;
     int num_threads=4;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
@@ -70,7 +70,7 @@ void test_unitig_counting_range_parallel(){
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     vector<uint64_t> output;
     count_maximal_unitigs_range_of_k(20, 200, ext, output);
     vector<uint64_t> output2;

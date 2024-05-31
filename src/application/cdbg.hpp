@@ -706,7 +706,7 @@ void cdbg_stage3_construct_cdbg(vector<Unitig> &unitigs, AbstractSequenceAccess 
 
 
 void cdbg_stage1_extract_paritial_unitigs_parallel(int k, ProkrusteanExtension &ext, CompactedDBGWorkspace &work, int thread_cnt, bool verbose=false){
-    assert(k>1 && k>ext.prokrustean.lmin);
+    assert(k>1 && k>ext.prokrustean.kmin);
     assert(ext.prokrustean.contains_stratum_extension_count);
     assert(thread_cnt>0);
     int stratum_count=ext.prokrustean.stratum_count;

@@ -18,7 +18,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_unitig_counting_range(){
-    int Lmin = 15;
+    int Kmin = 15;
     auto num_threads=12;
     WaveletString str(PATH_SREAD_FULL_GRLBWT_BWT, '$');
     auto fm_idx = FmIndex(str);
@@ -27,7 +27,7 @@ void test_unitig_counting_range(){
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_extension_count=true;
     
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Kmin);
     
     auto start = std::chrono::steady_clock::now();
     

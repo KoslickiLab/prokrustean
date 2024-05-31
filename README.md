@@ -19,18 +19,18 @@ make
 This approach requires a eBWT file that includes a single string with a seperator (normally '$'). Either download [our example data](https://pennstateoffice365-my.sharepoint.com/:f:/g/personal/akp6031_psu_edu/EpeyylRQoyhAmi60bt8ne3IBaTDVXzsdVVB8ODAKZ0CPRw?e=dCw1Oi), or refer to the [BWT Section](#BWT) below to make your own. Below code generates a binary file (./SRR20044276.bwt.prokrustean) representing the prokrustean graph.
 
 ```
-# -l is the smallest length of maximal repats to be computed. (Lmin in the paper)
+# -l is the smallest length of maximal repats to be computed. (Kmin in the paper)
 ./prokrustean -i ./SRR20044276.bwt -l 20
 ```
 #### Application1: Count distinct k-mers
 ```
-# default k=[L..R] (L=Lmin, R=maximum sequence length in the input).
+# default k=[L..R] (L=Kmin, R=maximum sequence length in the input).
 ./prokrustean_kmer_count -p ./SRR20044276.bwt.prokrustean
 ```
 
 #### Application2: Count (maximal) unitigs of de Bruijn graphs
 ```
-# default k=[L..R] (L=Lmin, R=maximum sequence length in the input)
+# default k=[L..R] (L=Kmin, R=maximum sequence length in the input)
 ./prokrustean_unitig_count -p ./SRR20044276.bwt.prokrustean
 ```
 

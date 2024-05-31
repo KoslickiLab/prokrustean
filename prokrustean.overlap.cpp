@@ -28,7 +28,7 @@ void help(){
 	"-h          help" << endl <<
 	"-p <arg>    (REQUIRED) prokrustean file name" << endl <<
 	"-o <arg>    output file name. Default: input file name + .overlap.txt" << endl <<
-	"-l <arg>    overlap length threshold. Default: Lmin of the prokrustean graph" << endl <<
+	"-l <arg>    overlap length threshold. Default: Kmin of the prokrustean graph" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
 	exit(0);
 }
@@ -79,10 +79,10 @@ int main(int argc, char** argv){
 	 
 	// cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	if(min_length==-1){
-		min_length=prokrustean.lmin;
-	} else if(min_length<prokrustean.lmin){
-		cout << "l (min_length) value is overriden with the kmin of prokrustean: " << prokrustean.lmin << endl;
-		min_length=prokrustean.lmin;
+		min_length=prokrustean.kmin;
+	} else if(min_length<prokrustean.kmin){
+		cout << "l (min_length) value is overriden with the kmin of prokrustean: " << prokrustean.kmin << endl;
+		min_length=prokrustean.kmin;
 	}
 	
 	cout << "min overlap length: " << min_length  << endl;

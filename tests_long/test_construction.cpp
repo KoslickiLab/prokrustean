@@ -23,7 +23,7 @@ using namespace std;
 using namespace sdsl;
 
 void test_full_process_push(){
-    int Lmin=1;
+    int Kmin=1;
     auto num_threads=12;
     int sleep=0;
     auto start = std::chrono::steady_clock::now();
@@ -44,7 +44,7 @@ void test_full_process_push(){
     start = std::chrono::steady_clock::now();
 
     
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Kmin);
     // unordered_map<uint8_t, int> counts;
     // for(auto cnt: prokrustean.stratums__region_cnt){
     //     counts[cnt]++;
@@ -61,7 +61,7 @@ void test_full_process_push(){
 
 
 void test_full_process_push_check_kmers(){
-    int Lmin=1;
+    int Kmin=1;
     auto num_threads=12;
     int sleep=0;
     auto start = std::chrono::steady_clock::now();
@@ -80,7 +80,7 @@ void test_full_process_push_check_kmers(){
     start = std::chrono::steady_clock::now();
 
     vector<future<void>> futures;
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Kmin);
 
     start = std::chrono::steady_clock::now();
     vector<string> seq_texts;

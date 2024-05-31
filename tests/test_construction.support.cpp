@@ -18,13 +18,13 @@ using namespace std;
 using namespace sdsl;
 
 void test_left_right_extension_counting(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     count_left_right_character_extensions(ext);
     
@@ -35,14 +35,14 @@ void test_left_right_extension_counting(){
 }
 
 void test_left_right_extension_counting_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     int num_threads=4;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     count_left_right_character_extensions(ext);
     ProkrusteanExtension ext2(prokrustean);
@@ -83,7 +83,7 @@ void test_left_right_storage(){
 }
 
 void test_stratum_occ_sampling_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     int num_threads=4;
     WaveletString str(PATH6_CDBG_SAMPLE2, '$');
     auto fm_idx = FmIndex(str);
@@ -92,7 +92,7 @@ void test_stratum_occ_sampling_parallel(){
 
     Prokrustean prokrustean;
     prokrustean.contains_stratum_extension_count=true;
-    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, num_threads, Kmin);
 	
 	ProkrusteanExtension ext(prokrustean);
     ProkrusteanExtension ext2(prokrustean);
@@ -105,14 +105,14 @@ void test_stratum_occ_sampling_parallel(){
 }
 
 void test_frequency_computation(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin=Kmin);
 
     // Compute naive frequencies
     vector<string> seqs; 
@@ -144,13 +144,13 @@ void test_frequency_computation(){
 }
 
 void test_compute_incoming_degrees_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin=Kmin);
 
     // Compute frequencies from prokrustean
     vector<uint8_t> incoming_degrees;
@@ -166,7 +166,7 @@ void test_compute_incoming_degrees_parallel(){
 }
 
 void test_frequency_computation_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     int thread_cnt = 4;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
@@ -174,7 +174,7 @@ void test_frequency_computation_parallel(){
     Prokrustean prokrustean;
     ProkrusteanExtension ext(prokrustean);
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin=Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin=Kmin);
 
     // Compute frequencies from prokrustean
     vector<uint8_t> incoming_degrees;

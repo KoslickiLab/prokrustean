@@ -102,7 +102,7 @@ void _fully_verify_compacted_de_bruijn_graph(vector<string> &sequences, unsigned
 
 
 void test_naive_cdbg(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH_SREAD_001001_GRLBWT_BWT, '$');
     auto fm_idx = FmIndex(str);
 

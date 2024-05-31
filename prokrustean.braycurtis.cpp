@@ -31,7 +31,7 @@ void help(){
 	"-h          help" << endl <<
 	"-p <arg>    (REQUIRED) prokrustean file name" << endl <<
 	"-s <arg>    (REQUIRED) A sample ids txt file containing a list of sample ids(0~255) meaning sample ids by sequences. For rows equivalent to each sequence, sample id 0~255 should be written" << endl <<
-	"-l <arg>    k range left. default: lmin." << endl <<
+	"-l <arg>    k range left. default: kmin." << endl <<
 	"-r <arg>    k range right. default: largest sequence size." << endl <<
 	"-o <arg>    output file name. Default: input file name + .braycurtis.txt" << endl <<
 	"-t <arg>    thread count Default:" << num_threads << endl;
@@ -93,9 +93,9 @@ int main(int argc, char** argv){
 	}
 	// cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 	if(from==-1){
-		from=prokrustean.lmin;
-	} else if(from<prokrustean.lmin){
-		cout << "from(l) value should be at least the lmin of prokrustean: " << prokrustean.lmin << endl;
+		from=prokrustean.kmin;
+	} else if(from<prokrustean.kmin){
+		cout << "from(l) value should be at least the kmin of prokrustean: " << prokrustean.kmin << endl;
 		exit(0);
 	}
 	if(to==-1){

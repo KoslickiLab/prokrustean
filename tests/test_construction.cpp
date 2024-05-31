@@ -64,23 +64,23 @@ void test_step1_binary_storage(){
 
 
 void test_basic_construction(){
-    int Lmin = 2;
+    int Kmin = 2;
     auto str = WaveletString(PATH1_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
 }
 
 // if prokrustean if correct, the kmers will be perfectly collected
 void test_basic_construction_w_kmers(){
-    int Lmin = 1;
+    int Kmin = 1;
     auto str = WaveletString(PATH4_SREAD_PARTITIONED);
     // auto str = WaveletString(PATH3_BWT);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     setup_stratum_example_occ(ext);
 
@@ -102,14 +102,14 @@ void test_basic_construction_w_kmers(){
 
 // Check the basic extension aligns with overlaps
 void test_basic_rule_w_extension(){
-    int Lmin = 1;
+    int Kmin = 1;
     auto str = WaveletString(PATH4_SREAD_PARTITIONED);
     auto fm_idx = FmIndex(str);
     
     Prokrustean prokrustean;
     prokrustean.contains_stratum_extension_count=true;
     ProkrusteanExtension ext(prokrustean);
-    construct_prokrustean_parallel(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_parallel(fm_idx, prokrustean, Kmin);
 
     for(int i=0; i < prokrustean.sequence_count; i++){
         SequenceVertex vertex = prokrustean.get_sequence(i);

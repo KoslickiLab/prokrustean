@@ -249,7 +249,7 @@ void compute_frequencies_by_datasets(ProkrusteanExtension &ext, int dataset_coun
             }
 
             overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
+            if(overlap<ext.prokrustean.kmin){
                 continue;
             }
             // pinpoint the overlap matching stratum
@@ -279,7 +279,7 @@ void compute_frequencies_by_datasets(ProkrusteanExtension &ext, int dataset_coun
             }
 
             overlap=vertex.overlap_length_on_left(j);
-            if(overlap<ext.prokrustean.lmin){
+            if(overlap<ext.prokrustean.kmin){
                 continue;
             }
             // pinpoint the overlap matching stratum
@@ -323,7 +323,7 @@ void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thr
                 }
 
                 overlap=vertex.overlap_length_on_left(j);
-                if(overlap<ext.prokrustean.lmin){
+                if(overlap<ext.prokrustean.kmin){
                     continue;
                 }
                 // pinpoint the overlap matching stratum
@@ -358,7 +358,7 @@ void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thr
                 }
 
                 overlap=vertex.overlap_length_on_left(j);
-                if(overlap<ext.prokrustean.lmin){
+                if(overlap<ext.prokrustean.kmin){
                     continue;
                 }
                 // pinpoint the overlap matching stratum

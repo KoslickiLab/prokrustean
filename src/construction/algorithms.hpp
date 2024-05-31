@@ -12,8 +12,8 @@
 
 using namespace std;
 
-void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Lmin=1){
-    prokrustean.lmin=Lmin;
+void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokrustean, uint64_t Kmin=1){
+    prokrustean.kmin=Kmin;
     StratumProjectionWorkspace workspace_projection(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     SuffixAnnotationWorkspace workspace_annotation(fm_idx.size());
     StratificationWorkSpace workspace_stratification;
@@ -23,7 +23,7 @@ void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokruste
     
     /* stage1 - strata are collected. stratified regions are projected as raw data */
     SuffixArrayNode root = get_root(fm_idx);
-    navigate_strata<StratumProjectionWorkspace, report_representative_locations>(root, Lmin, fm_idx, workspace_projection);
+    navigate_strata<StratumProjectionWorkspace, report_representative_locations>(root, Kmin, fm_idx, workspace_projection);
     workspace_projection.prepare_prokrustean_spaces();
 
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << " stratum " << prokrustean.stratums__size.size() << endl;
@@ -50,20 +50,20 @@ void construct_prokrustean_single_thread(FmIndex &fm_idx, Prokrustean &prokruste
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 }
 
-void _strata_projection_parallel(FmIndex &fm_idx, int Lmin, int thread_cnt, int parallel_roots_collection_depth, StratumProjectionWorkspace &workspace){
+void _strata_projection_parallel(FmIndex &fm_idx, int Kmin, int thread_cnt, int parallel_roots_collection_depth, StratumProjectionWorkspace &workspace){
     vector<future<void>> futures;
     atomic<int> root_idx_gen;
-    auto func_ = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionWorkspace &output, atomic<int> &root_idx_gen) {
+    auto func_ = [](vector<SuffixArrayNode> &roots, FmIndex &fm_idx, int Kmin, StratumProjectionWorkspace &output, atomic<int> &root_idx_gen) {
         while(true){
             auto idx=root_idx_gen.fetch_add(1);
             if(idx>=roots.size()) 
             break;
-            navigate_strata<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+            navigate_strata<StratumProjectionWorkspace, report_representative_locations>(roots[idx], Kmin, fm_idx, output);
         }
     };
-    vector<SuffixArrayNode> roots = collect_roots_while_navigate_strata<StratumProjectionWorkspace, report_representative_locations>(Lmin, fm_idx, workspace, parallel_roots_collection_depth);
+    vector<SuffixArrayNode> roots = collect_roots_while_navigate_strata<StratumProjectionWorkspace, report_representative_locations>(Kmin, fm_idx, workspace, parallel_roots_collection_depth);
 
-    for(int i=0; i<thread_cnt; i++){ futures.push_back(std::async(std::launch::async, func_, ref(roots), ref(fm_idx), Lmin, ref(workspace), ref(root_idx_gen)));}
+    for(int i=0; i<thread_cnt; i++){ futures.push_back(std::async(std::launch::async, func_, ref(roots), ref(fm_idx), Kmin, ref(workspace), ref(root_idx_gen)));}
     for (auto &f : futures) {f.wait();}
 
     workspace.prepare_prokrustean_spaces();
@@ -107,11 +107,11 @@ void _build_prokrustean_parallel(FmIndex &fm_index, Prokrustean &prokrustean, Su
 }
 
 
-void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int thread_cnt, int Lmin=10){
-    assert(Lmin>=1);
+void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, int thread_cnt, int Kmin=10){
+    assert(Kmin>=1);
     assert(thread_cnt>0);
     int root_depth = 5; // is there a clever way to decide the scale of parallelism?
-    prokrustean.lmin=Lmin;
+    prokrustean.kmin=Kmin;
     StratumProjectionWorkspace* workspace_projection = new StratumProjectionWorkspace(prokrustean, fm_idx.seq_cnt(), fm_idx.size());
     // StratumProjectionWorkspace workspace_projection(prokrustean, fm_idx.seq_cnt(), fm_idx.size(), opt);
     SuffixAnnotationWorkspace workspace_annotation(fm_idx.size());
@@ -121,7 +121,7 @@ void construct_prokrustean_parallel(FmIndex &fm_idx, Prokrustean &prokrustean, i
     auto start = std::chrono::steady_clock::now();
     
     /* stage1 - strata are collected. stratified regions are projected as raw data */
-    _strata_projection_parallel(fm_idx, Lmin, thread_cnt, root_depth, *workspace_projection);
+    _strata_projection_parallel(fm_idx, Kmin, thread_cnt, root_depth, *workspace_projection);
 
     cout << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
     start = std::chrono::steady_clock::now();

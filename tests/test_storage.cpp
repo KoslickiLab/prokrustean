@@ -244,12 +244,12 @@ void test_store_and_retrieve_extensions() {
 
 
 void test_store_and_retrieve_bwt() {
-    int Lmin = 1;
+    int Kmin = 1;
     auto str = WaveletString(PATH4_SREAD_PARTITIONED);
     auto fm_idx = FmIndex(str);
     
     Prokrustean originalData;
-    construct_prokrustean_parallel(fm_idx, originalData, Lmin);
+    construct_prokrustean_parallel(fm_idx, originalData, Kmin);
     
     // Serialize the data to a file
     store_prokrustean(originalData, "data.bin");

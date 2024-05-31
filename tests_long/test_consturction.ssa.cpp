@@ -24,7 +24,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // void test_step1_push(){
-//     int Lmin=30;
+//     int Kmin=30;
 //     auto num_threads=12;
 //     auto sampling_factor=8;
 
@@ -57,26 +57,26 @@
 //     start = std::chrono::steady_clock::now();
 //     vector<SuffixArrayNode_NEW> roots = collect_nodes(root, fm_idx, 3);
     
-//     auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+//     auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Kmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
 //         while(true){
 //             auto idx = idx_gen.fetch_add(1);
 //             if(idx>=roots.size()){
 //                 break;
 //             } else {
-//                 navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+//                 navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Kmin, fm_idx, output);
 //             }
 //         }
 //     };
     
-//     // futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Lmin, ref(output), ref(idx_gen)));
-//     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Lmin, ref(output), ref(idx_gen)));}
+//     // futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Kmin, ref(output), ref(idx_gen)));
+//     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Kmin, ref(output), ref(idx_gen)));}
 //     for (auto &f : futures) {f.wait();}
     
 //     cout << "new algorithm: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;
 // }
 
 // void test_full_process_push(){
-//     int Lmin=20;
+//     int Kmin=20;
 //     auto num_threads=12;
 //     auto sampling_factor=16;
 //     int sleep1=0;
@@ -127,19 +127,19 @@
 //     start = std::chrono::steady_clock::now();
 //     vector<SuffixArrayNode_NEW> roots = collect_nodes(root, fm_idx, 3);
     
-//     auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Lmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
+//     auto func__navigate = [](vector<SuffixArrayNode_NEW> &roots, FmIndex &fm_idx, int Kmin, StratumProjectionOutput &output, atomic<int> &idx_gen) {
 //         while(true){
 //             auto idx = idx_gen.fetch_add(1);
 //             if(idx>=roots.size()){
 //                 break;
 //             } else {
-//                 navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Lmin, fm_idx, output);
+//                 navigate_maximals<StratumProjectionOutput, report_representative_locations>(roots[idx], Kmin, fm_idx, output);
 //             }
 //         }
 //     };
     
-//     // futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Lmin, ref(output), ref(idx_gen)));
-//     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Lmin, ref(workspace), ref(idx_gen)));}
+//     // futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Kmin, ref(output), ref(idx_gen)));
+//     for(int i=0; i<num_threads; i++){futures.push_back(std::async(std::launch::async, func__navigate, ref(roots), ref(fm_idx), Kmin, ref(workspace), ref(idx_gen)));}
 //     for (auto &f : futures) {f.wait();}
     
 //     cout << "step1 finished: " << (std::chrono::steady_clock::now()-start).count()/1000000 << "ms" << endl;

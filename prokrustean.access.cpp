@@ -17,7 +17,7 @@
 using namespace std;
 using namespace sdsl;
 
-int lmin=-1;
+int kmin=-1;
 string input_bwt;
 string output_file;
 int num_threads=8;

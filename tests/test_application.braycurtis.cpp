@@ -16,13 +16,13 @@ using namespace sdsl;
 
 
 void test_single_dataset_returns_frequency(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
 
     Prokrustean prokrustean;
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     int dataset_count=1;
@@ -42,13 +42,13 @@ void test_single_dataset_returns_frequency(){
 }
 
 void test_two_datasets_return_correct_frequencies(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
 
     Prokrustean prokrustean;
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     vector<DatasetId> dataset_ids;
@@ -73,13 +73,13 @@ void test_two_datasets_return_correct_frequencies(){
 }
 
 void test_two_datasets_frequencies_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     int thread_cnt = 4;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
 
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     vector<DatasetId> dataset_ids;
@@ -107,7 +107,7 @@ void test_two_datasets_frequencies_parallel(){
 
 
 void test_single_dataset_returns_frequency_sum_denominator(){
-    int Lmin = 1;
+    int Kmin = 1;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
     auto fm_idx = FmIndex(str);
     
@@ -116,7 +116,7 @@ void test_single_dataset_returns_frequency_sum_denominator(){
 
     Prokrustean prokrustean;
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     int dataset_count=1;
@@ -150,7 +150,7 @@ void test_single_dataset_returns_frequency_sum_denominator(){
 }
 
 void test_two_datasets_return_correct_nominator(){
-    int Lmin = 1;
+    int Kmin = 1;
     // frequency=1 usually means sequencing error
     int least_frequency=2;
     WaveletString str(PATH4_SREAD_PARTITIONED, '$');
@@ -161,7 +161,7 @@ void test_two_datasets_return_correct_nominator(){
 
     Prokrustean prokrustean;
     prokrustean.contains_stratum_frequency=true;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     int dataset_count=2;
@@ -205,7 +205,7 @@ void test_two_datasets_return_correct_nominator(){
 }
 
 void test_two_datasets_nominator_parallel(){
-    int Lmin = 1;
+    int Kmin = 1;
     int thread_cnt = 4;
     // usually means sequencing error
     int least_frequency=2;
@@ -213,7 +213,7 @@ void test_two_datasets_nominator_parallel(){
     auto fm_idx = FmIndex(str);
 
     Prokrustean prokrustean;
-    construct_prokrustean_single_thread(fm_idx, prokrustean, Lmin);
+    construct_prokrustean_single_thread(fm_idx, prokrustean, Kmin);
     ProkrusteanExtension ext(prokrustean);
     
     int dataset_count=2;
