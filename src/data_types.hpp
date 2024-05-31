@@ -7,22 +7,26 @@
 #include <algorithm>
 
 /* These types influence the output size */
+typedef uint32_t Id; // sequence, maximal repeat id
+typedef uint32_t Length; // string lengths - length & positions of sequences & maximal repeats.
+typedef uint32_t RegionId; // stratifying region id. 
+
 
 /* Has to be under no. of sequences */
-typedef uint32_t SeqId; //
+typedef Id SeqId; //
 /* Has to be under maximum no. of stratums(maximal repeats) */
-typedef uint32_t StratumId; // 
+typedef Id StratumId; // 
 /* Has to be at least (SeqId or StratumId) */
-typedef uint32_t StratumOrSeqId; //
+typedef Id StratumOrSeqId; //
 /* Has to be under possible sequence max length. Has to be synced together */
-typedef uint32_t Pos;
-typedef uint32_t SequenceSize; 
+typedef Length Pos;
+typedef Length SequenceSize; 
 /* Has to be under possible stratum length */
-typedef uint32_t StratumSize; 
+typedef Length StratumSize; 
 /* Can covering region be over 255? meaning stratified regions are at least 122? */ 
 /*I doubt about it even if the dataset is very largein normal cases */
-typedef uint32_t CoveringRegionIdx; 
-typedef uint32_t CoveringRegionCount; 
+typedef RegionId StratifyingRegionIdx; 
+typedef RegionId StratifyingRegionCount; 
 //Alphabet
 typedef uint8_t CharId; 
 typedef uint8_t CharCount; 

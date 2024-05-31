@@ -238,7 +238,7 @@ void compute_frequencies_by_datasets(ProkrusteanExtension &ext, int dataset_coun
     for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
         ext.prokrustean.get_sequence(i, vertex);
         DatasetId dt_id=dataset_ids[i];
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &edge=vertex.s_edges[j];
             frequencies[dt_id][edge.stratum_id]+=1;
             
@@ -265,7 +265,7 @@ void compute_frequencies_by_datasets(ProkrusteanExtension &ext, int dataset_coun
         completed_strata.pop();
 
         ext.prokrustean.get_stratum(stratum_id, vertex);
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &edge=vertex.s_edges[j];
             for(DatasetId dt_id=0; dt_id<dataset_count; dt_id++){
                 frequencies[dt_id][edge.stratum_id]+=frequencies[dt_id][stratum_id];
@@ -310,7 +310,7 @@ void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thr
         for(SeqId i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
             ext.prokrustean.get_sequence(i, vertex);
             DatasetId dt_id=dataset_ids[i];
-            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
                 auto &s_edge=vertex.s_edges[j];
                 ext.lock_stratum(s_edge.stratum_id);
                 // frequency 
@@ -342,7 +342,7 @@ void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thr
 
             ext.prokrustean.get_stratum(stratum_id, vertex);
 
-            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
                 auto &s_edge=vertex.s_edges[j];
                 ext.lock_stratum(s_edge.stratum_id);
                 // frequency 

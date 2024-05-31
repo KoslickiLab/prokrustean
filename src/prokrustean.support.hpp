@@ -39,7 +39,7 @@ struct ProkrusteanExtension {
         this->stratum_locks[id%this->stratum_lock_scale].unlock();
     }
 
-    bool refracted_at_front_of_cover(int k, uint64_t size, StratifiedData* region, CoveringRegionCount rgn_cnt){
+    bool refracted_at_front_of_cover(int k, uint64_t size, StratifiedData* region, StratifyingRegionCount rgn_cnt){
         assert(size>=k);
         if(rgn_cnt==0){
             return true;
@@ -57,7 +57,7 @@ struct ProkrusteanExtension {
         return refracted_at_front_of_cover(k, prokrustean.stratums__size[id], prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
     }
 
-    bool refracted_at_back_of_cover(int k, uint64_t size, StratifiedData* region, CoveringRegionCount rgn_cnt){
+    bool refracted_at_back_of_cover(int k, uint64_t size, StratifiedData* region, StratifyingRegionCount rgn_cnt){
         assert(size>=k);
         if(rgn_cnt==0){
             return true;
@@ -123,7 +123,7 @@ struct ProkrusteanExtension {
             return true;
         }
     }
-    optional<StratifiedEdge> first_stratified(StratifiedData* region, CoveringRegionCount rgn_cnt){
+    optional<StratifiedEdge> first_stratified(StratifiedData* region, StratifyingRegionCount rgn_cnt){
         if(rgn_cnt==0){
             return nullopt;
         } else {
@@ -137,7 +137,7 @@ struct ProkrusteanExtension {
         return first_stratified(prokrustean.stratums__region[id], prokrustean.stratums__region_cnt[id]);
     }
 
-    optional<StratifiedEdge> last_stratified(StratifiedData* region, CoveringRegionCount rgn_cnt){
+    optional<StratifiedEdge> last_stratified(StratifiedData* region, StratifyingRegionCount rgn_cnt){
         if(rgn_cnt==0){
             return nullopt;
         } else {
@@ -220,7 +220,7 @@ bool no_stratified_region_in_stra(StratumId id, int k, ProkrusteanExtension &ext
 //     return true;
 // }
 
-CoveringRegionIdx first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
+StratifyingRegionIdx first_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
     for(int i=0; i< ext.prokrustean.stratums__region_cnt[id]; i++){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
             return i;
@@ -230,7 +230,7 @@ CoveringRegionIdx first_stratified_region_idx_in_stra(StratumId id, int k, Prokr
     assert(false);
 }
 
-CoveringRegionIdx last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
+StratifyingRegionIdx last_stratified_region_idx_in_stra(StratumId id, int k, ProkrusteanExtension &ext){
     for(int i=ext.prokrustean.stratums__region_cnt[id]-1; i>=0; i--){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][i].stratum_id]>=k){
             return i;
@@ -240,7 +240,7 @@ CoveringRegionIdx last_stratified_region_idx_in_stra(StratumId id, int k, Prokru
     assert(false);
 }
 
-CoveringRegionIdx next_stratified_region_idx_in_stra(StratumId id, CoveringRegionIdx idx, int k, ProkrusteanExtension &ext){
+StratifyingRegionIdx next_stratified_region_idx_in_stra(StratumId id, StratifyingRegionIdx idx, int k, ProkrusteanExtension &ext){
     idx++;
     while(idx<ext.prokrustean.stratums__region_cnt[id]){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
@@ -252,7 +252,7 @@ CoveringRegionIdx next_stratified_region_idx_in_stra(StratumId id, CoveringRegio
     assert(false);
 }
 
-CoveringRegionIdx prev_stratified_region_idx_in_stra(StratumId id, CoveringRegionIdx idx, int k, ProkrusteanExtension &ext){
+StratifyingRegionIdx prev_stratified_region_idx_in_stra(StratumId id, StratifyingRegionIdx idx, int k, ProkrusteanExtension &ext){
     idx--;
     while(idx>=0){
         if(ext.prokrustean.stratums__size[ext.prokrustean.stratums__region[id][idx].stratum_id]>=k){
@@ -556,7 +556,7 @@ void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &inco
     stack<StratumId> completed_strata;
     for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
         ext.prokrustean.get_sequence(i, vertex);
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &s_edge=vertex.s_edges[j];
             // frequency 
             frequencies[s_edge.stratum_id]+=frequency;
@@ -585,7 +585,7 @@ void compute_strata_frequencies(ProkrusteanExtension &ext, vector<uint8_t> &inco
         frequency=frequencies[stratum_id];
         ext.prokrustean.get_stratum(stratum_id, vertex);
 
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &s_edge=vertex.s_edges[j];
             // frequency 
             frequencies[s_edge.stratum_id]+=frequency;
@@ -633,7 +633,7 @@ void compute_strata_frequencies_parallel(ProkrusteanExtension &ext, int thread_c
         stack<StratumId> completed_strata;
         for(SeqId i=thread_idx; i<ext.prokrustean.sequence_count; i+=thread_cnt){
             ext.prokrustean.get_sequence(i, vertex);
-            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
                 auto &s_edge=vertex.s_edges[j];
                 ext.lock_stratum(s_edge.stratum_id);
                 // frequency 
@@ -667,7 +667,7 @@ void compute_strata_frequencies_parallel(ProkrusteanExtension &ext, int thread_c
             frequency=frequencies[stratum_id];
             ext.prokrustean.get_stratum(stratum_id, vertex);
 
-            for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+            for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
                 auto &s_edge=vertex.s_edges[j];
                 ext.lock_stratum(s_edge.stratum_id);
                 // frequency 
@@ -722,7 +722,14 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
     std::ofstream file(filename, std::ios::binary);
     if (file.is_open()) {
         // Serialize meta
+        uint64_t id_max_value=numeric_limits<Id>::max(); 
+        uint64_t length_max_value=numeric_limits<Length>::max(); 
+        uint64_t region_id_max_value=numeric_limits<RegionId>::max(); 
+
         file.write(reinterpret_cast<const char*>(&data.version), sizeof(data.version));
+        file.write(reinterpret_cast<const char*>(&id_max_value), sizeof(id_max_value));
+        file.write(reinterpret_cast<const char*>(&length_max_value), sizeof(length_max_value));
+        file.write(reinterpret_cast<const char*>(&region_id_max_value), sizeof(region_id_max_value));
         file.write(reinterpret_cast<const char*>(&data.lmin), sizeof(data.lmin));
         file.write(reinterpret_cast<const char*>(&data.sequence_count), sizeof(data.sequence_count));
         file.write(reinterpret_cast<const char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
@@ -738,8 +745,8 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
 
         // Serialize sequences__region_cnt and StratifiedData vectors
         for (int i = 0; i < data.sequence_count; ++i) {
-            CoveringRegionCount count = data.sequences__region_cnt[i];
-            file.write(reinterpret_cast<const char*>(&count), sizeof(CoveringRegionCount));
+            StratifyingRegionCount count = data.sequences__region_cnt[i];
+            file.write(reinterpret_cast<const char*>(&count), sizeof(StratifyingRegionCount));
             
             for (int j = 0; j < count; ++j) {
                 _serializeStratifiedData(file, &data.sequences__region[i][j]);
@@ -753,8 +760,8 @@ void store_prokrustean(const Prokrustean& data, const std::string& filename) {
 
         // Serialize stratums__region_cnt and StratifiedData vectors
         for (int i = 0; i < data.stratum_count; ++i) {
-            CoveringRegionCount count = data.stratums__region_cnt[i];
-            file.write(reinterpret_cast<const char*>(&count), sizeof(CoveringRegionCount));
+            StratifyingRegionCount count = data.stratums__region_cnt[i];
+            file.write(reinterpret_cast<const char*>(&count), sizeof(StratifyingRegionCount));
             
             for (int j = 0; j < count; ++j) {
                 _serializeStratifiedData(file, &data.stratums__region[i][j]);
@@ -794,7 +801,14 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         size_t sequence_count, stratum_count;
         
         // Deserialize meta
+        uint64_t id_max_value=0; 
+        uint64_t length_max_value=0; 
+        uint64_t region_id_max_value=0; 
+
         file.read(reinterpret_cast<char*>(&data.version), sizeof(data.version));
+        file.read(reinterpret_cast<char*>(&id_max_value), sizeof(id_max_value));
+        file.read(reinterpret_cast<char*>(&length_max_value), sizeof(length_max_value));
+        file.read(reinterpret_cast<char*>(&region_id_max_value), sizeof(region_id_max_value));
         file.read(reinterpret_cast<char*>(&data.lmin), sizeof(data.lmin));
         file.read(reinterpret_cast<char*>(&sequence_count), sizeof(sequence_count));
         file.read(reinterpret_cast<char*>(&data.total_sequence_region_count), sizeof(data.total_sequence_region_count));
@@ -802,6 +816,18 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         file.read(reinterpret_cast<char*>(&data.total_strata_region_count), sizeof(data.total_strata_region_count));
         file.read(reinterpret_cast<char*>(&data.contains_stratum_extension_count), sizeof(data.contains_stratum_extension_count));
         file.read(reinterpret_cast<char*>(&data.contains_stratum_frequency), sizeof(data.contains_stratum_frequency));
+
+        if(id_max_value!=numeric_limits<Id>::max()
+        ||length_max_value!=numeric_limits<Length>::max()
+        ||region_id_max_value!=numeric_limits<RegionId>::max()){
+            cout << " error: Id or Length or RegionId does not match the type used at storing this prokrustean graph." << endl;
+            cout << " stored id max value: " << id_max_value << " while current id max value: " << (uint64_t)numeric_limits<Id>::max() << endl;
+            cout << " stored length max value: " << length_max_value << " while current length max value: " << (uint64_t)numeric_limits<Length>::max() << endl;
+            cout << " stored region id max value: " << region_id_max_value << " while current region id max value: " << (uint64_t)numeric_limits<RegionId>::max() << endl;
+            assert(id_max_value==numeric_limits<Id>::max());
+            assert(length_max_value==numeric_limits<Length>::max());
+            assert(region_id_max_value==numeric_limits<RegionId>::max());
+        }
 
         data.set_seq_count(sequence_count);
         data.set_stratum_count(stratum_count);
@@ -818,8 +844,8 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         }
         uint64_t acc_seq_rgn_count=0;
         for (int i = 0; i < data.sequence_count; ++i) {
-            CoveringRegionCount count=0;
-            file.read(reinterpret_cast<char*>(&count), sizeof(CoveringRegionCount));
+            StratifyingRegionCount count=0;
+            file.read(reinterpret_cast<char*>(&count), sizeof(StratifyingRegionCount));
             data.sequences__region_cnt[i]=count;
             // data.sequences__region[i]=new StratifiedData[count];
             if(count>0){
@@ -849,8 +875,8 @@ bool load_prokrustean(const std::string& filename, Prokrustean& data) {
         }
         uint64_t acc_stra_rgn_count=0;
         for (int i = 0; i < data.stratum_count; ++i) {
-            CoveringRegionCount count=0;
-            file.read(reinterpret_cast<char*>(&count), sizeof(CoveringRegionCount));
+            StratifyingRegionCount count=0;
+            file.read(reinterpret_cast<char*>(&count), sizeof(StratifyingRegionCount));
             data.stratums__region_cnt[i]=count;
             if(count>0){
                 data.stratums__region[i]=&total_stra_rgn[acc_stra_rgn_count];

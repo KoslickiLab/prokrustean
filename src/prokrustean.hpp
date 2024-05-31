@@ -82,7 +82,7 @@ struct Vertex {
 
     Vertex(){}
     Vertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions, bool is_stratum) :id(id),size(size),s_edges(regions),is_stratum(is_stratum), is_sequence(!is_stratum){}
-    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, CoveringRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
+    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, StratifyingRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
         s_edges.resize(rgn_cnt);
         while(rgn_cnt>0){
             rgn_cnt--;
@@ -92,7 +92,7 @@ struct Vertex {
             assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size);
         } 
     }
-    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, CoveringRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
+    Vertex(uint32_t id, uint32_t size, bool is_stratum, StratifiedData* data, StratifyingRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): id(id), size(size), is_stratum(is_stratum), is_sequence(!is_stratum){
         int valid_rgn_cnt=0;
         for(int i=0; i<rgn_cnt; i++){
             if(stratum_sizes[data[i].stratum_id]>=k){
@@ -112,15 +112,15 @@ struct Vertex {
             // assert(0<=rgn.from && rgn.from < size && 0<rgn.to && rgn.to <= size && rgn.from < rgn.to);
         } 
     }
-    void get_valid_indices(int k, vector<CoveringRegionIdx>& indices){
+    void get_valid_indices(int k, vector<StratifyingRegionIdx>& indices){
         indices.clear();
-        for(CoveringRegionIdx i=0; i<s_edges.size(); i++){
+        for(StratifyingRegionIdx i=0; i<s_edges.size(); i++){
             if(s_edges[i].size()>=k){
                 indices.push_back(i);
             }
         }
     }
-    StratumSize overlap_length_on_left(CoveringRegionIdx idx){
+    StratumSize overlap_length_on_left(StratifyingRegionIdx idx){
         if(idx==0) {
             return 0;
         } else {
@@ -140,15 +140,15 @@ struct Vertex {
 struct StratumVertex: Vertex{
     StratumVertex(){}
     StratumVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, true){}
-    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, CoveringRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
-    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, CoveringRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, k, stratum_sizes){}
+    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, StratifyingRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, stratum_sizes){}
+    StratumVertex(uint32_t id, uint32_t size, StratifiedData* data, StratifyingRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, true, data, rgn_cnt, k, stratum_sizes){}
 };
 
 struct SequenceVertex: Vertex{
     SequenceVertex(){}
     SequenceVertex(uint32_t id, uint32_t size, vector<StratifiedEdge> &regions): Vertex(id, size, regions, false){}
-    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, CoveringRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
-    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, CoveringRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, k, stratum_sizes){}
+    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, StratifyingRegionCount rgn_cnt, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, stratum_sizes){}
+    SequenceVertex(uint32_t id, uint32_t size, StratifiedData* data, StratifyingRegionCount rgn_cnt, int k, vector<StratumSize> &stratum_sizes): Vertex(id, size, false, data, rgn_cnt, k, stratum_sizes){}
 };
 
 // int CHECKSUM=stoi(string("I am a prokrustean file"));
@@ -164,13 +164,13 @@ struct Prokrustean {
     uint64_t total_sequence_region_count=0;
     vector<SequenceSize> sequences__size;
     vector<StratifiedData*> sequences__region;
-    vector<CoveringRegionCount> sequences__region_cnt;
+    vector<StratifyingRegionCount> sequences__region_cnt;
     
     uint64_t stratum_count;
     uint64_t total_strata_region_count=0;
     vector<StratumSize> stratums__size;
     vector<StratifiedData*> stratums__region;
-    vector<CoveringRegionCount> stratums__region_cnt;
+    vector<StratifyingRegionCount> stratums__region_cnt;
 
     // extension
     vector<CharCount> stratums__character_extensions_cnt;
@@ -394,13 +394,13 @@ struct Prokrustean {
     }
 
     void set_seq_regions(SeqId id, StratifiedData* data, uint64_t rgn_cnt){
-        assert(rgn_cnt<=numeric_limits<CoveringRegionCount>::max());
+        assert(rgn_cnt<=numeric_limits<StratifyingRegionCount>::max());
         this->sequences__region[id]=data;
         this->sequences__region_cnt[id]=rgn_cnt;
     }
 
     void set_stratum_regions(StratumId id, StratifiedData* data, uint64_t rgn_cnt){
-        assert(rgn_cnt<=numeric_limits<CoveringRegionCount>::max());
+        assert(rgn_cnt<=numeric_limits<StratifyingRegionCount>::max());
         this->stratums__region[id]=data;
         this->stratums__region_cnt[id]=rgn_cnt;
     }

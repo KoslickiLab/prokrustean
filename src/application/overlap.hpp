@@ -22,7 +22,7 @@ void count_overlap_degrees(ProkrusteanExtension &ext, uint32_t min_length, vecto
     stack<StratumId> completed_strata;
     for(SeqId i=0; i<ext.prokrustean.sequence_count; i++){
         ext.prokrustean.get_sequence(i, vertex);
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &s_edge=vertex.s_edges[j];
             assert(incoming_degrees[s_edge.stratum_id]>0);
             incoming_degrees[s_edge.stratum_id]--;
@@ -49,7 +49,7 @@ void count_overlap_degrees(ProkrusteanExtension &ext, uint32_t min_length, vecto
 
         ext.prokrustean.get_stratum(stratum_id, vertex);
 
-        for(CoveringRegionIdx j=0; j<vertex.s_edges.size(); j++){
+        for(StratifyingRegionIdx j=0; j<vertex.s_edges.size(); j++){
             auto &s_edge=vertex.s_edges[j];
             assert(incoming_degrees[s_edge.stratum_id]>0);
             incoming_degrees[s_edge.stratum_id]--;

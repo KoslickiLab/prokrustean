@@ -270,7 +270,7 @@ void test_store_and_retrieve_random_data() {
     originalData.set_seq_count(sequence_cnt);
     originalData.set_stratum_count(stratum_cnt);
     for(int i=0; i<sequence_cnt; i++){
-        auto rgn_count = generate_random_val<CoveringRegionIdx>();
+        auto rgn_count = generate_random_val<StratifyingRegionIdx>();
         StratifiedData* arr= new StratifiedData[rgn_count];
         for(int r=0; r<rgn_count; r++){
             arr[r].stratum_id=generate_random_val<StratumId>();
@@ -279,7 +279,7 @@ void test_store_and_retrieve_random_data() {
         originalData.set_seq_regions(i, generate_random_val<SequenceSize>(), arr, rgn_count);
     }
     for(int i=0; i<stratum_cnt; i++){
-        auto rgn_count = generate_random_val<CoveringRegionIdx>();
+        auto rgn_count = generate_random_val<StratifyingRegionIdx>();
         StratifiedData* arr= new StratifiedData[rgn_count];
         for(int r=0; r<rgn_count; r++){
             arr[r].stratum_id=generate_random_val<StratumId>();
