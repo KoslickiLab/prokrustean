@@ -299,6 +299,7 @@ void compute_frequencies_by_datasets_parallel(ProkrusteanExtension &ext, int thr
     for(auto &f: frequencies){
         assert(f.size()==ext.prokrustean.stratum_count);
     }
+    assert(ext.stratum_lock_active);
 
     vector<future<void>> futures;
     auto func_ = [](ProkrusteanExtension &ext, int thread_idx, int thread_cnt, int dataset_count, vector<DatasetId> &dataset_ids, vector<vector<FrequencyCount>> &frequencies) {
@@ -415,11 +416,12 @@ void compute_braycurtis_k_range_parallel(uint64_t from, uint64_t to, Prokrustean
     assert(from>0 && from<=to);
     assert(ext.stratum_incoming_degrees.size()==ext.prokrustean.stratum_count);
     assert(ext.stratum_lock_active);
+    assert(dataset_ids.size()==ext.prokrustean.sequence_count);
 
     vector<vector<FrequencyCount>> stratum_frequencies_by_dataset(dataset_count, vector<FrequencyCount>(ext.prokrustean.stratum_count, 0));
     compute_frequencies_by_datasets_parallel(ext, thread_cnt, dataset_count, dataset_ids, stratum_frequencies_by_dataset);
-
-     std::vector<BrayCurtisIntermediate> thread_intermediates;
+    cout << "computed frequencies by datasets" << endl;
+    std::vector<BrayCurtisIntermediate> thread_intermediates;
     for(int i=0; i<thread_cnt; i++){
         BrayCurtisIntermediate intermediate(from, to, dataset_ids, dataset_count, stratum_frequencies_by_dataset);
         thread_intermediates.push_back(intermediate);
@@ -439,7 +441,7 @@ void compute_braycurtis_k_range_parallel(uint64_t from, uint64_t to, Prokrustean
         std::async(std::launch::async, func_, ref(ext.prokrustean), from, i, thread_cnt, ref(thread_intermediates[i]))
     );}
     for (auto &f : futures) {f.wait();}
-
+    cout << "computed comparisons" << endl;
     BrayCurtisIntermediate merged_intermediate(from, to, dataset_ids, dataset_count, stratum_frequencies_by_dataset);
     for(int i=0; i<merged_intermediate.nominator_countings.size(); i++){
         auto &counting=merged_intermediate.nominator_countings[i];
