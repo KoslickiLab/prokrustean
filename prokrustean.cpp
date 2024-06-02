@@ -17,7 +17,7 @@
 using namespace std;
 using namespace sdsl;
 
-int kmin=-1;
+int kmin=20;
 string input_bwt;
 string output_file;
 string output_seq_file;
