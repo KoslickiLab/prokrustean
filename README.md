@@ -22,7 +22,7 @@ This approach requires a eBWT file that includes a single string with a seperato
 ./prokrustean -i ./SRR20044276.bwt -l 20
 ```
 ### Application: Count distinct k-mers
-The command below counts the number of k-mers for a range k, [$kmin$, the maximum length possible]. Note that the output may not match that of other libraries like KMC. We have utilized brute-force implementations for testing purposes. ([/tests/naive_impl.cpp](/tests/naive_impl.cpp)).
+The command below counts the number of k-mers for a range k, [$kmin$, the maximum length possible]. Note that the output may not match that of other libraries like KMC. This is due to Prokrustean not using canonical k-mers, restricting to an `A,C,T,G` alphabet only, etc. But to check correctness, we have utilized brute-force implementations for testing purposes. ([/tests/naive_impl.cpp](/tests/naive_impl.cpp)).
 ```
 ./prokrustean_kmer_count -p ./SRR20044276.bwt.prokrustean
 ```
