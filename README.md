@@ -45,13 +45,12 @@ The prokrustean graph contains an hierarchical representation of the overlap gra
 ./prokrustean_overlap -p ./merged.bwt.prokrustean
 ```
 
-<!-- # Examples -->
-<!-- More detailed usages are introduced in the `/examples` folder.  
+# Examples
+More detailed usages are introduced in the `/examples` folder.  
 
 [/examples/datasets](examples/datasets.md) includes datasets used to generate figures in the paper. 
 
-[/examples/experiments](examples/experiments.md) details how the actual experiments in the paper are conducted.
--->
+[/examples/experiments](examples/experiments.md) details how the actual experiments in the paper were conducted.
 
 <div id="BWT"></div>
 
