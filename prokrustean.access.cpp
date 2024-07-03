@@ -30,7 +30,7 @@ void help(){
 	"Options:" << endl <<
 	"-h          help" << endl <<
 	"-i <arg>    (REQUIRED) input ebwt file name" << endl <<
-	"-o <arg>    output file. default: {input}.prokrustean.sequences" << endl <<
+	"-o <arg>    output file. default: {input}.sequences.dat" << endl <<
 	"-t <arg>    thread count. default: " << num_threads << endl;
 	exit(0);
 }
@@ -64,7 +64,7 @@ int main(int argc, char** argv){
 		help();
 	}
 	if(output_file.size()==0) {
-		output_file=input_bwt+".prokrustean.sequences";
+		output_file=input_bwt+".sequences.dat";
 	};
 
 	cout << "Input bwt file: " << input_bwt << endl;
