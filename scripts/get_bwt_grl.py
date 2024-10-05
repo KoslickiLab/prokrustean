@@ -25,6 +25,17 @@ cmake ..
 make
 '''
 ##################################################
+##################################################
+# Run
+# Given a sequence set, 
+# the sequences are merged into a single txt file with separator '$',
+# and grlBWT generates the intermediate binary,
+# and then grlBWT the txt bwt file.
+##################################################
+'''
+python3 scripts/get_bwt_grl.py -i some_sequences.fastq.gz
+'''
+##################################################
 
 FORMAT_MAPPING = {
     '.fasta': 'fasta',

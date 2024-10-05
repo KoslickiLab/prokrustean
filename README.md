@@ -1,11 +1,18 @@
-The Procrustean graph is a space-efficient substring index designed for rapid enumeration of k-mer contexts across varying k values, with a time complexity that remains constant regardless of the k range. The Procrustean graph is designed to effectively describe the structural transitions of k-mers with respect to k values. We utilize this capability to compute metrics relevant to k-mer-based applications in pangenomics and metagenomics.
+The Procrustean graph is a space-efficient substring index specifically designed to enable the rapid exploration of k-mer contexts across varying k values. The time complexity the exploration remains invariant with respect to the k range, making the computation of k-mer-related quantities across k-mer sizes extremely efficient. We provide algorithms for computing distinct k-mer counts, Bray-Curtis dissimilarities, maximal unitigs in De Bruijn graphs, and vertex degrees of overlap graphs for all k sizes.
 
-This repository covers (1) Prokrustean graph construction from an ebwt of a sequence set, and (2) applications using Prokrustean graphs. Please cite the paper below, when using our code for academic purposes:
+The Procrustean graph was motivated by the absence of a theoretical framework describing the transition of k-mer objects with respect to their order (k). Even though bioinformatics pipelines are mostly too complex to analyze the impact of k sizes from their outputs, there always exist mathematically well-defined k-mer-based objects that form the foundation of method formulation. How the "shape" of the objects change with k sizes is easily elucidated with the Prokrustean graph. Therefore, we expect the Procrustean graph to contribute to (1) designing and (2) computing metrics associated with k-mer-based objects that effectively reflect the influence of k-mers within pipelines.
+
+This repository provides:
+
+- Procrustean graph construction from the extended Burrows-Wheeler transform (eBWT).
+- Applications leveraging the Procrustean graph for computing k-mer-related quantities.
+
+For academic use, please cite the paper below when utilizing our code.
 > **Adam Park and David Koslicki.** "Prokrustean Graph: A substring index supporting rapid enumeration across a range of k-mer sizes." [![dx.doi.org/10.1101/2023.11.21.568151](https://img.shields.io/badge/doi-10.1101%2F2023.11.21.568151-blue.svg)](http://dx.doi.org/10.1101/2023.11.21.568151)
 
 # Quick start
 ### Install
-Prokrustean is a header-only stand-alone c++ project. The graph construction utilizes the wavelet tree of the input ebwt in [SDSL project](https://github.com/simongog/sdsl-lite), but we copied the relevant code from the project to avoid dependency issues.
+Prokrustean is a header-only stand-alone c++ project. The graph construction utilizes the wavelet tree of the input ebwt in [SDSL project](https://github.com/simongog/sdsl-lite), but we copied the relevant code from the project to minimize dependency issues.
 ```
 git clone https://github.com/KoslickiLab/prokrustean.git
 cd prokrustean
@@ -15,37 +22,40 @@ make
 ```
 
 ### Make a prokrustean graph
-This approach requires a eBWT file that includes a single string with a seperator (normally '$'). Either download [our example data](https://pennstateoffice365-my.sharepoint.com/:f:/g/personal/akp6031_psu_edu/EpeyylRQoyhAmi60bt8ne3IBaTDVXzsdVVB8ODAKZ0CPRw?e=dCw1Oi), or refer to the [BWT Section](#BWT) below to make your own. Below code generates a binary file (./SRR20044276.bwt.prokrustean) representing the prokrustean graph of a short read dataset of SRR20044276.
+For the input sequence set, typically sequencing data, we require an eBWT file that consists of a single string with a separator, usually '$'. There are numerous projects and ongoing studies focused on computing eBWTs. Refer to the [BWT Section](#BWT) below, which lists some eBWT construction tools and simple tutorials. Alternatively, you can download [our example data](https://pennstateoffice365-my.sharepoint.com/:f:/g/personal/akp6031_psu_edu/EpeyylRQoyhAmi60bt8ne3IBaTDVXzsdVVB8ODAKZ0CPRw?e=dCw1Oi) here.
+
+Below code generates a binary file (./SRR20044276.bwt.prokrustean) representing the prokrustean graph of a short read dataset of SRR20044276.
 
 ```
 # kmin is 20 by default.
 ./prokrustean -i ./SRR20044276.bwt -l 20
 ```
 ### Application: Count distinct k-mers
-The command below counts the number of k-mers for a range k, [$kmin$, the maximum length possible]. Note that the output may not match that of other libraries like KMC. This is due to Prokrustean not using canonical k-mers, restricting to an `A,C,T,G` alphabet only, etc. But to check correctness, we have utilized brute-force implementations for testing purposes. ([/tests/naive_impl.cpp](/tests/naive_impl.cpp)).
+The command below counts the number of k-mers for k=kmin, ... , the length of the longest sequence. Note that the output may not match that of other libraries like KMC, because KMC does not count k-mers as is - it considers canonical k-mers, and its usage is limited to `A,C,T,G` alphabet only, etc. We instead utilized brute-force implementations for testing purposes. ([/tests/naive_impl.cpp](/tests/naive_impl.cpp)).
 ```
 ./prokrustean_kmer_count -p ./SRR20044276.bwt.prokrustean
 ```
 
 ### Application: Count maximal unitigs of de Bruijn graphs
-Below command counts the number of maximal unitigs of de Bruijn graphs for a range of k, [$kmin$, the maximum length possible]. 
+Below command counts the number of maximal unitigs of de Bruijn graphs for k=kmin, ... , the maximum length of sequences. 
 ```
 ./prokrustean_unitig_count -p ./SRR20044276.bwt.prokrustean
 ```
 
-### Application: Compute Bray-Curtis
-The command below computes the Bray-Curtis dissimilarities between samples across a range of k, [$kmin$, the maximum length possible]. For comparing two read sets, `A.fastq.gz` and `B.fastq.gz`, first construct `merged.bwt.prokrustean` from the ebwt of the merged files. Then, the second parameter annotes each sample ids for each sequence, `merged.bwt.samples_ids.txt`. This file contains N rows of 0s or 1s, where N is the total number of sequences. Each integer in the ith row indicates whether the ith sequence in the Procrustean graph is from A (0) or B (1).
+### Application: Compute Bray-Curtis dissimilarity
+The command below computes the Bray-Curtis dissimilarities between samples for k = kmin, ... , the length of the longest sequence. To compare two read sets, `A.fastq.gz` and `B.fastq.gz`, they must be merged to generate `merged.bwt.prokrustean`. The second parameter, `merged.bwt.samples_ids.txt`, annotates the sample IDs for each sequence based on the implicit order in the eBWT. This file contains N rows of 0s and 1s, where N is the total number of merged sequences. Each integer in the ith row indicates whether the ith sequence in the Procrustean graph is from `A` (0) or `B` (1). We share how the two inputs were computed in [/examples/experiments](examples/experiments.md).
+
 ```
 ./prokrustean_braycurtis -p ./merged.bwt.prokrustean -s ./merged.bwt.samples_ids.txt
 ```
 
 ### Application: Count vertex degrees of the overlap graph
-The prokrustean graph contains an hierarchical representation of the overlap graph of the original sequence set. This compact representation makes computing vertex degrees of the overlap graph beneficial. Below command outputs the incoming and outgoing degrees of each sequence, where $kmin$ is the overlap threshold (overlap at least $kmin$ are counted)
+The prokrustean graph contains an hierarchical representation of the overlap graph of the original sequence set. This compact representation makes computing vertex degrees of the overlap graph beneficial. Below command outputs the incoming and outgoing degrees of each sequence, where kmin is the overlap threshold (overlap at least $kmin$ are counted).
 ```
 ./prokrustean_overlap -p ./merged.bwt.prokrustean
 ```
 
-# Examples
+# Example datasets and experiments
 More detailed usages are introduced in the `/examples` folder.  
 
 [/examples/datasets](examples/datasets.md) includes datasets used to generate figures in the paper. 
@@ -55,7 +65,7 @@ More detailed usages are introduced in the `/examples` folder.
 <div id="BWT"></div>
 
 ## How to get eBWTs
-There are many libraries computing eBWTs from fastq or fasta files. Their outputs may differ based on the employed strategies, but all are valid for generating the Procrustean graph. Here, we provide some examples that worked in our tasks. 
+There are multiple libraries computing eBWTs from fastq or fasta files. Their outputs are typically differ to each other based on the employed strategies, but all are valid for generating the Procrustean graph. Here, we provide some examples that worked in our tasks. 
 ### optimalBWT
 We used [optimalBWT](https://github.com/davidecenzato/optimalBWT) for normal cases on linux environments.
 ```
@@ -73,7 +83,7 @@ mv SRR20044276.fastq.optbwt SRR20044276.bwt
 ``` 
 
 ### BCR
-[BCR](https://github.com/giovannarosone/BCR_LCP_GSA) was specifically used for correctness tests and computing Bray-Curtis dissimilarity because it preserves the order of sequences from the original dataset. This preservation is crucial for annotating sequences; for example, in computing Bray-Curtis dissimilarity, each sequence should be annotated with thier sample Id.
+[BCR](https://github.com/giovannarosone/BCR_LCP_GSA) was specifically used for correctness tests and computing Bray-Curtis dissimilarity because it preserves the order of sequences from the original dataset. This preservation is crucial when you want to annotate sequences; for example, in computing Bray-Curtis dissimilarity, each sequence should be annotated with thier sample Id. We can simply say the first N(A) sequences are from sample A and then second N(B) sequences are from sample B, where N(A) and N(B) are numbers of sequences in samples A and B, respectively. 
 ```
 git clone https://github.com/giovannarosone/BCR\_LCP\_GSA
 cd BCR_LCP_GSA
@@ -126,8 +136,16 @@ python3 scripts/get_bwt_grl.py -i some_sequences.fastq.gz
 ```
 
 ### ropebwt2
-
-[ropebwt2](https://github.com/lh3/ropebwt2/blob/master/main.c) may have been familiarized by some users. However, it is not recommended to use the library to generate the input of this project as it generates an incorrect data for fairly large datasets. For example, get the bwt of SRR20044276.fasq.gz with ropebwt2 and recover the sequences with ./prokrustean_access. It fails at recovering the original sequences. The same task consistently works with both grlBWT and optimalBWT, and our naive implementation of bwt developed for testing purposes.
+[ropebwt2](https://github.com/lh3/ropebwt2/blob/master/main.c) may be familiar to some users. It is easily installed in most environments and run without issue, but be aware that ropebwt2 sorts the alphabet as (A < C < G < T < N), which differs from the default English sorting (A < C < G < N < T). The outputs of applications might be different from the outputs of BWTs that used other libraries if N is included in the input data. Install ropebwt2 with the command below:
+```
+git clone https://github.com/lh3/ropebwt2.git
+cd ropebwt2
+make
+```
+And generate the bwt.
+```
+./ropebwt2 -R -o SRR20044276.bwt SRR20044276.fastq.gz
+```
 
 # Supplementary Details
 ## Structure of the prokrustean graph
