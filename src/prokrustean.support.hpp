@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <cassert>
+#include <iomanip> 
 #include <iostream>
 #include <algorithm>
 #include "prokrustean.hpp"

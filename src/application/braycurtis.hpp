@@ -404,7 +404,7 @@ void compute_braycurtis_k_range(uint64_t from, uint64_t to, ProkrusteanExtension
             output.id2=counting.id2;
             output.nominator=counting.C[k];
             output.denominator=intermediate.denominator_countings[counting.id1].C[k]+intermediate.denominator_countings[counting.id2].C[k];
-            output.value=2*(float64_t)output.nominator/(float64_t)output.denominator;
+            output.value=2*(float_t)output.nominator/(float_t)output.denominator;
             outputs.push_back(output);
         }
     }
