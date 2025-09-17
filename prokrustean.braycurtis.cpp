@@ -99,10 +99,12 @@ int main(int argc, char** argv){
 		exit(0);
 	}
 	if(to==-1){
-		to=prokrustean.sequences__size[0];
-		for(auto &size: prokrustean.sequences__size){
-			if(to<size) to=size;
-		}
+		// *** the sequence size can be too large.
+			// to=prokrustean.sequences__size[0];
+			// for(auto &size: prokrustean.sequences__size){
+			// 	if(to<size) to=size;
+			// }
+		to=100;
 	} else if(to<from){
 		cout << "to(r) value should be at least from(l) value: " << from << endl;
 		exit(0);
@@ -123,8 +125,6 @@ int main(int argc, char** argv){
             std::cerr << "Error: the sequence ids should be in range for uint8_t (0~255): " << number << std::endl;
             exit(0);
         }
-		// temp
-		assert(number==0 || number==1);
         ids_by_sequence.push_back(static_cast<uint8_t>(number));
     }
     file.close();
